@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Mail } from 'lucide-react'
-import { Markdown } from '@/components/ui/markdown'
-import { AsciiGrid } from '@/components/ui/ascii-grid'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Mail } from "lucide-react";
+import { Markdown } from "@/components/ui/markdown";
+import { AsciiGrid } from "@/components/ui/ascii-grid";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 const termsContent = `
 # Terms and Conditions
@@ -69,9 +69,7 @@ If you feel uncomfortable or think there may be a potential violation of the Cod
 
 By sending us an email to [contact@kthais.com](mailto:contact@kthais.com), your report will be received by our organisers. If you want to remain anonymous please send us an email through an anonymous email service or create a temporary email account.
 
-If you need to contact a team member directly, please contact one of our organisers below.
-
-- **Filip Matz**, @Filip in Slack, [filip@kthais.com](mailto:filip@kthais.com).
+If you need to contact a team member directly, please contact the board at [contact@kthais.com](mailto:contact@kthais.com).
 
 KTHAIS reserves the right to revise, make exceptions to, or otherwise amend these policies in whole or in part.
 
@@ -227,32 +225,32 @@ This Agreement may be executed in counterparts or online, which taken together s
 #### No third party beneficiaries
 
 This Agreement shall be binding upon and inure solely to the benefit of the parties hereto and their permitted assigns and nothing herein, express or implied, is intended to or shall confer upon any other person any legal or equitable right, benefit or remedy of any nature whatsoever under or by reason of this Agreement.
-`
+`;
 
 export default function TermsAndConditionsPage() {
-  const [textMask, setTextMask] = useState<string | undefined>(undefined)
+  const [textMask, setTextMask] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 1400
-    canvas.height = 400
-    const ctx = canvas.getContext('2d')
+    const canvas = document.createElement("canvas");
+    canvas.width = 1400;
+    canvas.height = 400;
+    const ctx = canvas.getContext("2d");
 
-    if (!ctx) return
+    if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.fillStyle = 'white'
-    ctx.font = 'bold 120px system-ui, -apple-system, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "white";
+    ctx.font = "bold 120px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
-    ctx.fillText('TERMS', canvas.width / 2, canvas.height / 2)
+    ctx.fillText("TERMS", canvas.width / 2, canvas.height / 2);
 
-    const dataUrl = canvas.toDataURL('image/png')
+    const dataUrl = canvas.toDataURL("image/png");
     requestAnimationFrame(() => {
-      setTextMask(dataUrl)
-    })
-  }, [])
+      setTextMask(dataUrl);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -289,86 +287,84 @@ export default function TermsAndConditionsPage() {
       {/* White Content Area */}
       <div className="px-4 sm:px-6 md:px-8 lg:px-8 xl:px-8">
         <section className="relative max-w-7xl mx-auto z-20 -mt-24 bg-neutral-50 rounded-3xl p-4 md:p-8 mb-24 shadow-lg border">
-        {/* Breadcrumbs */}
-        <div className="mb-8 flex items-center">
-          <Link
-            href="/"
-            className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium"
-          >
-            Home
-          </Link>
-          <span className="text-gray-300 mx-2">/</span>
-          <Link
-            href="/legal"
-            className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium"
-          >
-            Legal
-          </Link>
-          <span className="text-gray-300 mx-2">/</span>
-          <span className="text-primary font-medium text-sm">
-            Terms and Conditions
-          </span>
-        </div>
-
-        {/* 2 Column Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            <Markdown content={termsContent} />
+          {/* Breadcrumbs */}
+          <div className="mb-8 flex items-center">
+            <Link
+              href="/"
+              className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium"
+            >
+              Home
+            </Link>
+            <span className="text-gray-300 mx-2">/</span>
+            <Link
+              href="/legal"
+              className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium"
+            >
+              Legal
+            </Link>
+            <span className="text-gray-300 mx-2">/</span>
+            <span className="text-primary font-medium text-sm">
+              Terms and Conditions
+            </span>
           </div>
 
-          {/* Right Column - Sticky Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-20 space-y-6">
-              {/* Quick Info */}
-              <div className="bg-white rounded-lg p-6 border">
-                <h3 className="text-lg font-medium mb-4 text-secondary-black flex items-center gap-2">
-                  Document Info
-                </h3>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <p className="font-medium text-secondary-black mb-1">
-                      Last Reviewed
-                    </p>
-                    <p className="text-muted-foreground">December 19, 2025</p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <p className="font-medium text-secondary-black mb-1">
-                      Jurisdiction
-                    </p>
-                    <p className="text-muted-foreground">
-                      Stockholm, Sweden
-                    </p>
+          {/* 2 Column Grid Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Main Content */}
+            <div className="lg:col-span-2 space-y-8">
+              <Markdown content={termsContent} />
+            </div>
+
+            {/* Right Column - Sticky Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-20 space-y-6">
+                {/* Quick Info */}
+                <div className="bg-white rounded-lg p-6 border">
+                  <h3 className="text-lg font-medium mb-4 text-secondary-black flex items-center gap-2">
+                    Document Info
+                  </h3>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <p className="font-medium text-secondary-black mb-1">
+                        Last Reviewed
+                      </p>
+                      <p className="text-muted-foreground">December 19, 2025</p>
+                    </div>
+                    <Separator />
+                    <div>
+                      <p className="font-medium text-secondary-black mb-1">
+                        Jurisdiction
+                      </p>
+                      <p className="text-muted-foreground">Stockholm, Sweden</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="bg-white rounded-lg p-6 border">
-                <h3 className="text-lg font-medium mb-4 text-secondary-black">
-                  Questions?
-                </h3>
-                <div className="flex flex-col gap-3">
-                  <Button variant="default" asChild className="w-full">
-                    <Link
-                      href="mailto:contact@kthais.com"
-                      className="flex items-center justify-center gap-2"
-                    >
-                      <Mail className="h-4 w-4" />
-                      Contact Us
-                    </Link>
-                  </Button>
-                  <Button variant="outline" asChild className="w-full">
-                    <Link href="/legal">All Legal Documents</Link>
-                  </Button>
+                {/* Action Buttons */}
+                <div className="bg-white rounded-lg p-6 border">
+                  <h3 className="text-lg font-medium mb-4 text-secondary-black">
+                    Questions?
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    <Button variant="default" asChild className="w-full">
+                      <Link
+                        href="mailto:contact@kthais.com"
+                        className="flex items-center justify-center gap-2"
+                      >
+                        <Mail className="h-4 w-4" />
+                        Contact Us
+                      </Link>
+                    </Button>
+                    <Button variant="outline" asChild className="w-full">
+                      <Link href="/legal">All Legal Documents</Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         </section>
       </div>
     </div>
-  )
+  );
 }
