@@ -64,6 +64,7 @@ function ProjectCard({ project }: { project: typeof projects[0] }) {
         </h3>
         {project.repoUrl && project.repoUrl !== "#" && (
           <button
+            type="button"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()

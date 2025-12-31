@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import NumberFlow from '@number-flow/react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface TimelineEvent {
@@ -93,10 +94,25 @@ export function HistoryTimeline({
   const [selectedYear, setSelectedYear] = useState(initialYear);
   
   const selectedEvent = sortedEvents.find(e => e.year === selectedYear) ?? sortedEvents[0];
+  const currentIndex = sortedEvents.findIndex(e => e.year === selectedYear);
+  const canGoPrevious = currentIndex < sortedEvents.length - 1;
+  const canGoNext = currentIndex > 0;
 
   const handleYearClick = (year: number) => {
     if (year === selectedYear) return;
     setSelectedYear(year);
+  };
+
+  const handlePrevious = () => {
+    if (canGoPrevious) {
+      setSelectedYear(sortedEvents[currentIndex + 1]?.year ?? selectedYear);
+    }
+  };
+
+  const handleNext = () => {
+    if (canGoNext) {
+      setSelectedYear(sortedEvents[currentIndex - 1]?.year ?? selectedYear);
+    }
   };
 
   return (
@@ -288,6 +304,7 @@ export function HistoryTimeline({
                       className={cn(
                         'relative z-10 flex items-center gap-4 group cursor-pointer',
                         'transition-all duration-300',
+                        'px-4 py-4 -mx-4',
                       )}
                       style={{ 
                         position: 'absolute',
