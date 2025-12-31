@@ -158,6 +158,7 @@ export function HistoryTimeline({
                       className={cn(
                         'relative z-10 flex flex-col items-center gap-2 group cursor-pointer',
                         'transition-all duration-300',
+                        'px-4 py-3 -my-3',
                       )}
                       style={{ 
                         position: 'absolute',
@@ -251,37 +252,71 @@ export function HistoryTimeline({
         {/* Desktop Layout - Vertical Timeline */}
         <div className="hidden lg:grid grid-cols-12 gap-8 lg:gap-12">
           {/* Left Content Panel */}
-          <div className="col-span-4 flex flex-col">
-            {/* Large Year Number with NumberFlow Animation */}
-            <div className="relative mb-6 flex items-start">
-              <NumberFlow
-                value={selectedEvent.year}
-                format={{ minimumFractionDigits: 0, maximumFractionDigits: 0, useGrouping: false }}
-                className="text-8xl font-serif text-foreground leading-none"
-              />
+          <div className="col-span-4 flex flex-col justify-between">
+            <div>
+              {/* Large Year Number with NumberFlow Animation */}
+              <div className="relative mb-6 flex items-start">
+                <NumberFlow
+                  value={selectedEvent.year}
+                  format={{ minimumFractionDigits: 0, maximumFractionDigits: 0, useGrouping: false }}
+                  className="text-8xl font-serif text-foreground leading-none"
+                />
+              </div>
+
+              {/* Main Heading */}
+              <motion.h2
+                key={`${selectedEvent.year}-heading-desktop`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="text-xl md:text-2xl text-foreground mb-4 tracking-tight"
+              >
+                {selectedEvent.heading}
+              </motion.h2>
+
+              {/* Descriptive Text */}
+              <motion.p
+                key={`${selectedEvent.year}-description-desktop`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+                className="text-sm md:text-base text-foreground/80 leading-relaxed mb-6 flex flex-col justify-start items-start gap-2"
+              >
+                {selectedEvent.description}
+              </motion.p>
             </div>
 
-            {/* Main Heading */}
-            <motion.h2
-              key={`${selectedEvent.year}-heading-desktop`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="text-xl md:text-2xl text-foreground mb-4 tracking-tight"
-            >
-              {selectedEvent.heading}
-            </motion.h2>
-
-            {/* Descriptive Text */}
-            <motion.p
-              key={`${selectedEvent.year}-description-desktop`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              className="text-sm md:text-base text-foreground/80 leading-relaxed mb-6 flex flex-col justify-start items-start gap-2"
-            >
-              {selectedEvent.description}
-            </motion.p>
+            {/* Navigation Buttons */}
+            <div className="flex items-center gap-2 mt-auto">
+              <button
+                type="button"
+                onClick={handlePrevious}
+                disabled={!canGoPrevious}
+                className={cn(
+                  'p-2 rounded-lg border transition-all duration-200',
+                  'hover:bg-accent hover:border-accent-foreground/20',
+                  'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+                  canGoPrevious ? 'cursor-pointer' : 'cursor-not-allowed'
+                )}
+                aria-label="Previous year"
+              >
+                <ChevronLeft className="w-5 h-5 text-foreground" />
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!canGoNext}
+                className={cn(
+                  'p-2 rounded-lg border transition-all duration-200',
+                  'hover:bg-accent hover:border-accent-foreground/20',
+                  'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent',
+                  canGoNext ? 'cursor-pointer' : 'cursor-not-allowed'
+                )}
+                aria-label="Next year"
+              >
+                <ChevronRight className="w-5 h-5 text-foreground" />
+              </button>
+            </div>
           </div>
 
           {/* Central Vertical Timeline */}
