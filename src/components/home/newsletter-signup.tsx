@@ -7,8 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export function NewsletterSignup() {
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
@@ -19,13 +18,8 @@ export function NewsletterSignup() {
     setErrorMessage("")
     setSuccessMessage("")
     
-    if (!firstName.trim()) {
-      setErrorMessage("Please enter your first name")
-      return
-    }
-
-    if (!lastName.trim()) {
-      setErrorMessage("Please enter your last name")
+    if (!name.trim()) {
+      setErrorMessage("Please enter your name")
       return
     }
     
@@ -43,7 +37,7 @@ export function NewsletterSignup() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ firstName, lastName, email }),
+        body: JSON.stringify({ name, email }),
       })
 
       const data = await response.json()
@@ -53,8 +47,7 @@ export function NewsletterSignup() {
       }
 
       setSuccessMessage("Successfully subscribed to our newsletter!")
-      setFirstName("")
-      setLastName("")
+      setName("")
       setEmail("")
     } catch (error) {
       setErrorMessage(
@@ -86,39 +79,21 @@ export function NewsletterSignup() {
             className="flex flex-col items-start gap-4 pt-4 w-full max-w-md mx-auto"
             onSubmit={handleSubmit}
           >
-            <div className="flex flex-col sm:flex-row gap-4 w-full">
-              <div className="flex flex-col gap-2 flex-1">
-                <Label htmlFor="firstName" className="text-left">First Name</Label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  placeholder="Alan"
-                  value={firstName}
-                  onChange={(e) => {
-                    setFirstName(e.target.value)
-                    setErrorMessage("")
-                  }}
-                  disabled={isLoading}
-                  className="h-12 text-base"
-                  required
-                />
-              </div>
-              <div className="flex flex-col gap-2 flex-1">
-                <Label htmlFor="lastName" className="text-left">Last Name</Label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  placeholder="Turing"
-                  value={lastName}
-                  onChange={(e) => {
-                    setLastName(e.target.value)
-                    setErrorMessage("")
-                  }}
-                  disabled={isLoading}
-                  className="h-12 text-base"
-                  required
-                />
-              </div>
+            <div className="flex flex-col gap-2 w-full">
+              <Label htmlFor="name" className="text-left">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Alan"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  setErrorMessage("")
+                }}
+                disabled={isLoading}
+                className="h-12 text-base"
+                required
+              />
             </div>
             <div className="flex flex-col gap-2 w-full">
               <Label htmlFor="email" className="text-left">Email</Label>

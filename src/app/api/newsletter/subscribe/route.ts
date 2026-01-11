@@ -1,19 +1,13 @@
-import { NextRequest, NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { firstName, lastName, email } = await request.json()
+    const { name, email } = await request.json()
 
-    if (!firstName || !firstName.trim()) {
+    if (!name || !name.trim()) {
       return NextResponse.json(
-        { error: "First name is required" },
-        { status: 400 }
-      )
-    }
-
-    if (!lastName || !lastName.trim()) {
-      return NextResponse.json(
-        { error: "Last name is required" },
+        { error: "Name is required" },
         { status: 400 }
       )
     }
@@ -58,7 +52,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
-    } catch (error) {
+    } catch {
       // Member doesn't exist, continue with subscription
     }
 
@@ -73,8 +67,7 @@ export async function POST(request: NextRequest) {
         email_address: email,
         status: "subscribed",
         merge_fields: {
-          FNAME: firstName.trim(),
-          LNAME: lastName.trim(),
+          FNAME: name.trim(),
         },
       }),
     })
