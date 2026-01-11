@@ -18,6 +18,7 @@ export function Homepage() {
       <EventsPreview />
 
       <ProjectsPreview />
+      <NewsletterSignup />
     </main>
   )
 }

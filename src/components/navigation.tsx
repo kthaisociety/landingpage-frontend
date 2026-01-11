@@ -129,6 +129,12 @@ export function Navigation() {
               Job Board
             </Link>
             <Link
+              href="/newsletter"
+              className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
+            >
+              Newsletter
+            </Link>
+            <Link
               href="mailto:contact@kthais.com"
               className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
@@ -201,6 +207,13 @@ export function Navigation() {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Job Board
+                </Link>
+                <Link
+                  href="/newsletter"
+                  className="block py-3 text-base font-normal text-foreground/70 hover:text-foreground transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Newsletter
                 </Link>
                 <Link
                   href="mailto:contact@kthais.com"
