@@ -3,6 +3,7 @@ import { EventsPreview } from "./events-preview"
 import { ProjectsPreview } from "./projects-preview"
 import { JobsPreview } from "./jobs-preview"
 import { HistoryTimeline } from "./history-timeline"
+import { NewsletterSignup } from "./newsletter-signup"
 
 export function Homepage() {
   return (
@@ -17,6 +18,7 @@ export function Homepage() {
       <EventsPreview />
 
       <ProjectsPreview />
+      <NewsletterSignup />
     </main>
   )
 }
