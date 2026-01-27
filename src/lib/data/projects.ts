@@ -290,6 +290,51 @@ export const projects: Project[] = [
     },
     maintenancePlan: "Active development and maintenance by KTH AI Society robotics team",
     contact: "max.decman@kthais.com"
+  },
+  {
+    id: "kth-course-community",
+    title: "KTH Course Community",
+    oneLineDescription: "Building an open and modular platform for KTH students to share learning experiences, review courses, and receive personalized course recommendations.",
+    shortDescription: "Course exploration and personalized recommendations for KTH students",
+    category: "AI application",
+    tags: ["education", "ai", "recommendation"],
+    techStack: [
+      "Next.js",
+      "React",
+      "TypeScript",
+      "Redux",
+      "Nest.js",
+      "Elasticsearch",
+      "Neon Serverless Postgres"
+    ],
+    problemImpact: "Many KTH students find it difficult to navigate the wide range of available courses. Course descriptions are often vague, and insights about course content are typically shared informally between students. Today, students often rely on personal networks or active forums to get advice from those who have taken a course before.\n\nThis project addresses that gap by providing a shared platform where users can explore courses, read and write reviews, create study plans, and navigate the KTH course landscape in a structured way. Users can also comment on courses to share additional perspectives and experiences.\n\nThe project is open source, with a strong focus on legal and transparent AI use, a scalable architecture, and a clear MVP mindset. It is designed to evolve over multiple years through continuous community contributions.",
+    keyFeatures: [
+      "Advanced course search (content, course name, and course code)",
+      "Review system with ratings across multiple metrics",
+      "Save courses and organize them into lists and folders",
+      "Study planning tools",
+      "AI-assisted course discovery"
+    ],
+    status: "In development",
+    repoUrl: "https://github.com/kthaisociety/course-compass",
+    contributors: [
+      { name: "Harriet Källberg", role: "Tech Lead" },
+      { name: "Max Andreasen", role: "Full-Stack" },
+      { name: "Kajsa Lidin", role: "Full-Stack" },
+      { name: "Edvin Blomgren", role: "Full-Stack" },
+      { name: "Ebba Gröndal", role: "Full-Stack" },
+      { name: "Filip Sjöstrand", role: "Tech Advisor" }
+    ],
+    affiliations: "KTHAIS, continuation of a project from Advanced Interaction Programming",
+    timeline: {
+      startDate: "2024-09-21",
+      currentPhase: "In development",
+      upcomingMilestones: [
+        "Frontend, backend, database structure, and Elasticsearch setup"
+      ]
+    },
+    maintenancePlan: "Open-source project maintained by the AIS team",
+    contact: "harriet@kthais.com"
   }
 ]
 
