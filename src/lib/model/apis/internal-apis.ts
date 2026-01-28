@@ -14,9 +14,19 @@ export const internalApi = createApi({
     getMeMocked: builder.query({
       query: () => "testServerApi",
     }),
+    // googleLogin: builder.mutation({
+    //   query: (code: string) => ({
+    //     url: "testServerApi/auth",
+    //     method: "POST",
+    //     body: { code },
+    //     headers: {
+    //       Authorization: `Bearer ${code}`,
+    //     },
+    //   }),
+    // }),
     googleLogin: builder.mutation({
       query: (code: string) => ({
-        url: "testServerApi/auth",
+        url: "auth/google",
         method: "POST",
         body: { code },
         headers: {
