@@ -36,9 +36,10 @@ export function useLogin() {
     mutationFn: (credentials: LoginCredentials) => authApi.login(credentials),
     onSuccess: (data) => {
       queryClient.setQueryData(["auth-session"], data);
-      // Get the redirect URL from the query params, default to dashboard
+      // Get the redirect URL from the query params, default to member dashboard
       const redirectTo =
-        new URLSearchParams(window.location.search).get("from") || "/dashboard";
+        new URLSearchParams(window.location.search).get("from") ||
+        "/member/dashboard";
       router.push(redirectTo);
     },
   });
@@ -53,7 +54,7 @@ export function useRegister() {
       authApi.register(credentials),
     onSuccess: (data) => {
       queryClient.setQueryData(["auth-session"], data);
-      router.push("/dashboard");
+      router.push("/member/dashboard");
     },
   });
 }

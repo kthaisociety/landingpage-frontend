@@ -9,6 +9,8 @@ export type JobPostInput = {
   location: string;
   salary: string;
   companyId: string;
+  publishAt?: string;
+  unpublishAt?: string;
 };
 
 export type JobPost = JobPostInput & {

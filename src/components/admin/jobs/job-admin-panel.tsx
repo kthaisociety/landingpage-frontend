@@ -15,7 +15,6 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useJobPosts, type JobPostInput } from "@/hooks/jobs";
 import { useCompanies } from "@/hooks/companies";
-import { cn } from "@/lib/utils";
 
 const jobTypeOptions = ["Full time", "Part time"];
 
@@ -26,12 +25,15 @@ const emptyForm: JobPostInput = {
   location: "",
   salary: "",
   companyId: "",
+  publishAt: "",
+  unpublishAt: "",
 };
 
-export function JobAdminPanel({ className }: { className?: string }) {
+export function JobAdminPanel() {
   const { createJob } = useJobPosts();
   const { companies } = useCompanies();
   const [form, setForm] = useState<JobPostInput>(emptyForm);
+  const [dateWarning, setDateWarning] = useState<string | null>(null);
 
   const handleChange =
     (field: keyof JobPostInput) =>
@@ -41,6 +43,11 @@ export function JobAdminPanel({ className }: { className?: string }) {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (form.publishAt && form.unpublishAt && form.unpublishAt < form.publishAt) {
+      setDateWarning("Unpublish date must be after publish date.");
+      return;
+    }
+    setDateWarning(null);
     createJob(form);
     setForm(emptyForm);
   };
@@ -49,7 +56,7 @@ export function JobAdminPanel({ className }: { className?: string }) {
   const canSubmitJob = hasCompanies && Boolean(form.companyId);
 
   return (
-    <section className={cn("mt-10 space-y-6", className)}>
+    <section className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Job posts</h2>
@@ -122,6 +129,26 @@ export function JobAdminPanel({ className }: { className?: string }) {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="job-publish-at">Publish date</Label>
+                  <Input
+                    id="job-publish-at"
+                    type="datetime-local"
+                    value={form.publishAt || ""}
+                    onChange={handleChange("publishAt")}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="job-unpublish-at">Unpublish date</Label>
+                  <Input
+                    id="job-unpublish-at"
+                    type="datetime-local"
+                    value={form.unpublishAt || ""}
+                    onChange={handleChange("unpublishAt")}
+                  />
+                </div>
+
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="job-company">Company</Label>
                   <Select
@@ -159,6 +186,11 @@ export function JobAdminPanel({ className }: { className?: string }) {
                     required
                   />
                 </div>
+                {dateWarning ? (
+                  <p className="text-xs text-destructive md:col-span-2">
+                    {dateWarning}
+                  </p>
+                ) : null}
               </div>
 
               <div className="flex flex-wrap items-center gap-3">

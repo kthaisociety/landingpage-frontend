@@ -15,6 +15,7 @@ export type ProjectInput = {
   timeline: string;
   maintenancePlan: string;
   contact: string;
+  logoUrl?: string;
 };
 
 export type ProjectPost = ProjectInput & {
