@@ -28,7 +28,7 @@ export type ExtendedJobListing = JobListing & {
 
 const STORAGE_KEY = "kthais-job-listings";
 const STORAGE_VERSION_KEY = "kthais-job-listings-version";
-const CURRENT_VERSION = "1.0.0";
+const CURRENT_VERSION = "1.0.1";
 
 const getNowIso = () => new Date().toISOString();
 
@@ -69,88 +69,40 @@ const getSeedJobs = (): ExtendedJobListing[] => {
   const now = getNowIso();
   return [
     {
-      id: "andon-labs-research-study",
-      title: "Paid Research Study",
-      company: "Andon Labs",
-      jobType: "Other",
-      location: "Remote",
-      salary: "200 SEK/hour",
-      contactEmail: "hanna@andonlabs.com",
-      applicationUrl: "https://docs.google.com/forms/d/1moSWzGseg4h6rJUmRSoK1U9b192QNczLUVgbZELHhS4/viewform",
-      description: `Are you a Master's or PhD student and want to earn some extra money by comparing your mind to AI? Andon Labs and Google DeepMind are collaborating on a project exploring how intelligent AI is compared to some of the smartest people around. We're looking for students to represent humanity in this experiment!
-
-## Key Info
-
-**Details:**
-
-- The study consists of 3 separate tests, each taking about 1 hour to complete
-- You can do them remotely, whenever it suits you, within a limited time window
-- Compensation: 200 SEK/hour
-- Apply before: 2026-01-01
-
-**Requirements:**
-
-- Master's or PhD student (any field)
-- Basic knowledge of command line usage
-
-Questions? Reach out to hanna@andonlabs.com`,
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: "blenda-labs-fullstack",
-      title: "Join Blenda Labs: Where AI Meets Filmmaking",
-      company: "Blenda Labs",
+      id: "multiply-ai-first-software-engineer",
+      title: "AI First Software Engineer",
+      company: "Multiply",
+      companyLogo: "/images/multiply-wordmark-black.png",
       jobType: "Full-time job",
-      location: "Stockholm",
-      applicationUrl: "https://blendalabs.notion.site/Job-Ads-Blenda-Labs-27248bf3a0928045a482e6e9ace4a7d0",
-      description: `Are you passionate about building products at the intersection of technology and creativity? At Blenda Labs, we're reimagining how movies are made, combining cutting-edge AI tools with creative talent to produce high-quality, cost-effective video at scale. We're now hiring for two key roles on our growing tech team:
+      location: "Artillerigatan, Östermalm Stockholm",
+      contactEmail: "oskar@multiply.co",
+      applicationUrl: "mailto:oskar@multiply.co",
+      description: `Multiply is building an AI powered creative operating system for agencies. We are five developers and a growing fleet of AI agents, building infrastructure where humans and models collaborate seamlessly.
 
-## Key Info
+We are now looking for an **AI First Software Engineer** to join us early.
 
-**Roles:**
+What you will be doing:
 
-- Fullstack TypeScript Developer: AI Movies
-- Fullstack Product + Data Lead (Analytics & Dashboard)
+• Building AI first product features powered by LLM agents
+• Designing orchestration systems and agent workflows
+• Shipping fast with minimal overhead
+• Exploring new AI tooling and integrating it directly into production
+• Thinking in systems, not just writing code
 
-**Who:** You're a hungry, ambitious Fullstack Developer who thrives in a startup environment
+What we are looking for:
 
-**Skills:** Specific to roles, see the application link for more information
+• You think AI first and build with agents, not just for them
+• You are curious, fast and hungry
+• You like small teams with strong technical leverage
+• Experience with Clojure or Lisp is a bonus, not required
 
-**Location:** Hybrid role in Stockholm
+Key details:
 
-**Duration:** Start with a 3 month consultant role to see if we're a good fit.
+- **Location:** Artillerigatan, Östermalm Stockholm
+- **Setup:** Onsite or hybrid
+- **Start:** By agreement
 
-**Apply before:** 2026-01-01`,
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: "vantir-ab-foundry",
-      title: "Forging founders from KTH talent",
-      company: "Vantir AB",
-      jobType: "Other",
-      location: "Remote",
-      applicationUrl: "https://vantir.se/careers#application-form",
-      description: `Do you dream of building a start-up? Vantir Foundry gives you the chance to join a team, build from idea to product to market, and earn equity.
-
-Our team brings experience from Amazon, Avanza, and Netlight, private-equity evaluations of 15+ BSEK, and 500+ MSEK raised in venture capital.
-
-Join our founding team for a live case:
-
-• CTO – responsible for architecture & stack.
-
-• 2 × Fullstack Developers – React Native + backend.
-
-• Data Scientists – MLOps & AI Focus
-
-• Data Engineers – Focus on Data Warehouse and pipelines
-
-• UX/UI Designer – creates intuitive interfaces.
-
-• Growth Hacker – drives TikTok, community & viral growth
-
-**Apply before:** 2026-01-01`,
+To apply, send two sentences about what you have built with AI agents in the last six months and why you are a great fit for our team.`,
       createdAt: now,
       updatedAt: now,
     },
