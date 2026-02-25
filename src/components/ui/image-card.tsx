@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { ProgressiveBlur } from "@/components/ui/progressive-blur"
@@ -24,6 +25,7 @@ interface ImageCardProps {
 export function ImageCard({
   image,
   alt,
+  fallbackImage,
   aspectRatio = "aspect-[22/25]",
   blurHeight = "40%",
   gradientColors = {
@@ -36,16 +38,27 @@ export function ImageCard({
   children,
   className,
 }: ImageCardProps) {
+  const [imgSrc, setImgSrc] = useState(image)
+  const [hasError, setHasError] = useState(false)
+
+  const handleError = () => {
+    if (fallbackImage && !hasError) {
+      setImgSrc(fallbackImage)
+      setHasError(true)
+    }
+  }
+
   return (
     <Card className={cn("group relative overflow-hidden cursor-pointer w-full", aspectRatio, className)}>
       {/* Background Image */}
       <div className="absolute inset-0 transition-transform duration-300 ease-out group-hover:scale-[1.02] will-change-transform">
         <Image
-          src={image}
+          src={imgSrc}
           alt={alt}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          onError={handleError}
         />
       </div>
 

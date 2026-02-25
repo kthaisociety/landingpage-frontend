@@ -28,7 +28,7 @@ export type ExtendedJobListing = JobListing & {
 
 const STORAGE_KEY = "kthais-job-listings";
 const STORAGE_VERSION_KEY = "kthais-job-listings-version";
-const CURRENT_VERSION = "1.0.1";
+const CURRENT_VERSION = "1.0.0";
 
 const getNowIso = () => new Date().toISOString();
 
@@ -72,7 +72,7 @@ const getSeedJobs = (): ExtendedJobListing[] => {
       id: "multiply-ai-first-software-engineer",
       title: "AI First Software Engineer",
       company: "Multiply",
-      companyLogo: "/images/multiply-wordmark-black.png",
+      companyLogo: "/cover-multiply.png",
       jobType: "Full-time job",
       location: "Artillerigatan, Östermalm Stockholm",
       contactEmail: "oskar@multiply.co",
@@ -81,7 +81,7 @@ const getSeedJobs = (): ExtendedJobListing[] => {
 
 We are now looking for an **AI First Software Engineer** to join us early.
 
-What you will be doing:
+**What you will be doing**
 
 • Building AI first product features powered by LLM agents
 • Designing orchestration systems and agent workflows
@@ -89,14 +89,14 @@ What you will be doing:
 • Exploring new AI tooling and integrating it directly into production
 • Thinking in systems, not just writing code
 
-What we are looking for:
+**What we are looking for**
 
 • You think AI first and build with agents, not just for them
 • You are curious, fast and hungry
 • You like small teams with strong technical leverage
 • Experience with Clojure or Lisp is a bonus, not required
 
-Key details:
+**Key details**
 
 - **Location:** Artillerigatan, Östermalm Stockholm
 - **Setup:** Onsite or hybrid
