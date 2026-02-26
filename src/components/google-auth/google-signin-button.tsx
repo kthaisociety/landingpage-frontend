@@ -1,27 +1,14 @@
 "use client";
 import { useGoogleLogin } from "@react-oauth/google";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/auth"; 
-import { useGoogleLoginMutation } from "@/lib/apis/internal-apis";
+import { useAuth } from "@/hooks/auth";
 
 export function GoogleLoginButton() {
   const { loginUser } = useAuth();
-  const [googleLoginMutation] = useGoogleLoginMutation();
-  const router = useRouter();
 
   const login = useGoogleLogin({
     flow: "auth-code",
     onSuccess: async function (codeResponse) {
-      try {
-        const result = await googleLoginMutation(codeResponse.code).unwrap();
-
-        if (result.user) {
-          loginUser(result.user); 
-          router.push("/");
-        }
-      } catch (error) {
-        console.error("Login mutation failed", error);
-      }
+      loginUser(codeResponse.code);
     },
     onError: function () {
       return console.error("Google login failed");

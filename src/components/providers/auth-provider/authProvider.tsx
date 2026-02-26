@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useLazyGetMeQuery, useLogoutMutation } from "@/lib/apis/internal-apis";
+import { useRouter } from "next/navigation";
+import { useGoogleLoginMutation, useLazyGetMeQuery, useLogoutMutation } from "@/lib/apis/internal-apis";
 import type { User } from "@/types/auth";
 import { AuthContext } from "@/hooks/auth";
 import { checkUserCache, saveUserToCache, clearUserCache } from "./authCache";
@@ -9,13 +10,26 @@ import { checkUserCache, saveUserToCache, clearUserCache } from "./authCache";
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
   const [triggerGetMe] = useLazyGetMeQuery();
   const [triggerLogout] = useLogoutMutation();
+  const [triggerGoogleLogin] = useGoogleLoginMutation();
 
-  const loginUser = useCallback(function (newUser: User) {
-    setUser(newUser);
-    saveUserToCache(newUser);
-  }, []);
+  const loginUser = useCallback(
+    async function (code: string) {
+      try {
+        const result = await triggerGoogleLogin(code).unwrap();
+        if (result.user) {
+          setUser(result.user);
+          saveUserToCache(result.user);
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Login failed", error);
+      }
+    },
+    [triggerGoogleLogin, router],
+  );
 
   const logoutUser = useCallback(
     async function () {
@@ -47,7 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const data = await triggerGetMe().unwrap();
             if (data?.user) {
-              loginUser(data.user);
+                setUser(data.user);
+                saveUserToCache(data.user);
             } else {
               logoutUser();
             }
@@ -86,3 +101,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
+

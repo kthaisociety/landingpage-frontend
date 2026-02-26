@@ -10,6 +10,6 @@ export interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
   isLoading: boolean;
-  loginUser: (user: User) => void;
+  loginUser: (code: string) => void;
   logoutUser: () => void;
 }
