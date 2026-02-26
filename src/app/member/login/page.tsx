@@ -27,6 +27,11 @@ function MemberLogin() {
     const ctx = canvas.getContext("2d");
 
     if (!ctx) return;
+    console.log("here1")
+    if (isLoggedIn){
+      console.log("Here2")
+      router.push("/");
+    } 
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -37,10 +42,8 @@ function MemberLogin() {
     const text = "Login";
     ctx.fillText(text, canvas.width / 2, 0);
     const dataUrl = canvas.toDataURL("image/png");
-    // Avoid synchronous setState inside effect to prevent cascading renders
-    // schedule the state update in the next animation frame
     requestAnimationFrame(() => setLoginTextMask(dataUrl));
-  }, []);
+  }, [isLoggedIn]);
 
   return (
     <div className="min-w-screen">
@@ -119,26 +122,6 @@ function MemberLogin() {
             >
               Apply for Membership
             </a>
-            {isLoggedIn && (
-              <button
-                className="
-       inline-flex items-center justify-center
-        rounded-xl px-6 py-3
-        text-base font-semibold
-        border border-primary/30
-        text-primary
-        transition-all duration-300 ease-out
-        hover:bg-primary/5
-        hover:shadow-md hover:-translate-y-0.5"
-                  type="button"
-                  onClick={async () => {
-                  await logout(undefined).unwrap();
-                  router.push("/");
-                }}
-              >
-                Logout user: {user?.name}
-              </button>
-            )}
           </div>
         </div>
       </section>
