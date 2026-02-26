@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type FormEvent,
+} from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +18,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { useCompanies, type CompanyInput } from "@/hooks/companies";
 
 const emptyForm: CompanyInput = {
@@ -21,10 +26,11 @@ const emptyForm: CompanyInput = {
   websiteUrl: "",
 };
 
-export function CompanyAdminPanel({ className }: { className?: string }) {
+export function CompanyAdminPanel() {
   const { companies, createCompany } = useCompanies();
   const [form, setForm] = useState<CompanyInput>(emptyForm);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange =
     (field: keyof CompanyInput) =>
@@ -32,8 +38,7 @@ export function CompanyAdminPanel({ className }: { className?: string }) {
       setForm((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
-  const handleLogoUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const processImageFile = (file: File | null | undefined) => {
     if (!file) {
       return;
     }
@@ -57,6 +62,15 @@ export function CompanyAdminPanel({ className }: { className?: string }) {
     reader.readAsDataURL(file);
   };
 
+  const handleLogoUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    processImageFile(event.target.files?.[0]);
+  };
+
+  const handleDropLogo = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    processImageFile(event.dataTransfer.files?.[0]);
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.logoUrl) {
@@ -69,7 +83,7 @@ export function CompanyAdminPanel({ className }: { className?: string }) {
   };
 
   return (
-    <section className={cn("mt-10 space-y-6", className)}>
+    <section className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Companies</h2>
@@ -105,11 +119,21 @@ export function CompanyAdminPanel({ className }: { className?: string }) {
 
               <div className="space-y-2">
                 <Label htmlFor="company-logo">Company logo</Label>
+                <div
+                  className="rounded-md border border-dashed border-input p-4 text-sm text-muted-foreground cursor-pointer hover:bg-secondary/40 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={handleDropLogo}
+                >
+                  Drag and drop a logo here, or click to upload.
+                </div>
                 <Input
+                  ref={fileInputRef}
                   id="company-logo"
                   type="file"
                   accept="image/*"
                   onChange={handleLogoUpload}
+                  className="hidden"
                 />
                 {form.logoUrl ? (
                   <div className="flex items-center gap-3">

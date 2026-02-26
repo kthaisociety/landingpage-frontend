@@ -1,6 +1,14 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { useProjectPosts, type ProjectInput } from "@/hooks/projects";
 
 const categoryPresets = [
@@ -47,16 +54,21 @@ const emptyForm: ProjectInput = {
   timeline: "",
   maintenancePlan: "",
   contact: "",
+  logoUrl: "",
 };
 
-export function ProjectAdminPanel({ className }: { className?: string }) {
+export function ProjectAdminPanel() {
   const { createProject } = useProjectPosts();
   const [form, setForm] = useState<ProjectInput>(emptyForm);
   const [categoryWarning, setCategoryWarning] = useState<string | null>(null);
   const [categoryInput, setCategoryInput] = useState("");
   const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [techStackInput, setTechStackInput] = useState("");
+  const [techStackTags, setTechStackTags] = useState<string[]>([]);
   const [memberInput, setMemberInput] = useState("");
   const [memberWarning, setMemberWarning] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const categoryOptions = [...categoryPresets, ...customCategories];
 
@@ -100,13 +112,19 @@ export function ProjectAdminPanel({ className }: { className?: string }) {
       setMemberWarning("Select at least one contributor.");
       return;
     }
-    createProject(form);
+    createProject({
+      ...form,
+      techStack: techStackTags.join(", "),
+    });
     setForm(emptyForm);
     setCategoryWarning(null);
     setCategoryInput("");
     setCustomCategories([]);
+    setTechStackInput("");
+    setTechStackTags([]);
     setMemberInput("");
     setMemberWarning(null);
+    setLogoError(null);
   };
 
   const handleAddCategory = () => {
@@ -158,8 +176,59 @@ export function ProjectAdminPanel({ className }: { className?: string }) {
     setMemberWarning(null);
   };
 
+  const addTechTag = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    setTechStackTags((prev) => {
+      const exists = prev.some((tag) => tag.toLowerCase() === trimmed.toLowerCase());
+      if (exists) return prev;
+      return [...prev, trimmed];
+    });
+    setTechStackInput("");
+  };
+
+  const removeTechTag = (tagToRemove: string) => {
+    setTechStackTags((prev) => prev.filter((tag) => tag !== tagToRemove));
+  };
+
+  const handleTechStackKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter" && event.key !== ",") return;
+    event.preventDefault();
+    addTechTag(techStackInput);
+  };
+
+  const processProjectLogo = (file: File | null | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setLogoError("Please upload an image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((prev) => ({
+        ...prev,
+        logoUrl: typeof reader.result === "string" ? reader.result : "",
+      }));
+      setLogoError(null);
+    };
+    reader.onerror = () => {
+      setLogoError("Failed to read the image file.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleProjectLogoUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    processProjectLogo(event.target.files?.[0]);
+  };
+
+  const handleProjectLogoDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    processProjectLogo(event.dataTransfer.files?.[0]);
+  };
+
   return (
-    <section className={cn("mt-10 space-y-6", className)}>
+    <section className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold">Project entries</h2>
         <p className="text-sm text-muted-foreground">
@@ -202,6 +271,54 @@ export function ProjectAdminPanel({ className }: { className?: string }) {
                 </p>
               </div>
 
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="project-logo">Project logo</Label>
+                <div
+                  className="rounded-md border border-dashed border-input p-4 text-sm text-muted-foreground cursor-pointer hover:bg-secondary/40 transition-colors"
+                  onClick={() => logoInputRef.current?.click()}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={handleProjectLogoDrop}
+                >
+                  Drag and drop a project logo here, or click to upload.
+                </div>
+                <Input
+                  ref={logoInputRef}
+                  id="project-logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProjectLogoUpload}
+                  className="hidden"
+                />
+                {form.logoUrl ? (
+                  <div className="relative w-fit">
+                    <Image
+                      src={form.logoUrl}
+                      alt={`${form.title || "Project"} logo preview`}
+                      width={64}
+                      height={64}
+                      className="h-16 w-16 rounded-md border border-input object-contain"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="absolute -right-2 -top-2 h-6 w-6 rounded-full text-xs"
+                      onClick={() => setForm((prev) => ({ ...prev, logoUrl: "" }))}
+                      aria-label="Remove project logo"
+                    >
+                      x
+                    </Button>
+                  </div>
+                ) : null}
+                {logoError ? (
+                  <p className="text-xs text-destructive">{logoError}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Upload a PNG or JPG file.
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="project-status">Status</Label>
                 <Select
@@ -219,12 +336,38 @@ export function ProjectAdminPanel({ className }: { className?: string }) {
 
               <div className="space-y-2">
                 <Label htmlFor="project-tech">Tech stack</Label>
-                <Input
-                  id="project-tech"
-                  value={form.techStack}
-                  onChange={handleChange("techStack")}
-                  placeholder="Next.js, React, Python"
-                />
+                <div className="flex flex-wrap gap-2">
+                  {techStackTags.map((tag) => (
+                    <Button
+                      key={tag}
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => removeTechTag(tag)}
+                    >
+                      {tag}
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="project-tech"
+                    value={techStackInput}
+                    onChange={(event) => setTechStackInput(event.target.value)}
+                    onKeyDown={handleTechStackKeyDown}
+                    placeholder="Type a tech and press Enter"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => addTechTag(techStackInput)}
+                  >
+                    Add tech
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Save tech stack as tags. Click a tag to remove it.
+                </p>
               </div>
 
               <div className="space-y-2 md:col-span-2">
