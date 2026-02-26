@@ -31,9 +31,9 @@ function JobCard({ job }: { job: JobListing }) {
   if (job.jobType) tags.push(job.jobType)
   if (job.location) tags.push(job.location)
 
-  // Generate cover image path from company name
+  // Prefer explicit company logo if provided, otherwise fall back to generated cover path
   const companySlug = job.company.toLowerCase().replace(/\s+/g, "-")
-  const coverImage = `/cover-${companySlug}.jpg`
+  const coverImage = job.companyLogo || `/cover-${companySlug}.jpg`
 
   return (
     <Link href={`/business/jobs/${job.id}`}>
