@@ -18,12 +18,13 @@ export async function POST(request: NextRequest) {
     const userData = {
       id: `google_${Math.random().toString(36).substr(2, 9)}`,
       email: "member@kthaisociety.se",
-      name: "KTH Member",
+      name: "Member-007",
       firstName: "KTH",
       lastName: "Member",
       picture: "https://i.pravatar.cc/150?img=5",
       provider: "google",
-      role: "member",
+      // role: "member",
+      role: "admin",
     };
 
     const sessionToken = jwt.sign(userData, JWT_SECRET, { expiresIn: "7d" });

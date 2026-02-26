@@ -1,7 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import { clearUserCache, saveUserToCache } from "./authCache";
 
-interface User {
+export interface User {
   name: string;
   email: string;
   picture: string;
@@ -12,13 +13,12 @@ interface AuthState {
   user: User | null;
   isLoggedIn: boolean;
   loading: boolean;
-  error?: string;
 }
 
 const initialState: AuthState = {
   user: null,
   isLoggedIn: false,
-  loading: true, // start as loading until we check session
+  loading: true, 
 };
 
 export const authSlice = createSlice({
@@ -29,11 +29,13 @@ export const authSlice = createSlice({
       state.user = action.payload;
       state.isLoggedIn = true;
       state.loading = false;
+      saveUserToCache(state.user)
     },
     clearUser: (state) => {
       state.user = null;
       state.isLoggedIn = false;
       state.loading = false;
+      clearUserCache()
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;

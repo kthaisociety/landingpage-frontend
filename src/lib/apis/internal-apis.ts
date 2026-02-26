@@ -1,42 +1,32 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { clearUser } from "../slices/auth-slice/authSlice";
+import { clearUser } from "../store/slices/auth-slice/authSlice";
+import type { User } from "../store/slices/auth-slice/authSlice";
 
 export const internalApi = createApi({
   reducerPath: "internalApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/", credentials: "include" }),
+  tagTypes: ["auth"],
   endpoints: (builder) => ({
-    getMe: builder.query({
-      query: () => "api/auth/me",
-    }),
-    getProfile: builder.query({
-      query: () => "api/auth/profile",
-    }),
-    getMeMocked: builder.query({
-      query: () => "testServerApi",
+    getMe: builder.query<{ user: User }, void>({
+      query: () => 'api/member/auth/getme',
     }),
     googleLogin: builder.mutation({
       query: (code: string) => ({
-        url: "testServerApi/auth",
+        url: "api/member/auth",
         method: "POST",
         body: { code },
-        headers: {
-          Authorization: `Bearer ${code}`,
-        },
+        headers: { Authorization: `Bearer ${code}` },
       }),
     }),
-    // testing with testServerApi
-    logout: builder.mutation({
-      query: () => ({
-        url: "testServerApi/logout",
-        method: "POST",
-      }),
+    logout: builder.mutation<void, void>({
+      query: () => ({ url: "api/member/logout", method: "POST" }),
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
           dispatch(clearUser());
           dispatch(internalApi.util.resetApiState());
         } catch (err) {
-          console.log("Logout error:", err);
+          console.error("Logout error:", err);
         }
       },
     }),
@@ -44,9 +34,7 @@ export const internalApi = createApi({
 });
 
 export const {
-  useGetMeQuery,
-  useGetMeMockedQuery,
-  useGetProfileQuery,
+  useLazyGetMeQuery,
   useGoogleLoginMutation,
   useLogoutMutation,
 } = internalApi;

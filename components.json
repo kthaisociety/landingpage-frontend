@@ -16,7 +16,8 @@
     "utils": "@/lib/utils",
     "ui": "@/components/ui",
     "lib": "@/lib",
-    "hooks": "@/hooks"
+    "hooks": "@/hooks",
+    "types": "@/types"
   },
   "registries": {
     "@animate-ui": "https://animate-ui.com/r/{name}.json"
