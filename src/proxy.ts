@@ -5,7 +5,7 @@ import { jwtVerify } from "jose";
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET||"test-secret-key");
 
 export async function proxy(req: NextRequest) {
-  console.log("proxy is triggered")
+  // console.log("proxy is triggered")
   const url = req.nextUrl.clone();
   const token = req.cookies.get("auth_token")?.value;
   const { pathname } = url;
@@ -18,10 +18,10 @@ export async function proxy(req: NextRequest) {
     return res;
   }
 
-  const isDashboard = pathname.startsWith("/admin/dashboard");
-  const isProfile = pathname.startsWith("/member/profile");
+  const isDashboard = pathname.startsWith("/member/dashboard");
+  const isAdmin = pathname.startsWith("/member/admin")
 
-  if (!isDashboard && !isProfile) {
+  if (!isDashboard && !isAdmin) {
     return NextResponse.next();
   }
 
@@ -34,7 +34,7 @@ export async function proxy(req: NextRequest) {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     const role = payload.role as string | undefined;
 
-    if (isDashboard) {
+    if (isAdmin) {
       if (role !== "admin") {
         url.pathname = "/"; 
         return NextResponse.redirect(url);
@@ -42,7 +42,7 @@ export async function proxy(req: NextRequest) {
       return NextResponse.next();
     }
 
-    if (isProfile) {
+    if (isDashboard) {
       if (!["admin", "member"].includes(role ?? "")) {
         url.pathname = "/";
         return NextResponse.redirect(url);
@@ -62,5 +62,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/member/login/:path*", "/admin/dashboard/:path*", "/member/profile/:path*"],
+  matcher: ["/member/login/:path*", "/member/dashboard/:path*", "/member/admin/:path*"],
 };
