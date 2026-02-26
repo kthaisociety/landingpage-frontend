@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 interface ImageCardProps {
   image: string
   alt: string
+  fallbackImage?: string
   aspectRatio?: string
   blurHeight?: string
   gradientColors?: {
