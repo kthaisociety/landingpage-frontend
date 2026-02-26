@@ -6,8 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu, X, User, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLogoutMutation } from "@/lib/model/apis/internal-apis";
-import { useAppSelector } from "@/lib/model/store";
+import { useLogoutMutation } from "@/lib/apis/internal-apis";
+import { useAppSelector } from "@/lib/store/store";
 
 import { TextMorph } from "@/components/ui/text-morph";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
@@ -49,13 +49,13 @@ export function Navigation() {
   const handleProfileDropdownToggle = () => setIsProfileOpen((prev) => !prev);
 
   const handleProfileClick = () => {
-    router.push("/member/profile");
+    router.push("/member/dashboard");
     setIsProfileOpen(false);
     setIsMobileMenuOpen(false);
   };
 
   const handleAdminDashboardClick = () => {
-    router.push("/admin/dashboard");
+    router.push("/member/admin");
     setIsProfileOpen(false);
     setIsMobileMenuOpen(false);
   };
@@ -102,11 +102,11 @@ export function Navigation() {
                 <p className="text-sm font-semibold truncate">{user.name}</p>
               </div>
               <button onClick={handleProfileClick} className="w-full text-left px-4 py-2.5 text-sm text-foreground/80 hover:bg-gray-50 hover:text-foreground flex items-center gap-2 transition-colors">
-                <User className="h-4 w-4" /> Profile
+                <LayoutDashboard className="h-4 w-4" /> Dashboard
               </button>
               {user.role === "admin" && (
                 <button onClick={handleAdminDashboardClick} className="w-full text-left px-4 py-2.5 text-sm text-foreground/80 hover:bg-gray-50 hover:text-foreground flex items-center gap-2 transition-colors">
-                  <LayoutDashboard className="h-4 w-4" /> Admin Dashboard
+                  < User className="h-4 w-4" /> Admin
                 </button>
               )}
               <button onClick={handleLogoutClick} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-gray-50">
@@ -149,11 +149,11 @@ export function Navigation() {
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="px-2 mb-2"><p className="text-xs text-muted-foreground uppercase font-semibold">Account</p></div>
                 <Button variant="ghost" className="w-full justify-start pl-0 text-base font-medium hover:bg-transparent" onClick={handleProfileClick}>
-                  <User className="mr-2 h-4 w-4" /> {user.name} (Profile)
+                  < LayoutDashboard className="mr-2 h-4 w-4" /> {user.name} (Dashboard)
                 </Button>
                 {user.role === "admin" && (
                   <Button variant="ghost" className="w-full justify-start pl-0 text-base font-medium hover:bg-transparent" onClick={handleAdminDashboardClick}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" /> Admin Dashboard
+                    <User className="mr-2 h-4 w-4" /> Admin
                   </Button>
                 )}
                 <Button variant="ghost" className="w-full justify-start pl-0 text-base font-medium text-red-600 hover:bg-transparent hover:text-red-700" onClick={handleLogoutClick}>
