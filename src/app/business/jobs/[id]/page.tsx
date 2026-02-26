@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import { ArrowLeft, Briefcase, MapPin, DollarSign, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AsciiGrid } from "@/components/ui/ascii-grid"
@@ -114,18 +113,6 @@ export default function JobDetailPage() {
     <div className="min-h-screen">
       {/* Header Section */}
       <section className="relative bg-white text-secondary-black pt-64 pb-24 overflow-hidden">
-        {/* Company Logo Background */}
-        {job.companyLogo && (
-          <div className="absolute inset-0 opacity-5">
-            <Image 
-              src={job.companyLogo} 
-              alt={job.company}
-              fill
-              className="object-cover"
-              unoptimized
-            />
-          </div>
-        )}
         <div className="absolute inset-0 pointer-events-none">
           <AsciiGrid 
             color="rgba(0, 0, 0, 0.2)" 
