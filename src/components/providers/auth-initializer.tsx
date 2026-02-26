@@ -1,9 +1,9 @@
 "use client";
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/model/store";
-import { setUser, clearUser, setLoading } from "@/lib/model/slices/auth-slice/authSlice";
-import { checkUserCache, saveUserToCache, clearUserCache } from "@/lib/model/slices/auth-slice/authCache";
-import { useLazyGetMeQuery, useLogoutMutation } from "@/lib/model/apis/internal-apis";
+import { useAppDispatch, useAppSelector } from "@/lib/store/store";
+import { setUser, clearUser, setLoading } from "@/lib/store/slices/auth-slice/authSlice";
+import { checkUserCache, saveUserToCache, clearUserCache } from "@/lib/store/slices/auth-slice/authCache";
+import { useLazyGetMeQuery, useLogoutMutation } from "@/lib/apis/internal-apis";
 
 export function AuthInitializer({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();

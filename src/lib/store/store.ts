@@ -5,13 +5,11 @@ import {
   useSelector,
 } from "react-redux";
 import { authReducer } from "./slices/auth-slice/authSlice";
-import { dummyReducer } from "./slices/dummy/dummy-slice";
-import { internalApi } from "./apis/internal-apis";
+import { internalApi } from "../apis/internal-apis";
 
 export const makeStore = () => {
   return configureStore({
     reducer: {
-      dummy: dummyReducer,
       auth: authReducer,
       [internalApi.reducerPath]: internalApi.reducer,
     },
