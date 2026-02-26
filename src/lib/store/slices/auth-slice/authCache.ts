@@ -1,4 +1,4 @@
-import { User } from "@/lib/store/slices/auth-slice/authSlice";
+import type { User } from "@/lib/store/slices/auth-slice/authSlice";
 
 const CACHE_KEY = "_kthais_uc";
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours

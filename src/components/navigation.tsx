@@ -89,7 +89,7 @@ export function Navigation() {
 
     return (
       <div className="relative" ref={profileRef}>
-        <button onClick={handleProfileDropdownToggle} className="flex items-center gap-2 text-md font-medium text-foreground/80 hover:text-foreground transition-colors focus:outline-none">
+        <button type="button" onClick={handleProfileDropdownToggle} className="flex items-center gap-2 text-md font-medium text-foreground/80 hover:text-foreground transition-colors focus:outline-none">
           {user.name}
           <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`} />
         </button>
@@ -101,15 +101,15 @@ export function Navigation() {
                 <p className="text-xs text-muted-foreground">Signed in as</p>
                 <p className="text-sm font-semibold truncate">{user.name}</p>
               </div>
-              <button onClick={handleProfileClick} className="w-full text-left px-4 py-2.5 text-sm text-foreground/80 hover:bg-gray-50 hover:text-foreground flex items-center gap-2 transition-colors">
+              <button type="button" onClick={handleProfileClick} className="w-full text-left px-4 py-2.5 text-sm text-foreground/80 hover:bg-gray-50 hover:text-foreground flex items-center gap-2 transition-colors">
                 <LayoutDashboard className="h-4 w-4" /> Dashboard
               </button>
               {user.role === "admin" && (
-                <button onClick={handleAdminDashboardClick} className="w-full text-left px-4 py-2.5 text-sm text-foreground/80 hover:bg-gray-50 hover:text-foreground flex items-center gap-2 transition-colors">
+                <button type="button" onClick={handleAdminDashboardClick} className="w-full text-left px-4 py-2.5 text-sm text-foreground/80 hover:bg-gray-50 hover:text-foreground flex items-center gap-2 transition-colors">
                   < User className="h-4 w-4" /> Admin
                 </button>
               )}
-              <button onClick={handleLogoutClick} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-gray-50">
+              <button type="button" onClick={handleLogoutClick} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-gray-50">
                 <LogOut className="h-4 w-4" /> Logout
               </button>
             </motion.div>

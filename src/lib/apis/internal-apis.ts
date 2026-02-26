@@ -1,12 +1,13 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { clearUser } from "../store/slices/auth-slice/authSlice";
+import type { User } from "../store/slices/auth-slice/authSlice";
 
 export const internalApi = createApi({
   reducerPath: "internalApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/", credentials: "include" }),
   tagTypes: ["auth"],
   endpoints: (builder) => ({
-    getMe: builder.query<{ user: any }, void>({
+    getMe: builder.query<{ user: User }, void>({
       query: () => 'api/member/auth/getme',
     }),
     googleLogin: builder.mutation({

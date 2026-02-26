@@ -18,6 +18,7 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
       dispatch(setLoading(true));
 
       const { exists, isExpired, user } = checkUserCache();
+      const hasCheckedCache = localStorage.getItem("_kthais_auth_checked") === "true";
 
       if (exists && !isExpired && user) {
         dispatch(setUser(user));
@@ -35,22 +36,27 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
             clearUserCache();
             dispatch(clearUser());
           }
-        } catch (error) {
+        } catch (_error) {
           clearUserCache();
           dispatch(clearUser());
         }
+        localStorage.setItem("_kthais_auth_checked", "true");
         return;
       }
 
-      dispatch(clearUser());
-      try {
-        await triggerLogout().unwrap();
-      } catch (error) {
+      if (!hasCheckedCache) {
+        try {
+          await triggerLogout().unwrap();
+        } catch (_error) {
+        }
+        localStorage.setItem("_kthais_auth_checked", "true");
       }
+
+      dispatch(clearUser());
     };
 
     initializeAuth();
-  }, [dispatch, triggerGetMe, triggerLogout]);
+  }, [dispatch, triggerGetMe, triggerLogout, isLoggedIn]);
 
-  return <>{children}</>;
+  return children;
 }

@@ -4,8 +4,8 @@ import {
   useDispatch,
   useSelector,
 } from "react-redux";
-import { authReducer } from "./slices/auth-slice/authSlice";
 import { internalApi } from "../apis/internal-apis";
+import { authReducer } from "./slices/auth-slice/authSlice";
 
 export const makeStore = () => {
   return configureStore({

@@ -40,7 +40,7 @@ function MemberLogin() {
     ctx.fillText(text, canvas.width / 2, 0);
     const dataUrl = canvas.toDataURL("image/png");
     requestAnimationFrame(() => setLoginTextMask(dataUrl));
-  }, [isLoggedIn]);
+  }, [isLoggedIn, router]);
 
   return (
     <div className="min-w-screen">

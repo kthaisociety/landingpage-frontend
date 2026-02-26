@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "test-secret-key");
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     return NextResponse.json({ user: payload }, { status: 200 });
-  } catch (error) {
+  } catch (_error) {
     // Expired or tampered token
     return NextResponse.json({ error: "Invalid session" }, { status: 401 });
   }
