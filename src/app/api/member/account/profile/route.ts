@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { ProfileData } from "@/types/profile";
+import { NextResponse as NextResponseImpl } from "next/server";
+import type { ProfileData } from "@/types/profile";
 
 const mockUsersDatabase: Record<string, ProfileData> = {
   "alex.chen@example.com": {
@@ -55,11 +55,13 @@ export async function GET() {
   const userProfile = mockUsersDatabase[CURRENT_SESSION_EMAIL];
   
   if (!userProfile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    return NextResponseImpl.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  await new Promise((resolve) => setTimeout(resolve, 800));
-  return NextResponse.json(userProfile);
+  await new Promise(resolve => {
+    setTimeout(resolve, 800);
+  });
+  return NextResponseImpl.json(userProfile);
 }
 
 export async function PUT(request: Request) {
@@ -68,17 +70,17 @@ export async function PUT(request: Request) {
     const existingProfile = mockUsersDatabase[CURRENT_SESSION_EMAIL];
 
     if (!existingProfile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+      return NextResponseImpl.json({ error: "Profile not found" }, { status: 404 });
     }
 
     mockUsersDatabase[CURRENT_SESSION_EMAIL] = { ...existingProfile, ...updates };
-    return NextResponse.json(mockUsersDatabase[CURRENT_SESSION_EMAIL]);
-  } catch (error) {
-    return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
+    return NextResponseImpl.json(mockUsersDatabase[CURRENT_SESSION_EMAIL]);
+  } catch {
+    return NextResponseImpl.json({ error: "Invalid request payload" }, { status: 400 });
   }
 }
 
 export async function DELETE() {
   delete mockUsersDatabase[CURRENT_SESSION_EMAIL];
-  return NextResponse.json({ success: true });
+  return NextResponseImpl.json({ success: true });
 }

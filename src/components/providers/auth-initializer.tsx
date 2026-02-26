@@ -36,7 +36,8 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
             clearUserCache();
             dispatch(clearUser());
           }
-        } catch (_error) {
+        } catch {
+          // Failed to fetch updated user data
           clearUserCache();
           dispatch(clearUser());
         }
@@ -47,7 +48,8 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
       if (!hasCheckedCache) {
         try {
           await triggerLogout().unwrap();
-        } catch (_error) {
+        } catch {
+          // Logout failed silently
         }
         localStorage.setItem("_kthais_auth_checked", "true");
       }
