@@ -20,11 +20,6 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "kthais.com",
       },
-      //TODO: remove this in production, only for development
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
     ],
   },
   output: "standalone",
