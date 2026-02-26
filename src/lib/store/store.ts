@@ -5,22 +5,24 @@ import {
   useSelector,
 } from "react-redux";
 import { internalApi } from "../apis/internal-apis";
-import { authReducer } from "./slices/auth-slice/authSlice";
 
-export const makeStore = () => {
+export function makeStore() {
   return configureStore({
     reducer: {
-      auth: authReducer,
+      // auth: authReducer,
       [internalApi.reducerPath]: internalApi.reducer,
     },
-    middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(internalApi.middleware),
+    middleware: function (getDefaultMiddleware) {
+      return getDefaultMiddleware().concat(internalApi.middleware);
+    },
     devTools: process.env.NODE_ENV !== "production",
   });
-};
+}
 
 export type RootState = ReturnType<ReturnType<typeof makeStore>["getState"]>;
 export type AppDispatch = ReturnType<typeof makeStore>["dispatch"];
-export const useAppDispatch = () => useDispatch<AppDispatch>();
+export function useAppDispatch() {
+  return useDispatch<AppDispatch>();
+}
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 export type AppStore = ReturnType<typeof makeStore>;

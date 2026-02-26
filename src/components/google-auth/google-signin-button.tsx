@@ -1,26 +1,39 @@
+"use client";
 import { useGoogleLogin } from "@react-oauth/google";
-import type { JSX } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/auth"; 
+import { useGoogleLoginMutation } from "@/lib/apis/internal-apis";
 
-export function GoogleLoginButton({
-  onGoogleLogin,
-}: {
-  onGoogleLogin: (accessToken: string) => void;
-}): JSX.Element {
+export function GoogleLoginButton() {
+  const { loginUser } = useAuth();
+  const [googleLoginMutation] = useGoogleLoginMutation();
+  const router = useRouter();
+
   const login = useGoogleLogin({
     flow: "auth-code",
-    onSuccess: (codeResponse) => {
-      // Send the authorization code to your backend to exchange for an access token
-      onGoogleLogin(codeResponse.code);
+    onSuccess: async function (codeResponse) {
+      try {
+        const result = await googleLoginMutation(codeResponse.code).unwrap();
+
+        if (result.user) {
+          loginUser(result.user); 
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Login mutation failed", error);
+      }
     },
-    onError: () => {
-      console.error("Google login failed");
+    onError: function () {
+      return console.error("Google login failed");
     },
   });
 
   return (
     <button
       type="button"
-      onClick={() => login()}
+      onClick={function () {
+        return login();
+      }}
       className="
         inline-flex items-center justify-center
         rounded-xl px-6 py-3

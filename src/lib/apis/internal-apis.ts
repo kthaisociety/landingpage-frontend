@@ -1,40 +1,35 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { clearUser } from "../store/slices/auth-slice/authSlice";
-import type { User } from "../store/slices/auth-slice/authSlice";
+import type { User } from "@/types/auth";
 
 export const internalApi = createApi({
   reducerPath: "internalApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/", credentials: "include" }),
   tagTypes: ["auth"],
-  endpoints: (builder) => ({
-    getMe: builder.query<{ user: User }, void>({
-      query: () => 'api/member/auth/getme',
-    }),
-    googleLogin: builder.mutation({
-      query: (code: string) => ({
-        url: "api/member/auth",
-        method: "POST",
-        body: { code },
-        headers: { Authorization: `Bearer ${code}` },
+  endpoints: function (builder) {
+    return {
+      getMe: builder.query<{ user: User }, void>({
+        query: function () {
+          return "api/member/auth/getme";
+        },
       }),
-    }),
-    logout: builder.mutation<void, void>({
-      query: () => ({ url: "api/member/logout", method: "POST" }),
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          dispatch(clearUser());
-          dispatch(internalApi.util.resetApiState());
-        } catch (err) {
-          console.error("Logout error:", err);
-        }
-      },
-    }),
-  }),
+      googleLogin: builder.mutation({
+        query: function (code: string) {
+          return {
+            url: "api/member/auth",
+            method: "POST",
+            body: { code },
+            headers: { Authorization: `Bearer ${code}` },
+          };
+        },
+      }),
+      logout: builder.mutation<void, void>({
+        query: function () {
+          return { url: "api/member/logout", method: "POST" };
+        },
+      }),
+    };
+  },
 });
 
-export const {
-  useLazyGetMeQuery,
-  useGoogleLoginMutation,
-  useLogoutMutation,
-} = internalApi;
+export const { useLazyGetMeQuery, useGoogleLoginMutation, useLogoutMutation } =
+  internalApi;
