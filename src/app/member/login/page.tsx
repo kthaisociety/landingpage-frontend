@@ -6,10 +6,9 @@ import { GoogleLoginButton } from "@/components/google-auth/google-signin-button
 import { LoginProvider } from "@/components/providers/google-oauth-provider";
 import {
   useGoogleLoginMutation,
-  useLogoutMutation,
-} from "@/lib/model/apis/internal-apis";
-import { useAppDispatch, useAppSelector } from "@/lib/model/store";
-import { setUser } from "@/lib/model/slices/auth-slice/authSlice";
+} from "@/lib/apis/internal-apis";
+import { useAppDispatch, useAppSelector } from "@/lib/store/store";
+import { setUser } from "@/lib/store/slices/auth-slice/authSlice";
 
 function MemberLogin() {
   const [loginTextMask, setLoginTextMask] = useState<string | undefined>();
@@ -17,8 +16,6 @@ function MemberLogin() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
-  const user = useAppSelector((state) => state.auth.user);
-  const [logout] = useLogoutMutation();
 
   useEffect(() => {
     const canvas = document.createElement("canvas");
