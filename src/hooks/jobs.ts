@@ -30,7 +30,7 @@ export type ExtendedJobListing = JobListing & {
 
 const STORAGE_KEY = "kthais-job-listings";
 const STORAGE_VERSION_KEY = "kthais-job-listings-version";
-const CURRENT_VERSION = "1.0.0";
+const CURRENT_VERSION = "1.0.1";
 
 const getNowIso = () => new Date().toISOString();
 
