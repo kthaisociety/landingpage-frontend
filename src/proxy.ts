@@ -5,7 +5,6 @@ import { jwtVerify } from "jose";
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET||"test-secret-key");
 
 export async function proxy(req: NextRequest) {
-  // console.log("proxy is triggered")
   const url = req.nextUrl.clone();
   const token = req.cookies.get("auth_token")?.value;
   const { pathname } = url;

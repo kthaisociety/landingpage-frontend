@@ -1,26 +1,26 @@
+"use client";
 import { useGoogleLogin } from "@react-oauth/google";
-import type { JSX } from "react";
+import { useAuth } from "@/hooks/auth";
 
-export function GoogleLoginButton({
-  onGoogleLogin,
-}: {
-  onGoogleLogin: (accessToken: string) => void;
-}): JSX.Element {
+export function GoogleLoginButton() {
+  const { loginUser } = useAuth();
+
   const login = useGoogleLogin({
     flow: "auth-code",
-    onSuccess: (codeResponse) => {
-      // Send the authorization code to your backend to exchange for an access token
-      onGoogleLogin(codeResponse.code);
+    onSuccess: async function (codeResponse) {
+      loginUser(codeResponse.code);
     },
-    onError: () => {
-      console.error("Google login failed");
+    onError: function () {
+      return console.error("Google login failed");
     },
   });
 
   return (
     <button
       type="button"
-      onClick={() => login()}
+      onClick={function () {
+        return login();
+      }}
       className="
         inline-flex items-center justify-center
         rounded-xl px-6 py-3
