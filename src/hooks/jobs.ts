@@ -85,14 +85,14 @@ We are now looking for an **AI First Software Engineer** to join us early.
 
 **What you will be doing**
 
-• Building AI first product features powered by LLM agents
-• Designing orchestration systems and agent workflows
+• Building AI first product features powered by LLM agents 
+• Designing orchestration systems and agent workflows 
 • Shipping fast with minimal overhead
 • Exploring new AI tooling and integrating it directly into production
 • Thinking in systems, not just writing code
 
-**What we are looking for**
 
+**What we are looking for**
 • You think AI first and build with agents, not just for them
 • You are curious, fast and hungry
 • You like small teams with strong technical leverage
