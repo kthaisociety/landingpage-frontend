@@ -1,46 +1,43 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { GoogleLoginButton } from "@/components/google-auth/google-signin-button";
-import { LoginProvider } from "@/components/providers/google-oauth-provider";
-import {
-  useGoogleLoginMutation,
-} from "@/lib/apis/internal-apis";
-import { useAppDispatch, useAppSelector } from "@/lib/store/store";
-import { setUser } from "@/lib/store/slices/auth-slice/authSlice";
+import { useAuth } from "@/hooks/auth";
 
 function MemberLogin() {
   const [loginTextMask, setLoginTextMask] = useState<string | undefined>();
-  const [googleLoginMutation] = useGoogleLoginMutation();
-  const dispatch = useAppDispatch();
+
   const router = useRouter();
-  const isLoggedIn = useAppSelector((state) => state.auth.isLoggedIn);
+  const { isLoggedIn } = useAuth();
 
-  useEffect(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1200;
-    canvas.height = 400;
-    const ctx = canvas.getContext("2d");
+  useEffect(
+    function () {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1200;
+      canvas.height = 400;
+      const ctx = canvas.getContext("2d");
 
-    if (!ctx) return;
-    console.log("here1")
-    if (isLoggedIn){
-      console.log("Here2")
-      router.push("/");
-    } 
+      if (!ctx) return;
+      if (isLoggedIn) {
+        router.push("/");
+      }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "white";
-    ctx.font = "bold 200px system-ui, -apple-system, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    const text = "Login";
-    ctx.fillText(text, canvas.width / 2, 0);
-    const dataUrl = canvas.toDataURL("image/png");
-    requestAnimationFrame(() => setLoginTextMask(dataUrl));
-  }, [isLoggedIn, router]);
+      ctx.fillStyle = "white";
+      ctx.font = "bold 200px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      const text = "Login";
+      ctx.fillText(text, canvas.width / 2, 0);
+      const dataUrl = canvas.toDataURL("image/png");
+      requestAnimationFrame(function () {
+        return setLoginTextMask(dataUrl);
+      });
+    },
+    [isLoggedIn, router],
+  );
 
   return (
     <div className="min-w-screen">
@@ -70,8 +67,6 @@ function MemberLogin() {
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter">
             Login
           </h1>
-
-          {/* Description */}
           <p className="text-lg md:text-xl mb-8 max-w-2xl opacity-95 leading-relaxed font-serif">
             Access to this platform is restricted to members of the{" "}
             <span className="font-semibold">KTH AI Society</span>. If you are
@@ -80,30 +75,10 @@ function MemberLogin() {
             collaborations.
           </p>
 
-          {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Login Button */}
-            <LoginProvider>
-              <GoogleLoginButton
-                onGoogleLogin={async function (
-                  accessToken: string
-                ): Promise<void> {
-                  const result = await googleLoginMutation(
-                    accessToken
-                  ).unwrap();
-
-                  // Dispatch user data to Redux
-                  if (result.user) {
-                    dispatch(setUser(result.user));
-                    router.push("/");
-                  }
-                }}
-              />
-            </LoginProvider>
-
-            {/* Apply Button */}
+            <GoogleLoginButton />
             <a
-              href="https://kthaisociety.se/apply" // update if needed
+              href="https://kthaisociety.se/apply"
               target="_blank"
               rel="noopener noreferrer"
               className="
@@ -124,6 +99,6 @@ function MemberLogin() {
       </section>
     </div>
   );
-};
+}
 
 export default MemberLogin;

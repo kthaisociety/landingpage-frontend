@@ -1,15 +1,15 @@
-import type { User } from "@/lib/store/slices/auth-slice/authSlice";
+import type {User} from "@/types/auth"
 
 const CACHE_KEY = "_kthais_uc";
 const CACHE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export const saveUserToCache = (user: User) => {
+export function saveUserToCache(user: User) {
   const payload = {
     user,
     expiresAt: Date.now() + CACHE_EXPIRATION_MS,
   };
   localStorage.setItem(CACHE_KEY, btoa(JSON.stringify(payload)));
-};
+}
 
 export const checkUserCache = (): { exists: boolean; isExpired: boolean; user: User | null } => {
   const cached = localStorage.getItem(CACHE_KEY);
@@ -18,7 +18,8 @@ export const checkUserCache = (): { exists: boolean; isExpired: boolean; user: U
 
   try {
     const parsed = JSON.parse(atob(cached));
-    if (Date.now() > parsed.expiresAt) {
+    const isExpired = Date.now() > parsed.expiresAt;
+    if (isExpired) {
       return { exists: true, isExpired: true, user: null };
     }
     return { exists: true, isExpired: false, user: parsed.user };
@@ -27,6 +28,6 @@ export const checkUserCache = (): { exists: boolean; isExpired: boolean; user: U
   }
 };
 
-export const clearUserCache = () => {
+export function clearUserCache() {
   localStorage.removeItem(CACHE_KEY);
-};
+}
