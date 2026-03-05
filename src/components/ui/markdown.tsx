@@ -20,10 +20,10 @@ export function Markdown({ content, className }: MarkdownProps) {
         'prose-h4:text-xl prose-h4:mb-2 prose-h4:mt-5',
         // Paragraphs
         'prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-4 prose-p:text-base',
-        // Lists
-        'prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4 prose-ul:text-gray-700',
-        'prose-ol:list-decimal prose-ol:pl-6 prose-ol:mb-4 prose-ol:text-gray-700',
-        'prose-li:mb-2 prose-li:leading-relaxed prose-li:text-base',
+        // Lists – explicit list style and spacing so bullets/numbers always show
+        'prose-ul:list-disc prose-ul:list-outside prose-ul:pl-6 prose-ul:my-4 prose-ul:space-y-2 prose-ul:text-gray-700',
+        'prose-ol:list-decimal prose-ol:list-outside prose-ol:pl-6 prose-ol:my-4 prose-ol:space-y-2 prose-ol:text-gray-700',
+        'prose-li:pl-1 prose-li:leading-relaxed prose-li:text-base prose-li:my-1',
         // Links
         'prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-a:font-medium',
         // Strong and emphasis
@@ -69,6 +69,23 @@ export function Markdown({ content, className }: MarkdownProps) {
           ),
           hr: ({ node: _node, ...props }) => (
             <hr className="border-t border-gray-300 my-2" {...props} />
+          ),
+          ul: ({ node: _node, ...props }) => (
+            <ul
+              className="list-disc list-outside pl-6 my-4 space-y-2 text-gray-700 [&>li]:pl-1 [&>li]:my-1 [&>li]:leading-relaxed [&>li]:text-base"
+              style={{ listStyleType: 'disc' }}
+              {...props}
+            />
+          ),
+          ol: ({ node: _node, ...props }) => (
+            <ol
+              className="list-decimal list-outside pl-6 my-4 space-y-2 text-gray-700 [&>li]:pl-1 [&>li]:my-1 [&>li]:leading-relaxed [&>li]:text-base"
+              style={{ listStyleType: 'decimal' }}
+              {...props}
+            />
+          ),
+          li: ({ node: _node, ...props }) => (
+            <li className="pl-1 my-1 leading-relaxed text-base text-gray-700" {...props} />
           ),
         }}
       >

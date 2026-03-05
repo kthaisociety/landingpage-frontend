@@ -30,7 +30,7 @@ export type ExtendedJobListing = JobListing & {
 
 const STORAGE_KEY = "kthais-job-listings";
 const STORAGE_VERSION_KEY = "kthais-job-listings-version";
-const CURRENT_VERSION = "1.0.4";
+const CURRENT_VERSION = "1.0.";
 
 const getNowIso = () => new Date().toISOString();
 
@@ -119,7 +119,7 @@ To apply, send two sentences about what you have built with AI agents in the las
       applicationUrl: "https://jobs.ashbyhq.com/neko-health/f1fd7ae9-bbdb-45c6-a44b-6ba3b6c49b08",
       description: `At Neko Health, we are redefining preventive healthcare through advanced diagnostics, multimodal data, and cutting-edge AI. Our mission is to improve long-term health outcomes by enabling earlier detection and deeper understanding of disease risk. By combining engineering, medical science, and machine learning, we build systems that translate complex health data into actionable insights.
 
-## About the Role
+**Role Description**
 
 We are looking for a highly motivated AI Intern to join our Data & AI Team for the summer. This is an opportunity to work hands-on with real-world health data and contribute directly to impactful early-detection solutions.
 
@@ -127,7 +127,7 @@ As an AI Intern, you will collaborate closely with researchers, engineers, and c
 
 **Duration:** Summer Internship (approx. 8–12 weeks)
 
-## What You'll Work On
+**What You'll Work On**
 
 Projects may include:
 
@@ -140,7 +140,7 @@ Projects may include:
 
 Your work may contribute directly to research initiatives, product features, or internal AI infrastructure.
 
-## What We're Looking For
+**What We're Looking For**
 
 We're seeking curious, driven, and technically strong students who are excited to tackle complex health-data problems.
 
@@ -158,11 +158,7 @@ We're seeking curious, driven, and technically strong students who are excited t
 - Exposure to foundation models or large-scale representation learning
 - Familiarity with healthcare or biomedical data
 - Research experience or publications in ML/AI
-- Experience working in collaborative, cross-functional teams
-
-## How to Apply
-
-Click the link below to apply for the Data & AI Intern position at Neko Health.`,
+- Experience working in collaborative, cross-functional teams`,
       createdAt: now,
       updatedAt: now,
     },
