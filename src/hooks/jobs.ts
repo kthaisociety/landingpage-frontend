@@ -112,7 +112,7 @@ To apply, send two sentences about what you have built with AI agents in the las
       id: "neko-health-ai-intern-data-ai-summer",
       title: "AI Intern – Data & AI Team (Summer Internship)",
       company: "Neko Health",
-      companyLogo: "/cover-neko-health.jpg",
+      companyLogo: "/cover-neko.png",
       jobType: "Summer internship",
       location: "Stockholm (on-site)",
       contactEmail: "jobs@nekohealth.com",
