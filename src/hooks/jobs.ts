@@ -30,7 +30,7 @@ export type ExtendedJobListing = JobListing & {
 
 const STORAGE_KEY = "kthais-job-listings";
 const STORAGE_VERSION_KEY = "kthais-job-listings-version";
-const CURRENT_VERSION = "1.0.1";
+const CURRENT_VERSION = "1.0.3";
 
 const getNowIso = () => new Date().toISOString();
 
@@ -85,18 +85,18 @@ We are now looking for an **AI First Software Engineer** to join us early.
 
 **What you will be doing**
 
-• Building AI first product features powered by LLM agents 
-• Designing orchestration systems and agent workflows 
-• Shipping fast with minimal overhead
-• Exploring new AI tooling and integrating it directly into production
-• Thinking in systems, not just writing code
-
+- Building AI first product features powered by LLM agents
+- Designing orchestration systems and agent workflows
+- Shipping fast with minimal overhead
+- Exploring new AI tooling and integrating it directly into production
+- Thinking in systems, not just writing code
 
 **What we are looking for**
-• You think AI first and build with agents, not just for them
-• You are curious, fast and hungry
-• You like small teams with strong technical leverage
-• Experience with Clojure or Lisp is a bonus, not required
+
+- You think AI first and build with agents, not just for them
+- You are curious, fast and hungry
+- You like small teams with strong technical leverage
+- Experience with Clojure or Lisp is a bonus, not required
 
 **Key details**
 
@@ -105,6 +105,64 @@ We are now looking for an **AI First Software Engineer** to join us early.
 - **Start:** By agreement
 
 To apply, send two sentences about what you have built with AI agents in the last six months and why you are a great fit for our team.`,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: "neko-health-ai-intern-data-ai-summer",
+      title: "AI Intern – Data & AI Team (Summer Internship)",
+      company: "Neko Health",
+      companyLogo: "/cover-neko-health.jpg",
+      jobType: "Summer internship",
+      location: "Stockholm (on-site)",
+      contactEmail: "jobs@nekohealth.com",
+      applicationUrl: "https://jobs.ashbyhq.com/neko-health/f1fd7ae9-bbdb-45c6-a44b-6ba3b6c49b08",
+      description: `At Neko Health, we are redefining preventive healthcare through advanced diagnostics, multimodal data, and cutting-edge AI. Our mission is to improve long-term health outcomes by enabling earlier detection and deeper understanding of disease risk. By combining engineering, medical science, and machine learning, we build systems that translate complex health data into actionable insights.
+
+## About the Role
+
+We are looking for a highly motivated AI Intern to join our Data & AI Team for the summer. This is an opportunity to work hands-on with real-world health data and contribute directly to impactful early-detection solutions.
+
+As an AI Intern, you will collaborate closely with researchers, engineers, and clinicians to explore how multimodal health data can be modelled, analysed, and transformed into meaningful preventive insights. You will work within Neko's scientific and technical frameworks to ensure rigor, reproducibility, and measurable impact.
+
+**Duration:** Summer Internship (approx. 8–12 weeks)
+
+## What You'll Work On
+
+Projects may include:
+
+- Developing machine learning models for multimodal health data (imaging, physiological signals, structured clinical data, etc.)
+- Applying computer vision techniques to medical imaging or sensor-based data
+- Experimenting with foundation models and representation learning approaches
+- Prototyping data-centric workflows for preprocessing, labelling, and evaluation
+- Designing and validating algorithms for early-detection insights
+- Evaluating model performance, robustness, and generalization in healthcare settings
+
+Your work may contribute directly to research initiatives, product features, or internal AI infrastructure.
+
+## What We're Looking For
+
+We're seeking curious, driven, and technically strong students who are excited to tackle complex health-data problems.
+
+**Required Qualifications:**
+
+- Currently pursuing a Bachelor's or Master's degree in Computer Science, Engineering, Mathematics, Physics, or a related field
+- Strong foundation in machine learning and/or computer vision
+- Solid programming skills (e.g., Python, PyTorch, TensorFlow, or similar frameworks)
+- Experience working with data pipelines, experimentation, or model evaluation
+- Strong analytical thinking and problem-solving ability
+
+**Nice to Have:**
+
+- Experience with multimodal modelling
+- Exposure to foundation models or large-scale representation learning
+- Familiarity with healthcare or biomedical data
+- Research experience or publications in ML/AI
+- Experience working in collaborative, cross-functional teams
+
+## How to Apply
+
+Click the link below to apply for the Data & AI Intern position at Neko Health.`,
       createdAt: now,
       updatedAt: now,
     },
