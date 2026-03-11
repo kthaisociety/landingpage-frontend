@@ -8,6 +8,7 @@ export type JobListing = {
   company: string
   companyLogo?: string
   jobType: string
+  tags?: string[]
   location: string
   salary?: string
   description: string

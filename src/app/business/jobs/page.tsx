@@ -27,8 +27,9 @@ function JobCard({ job }: { job: JobListing }) {
   }
 
   // Create tags array from job properties
-  const tags = []
+  const tags: string[] = []
   if (job.jobType) tags.push(job.jobType)
+  if (job.tags && job.tags.length) tags.push(...job.tags)
   if (job.location) tags.push(job.location)
 
   // Prefer explicit company logo if provided, otherwise fall back to generated cover path

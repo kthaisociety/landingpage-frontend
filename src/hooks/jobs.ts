@@ -30,7 +30,7 @@ export type ExtendedJobListing = JobListing & {
 
 const STORAGE_KEY = "kthais-job-listings";
 const STORAGE_VERSION_KEY = "kthais-job-listings-version";
-const CURRENT_VERSION = "1.0.";
+const CURRENT_VERSION = "1.0.2";
 
 const getNowIso = () => new Date().toISOString();
 
@@ -139,26 +139,58 @@ Projects may include:
 - Evaluating model performance, robustness, and generalization in healthcare settings
 
 Your work may contribute directly to research initiatives, product features, or internal AI infrastructure.
-
+      
 **What We're Looking For**
-
+      
 We're seeking curious, driven, and technically strong students who are excited to tackle complex health-data problems.
-
+      
 **Required Qualifications:**
-
+      
 - Currently pursuing a Bachelor's or Master's degree in Computer Science, Engineering, Mathematics, Physics, or a related field
 - Strong foundation in machine learning and/or computer vision
 - Solid programming skills (e.g., Python, PyTorch, TensorFlow, or similar frameworks)
 - Experience working with data pipelines, experimentation, or model evaluation
 - Strong analytical thinking and problem-solving ability
-
+      
 **Nice to Have:**
-
+      
 - Experience with multimodal modelling
 - Exposure to foundation models or large-scale representation learning
 - Familiarity with healthcare or biomedical data
 - Research experience or publications in ML/AI
 - Experience working in collaborative, cross-functional teams`,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: "twiga-ai-engineer-internal-recruitment",
+      title: "AI Engineer",
+      company: "KTH AI Society & Tanzanian AI Community",
+      companyLogo: "/cover-tanzania.png",
+      jobType: "Part-time",
+      tags: ["Internal recruitment"],
+      location: "Stockholm / Remote",
+      contactEmail: "alvaro@kthais.com",
+      applicationUrl: "mailto:alvaro@kthais.com",
+      description: `Twiga is a collaboration between KTH AI Society and the Tanzanian AI Community. The project builds AI-powered tools that support teachers and students across Tanzania. KTH AI Society leads the technical development and is building agentic systems that orchestrate tasks based on local educators' needs.
+
+**What You Will Learn**
+
+- Design, development, and deployment of task-orchestrating agentic systems
+- Python, FastAPI, Postgres, Docker, OCR, and RAG
+- Product development and user onboarding
+- Best practices for open source contribution
+
+**Project Roadmap**
+
+- Cover the entire Tanzanian curriculum
+- Onboard 100+ teachers
+- Support multi-format input and output
+
+**Contact**
+
+Álvaro Mazcuñán Herreros | Tech Lead
+alvaro@kthais.com`,
       createdAt: now,
       updatedAt: now,
     },
