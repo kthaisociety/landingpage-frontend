@@ -201,10 +201,17 @@ export const projects: Project[] = [
       "Synthetic Training Pipeline: Overcomes data scarcity by leveraging a custom-built synthetic map generator to train the model on diverse topographical scenarios.",
       "2D-to-3D Reconstruction: Directly outputs a 3D elevation model (Digital Elevation Model or Mesh) from a single 2D input image."
     ],
-    status: "In development",
+    status: "Completed",
     coverImage: "/cover-topovision.jpg",
     coverImageTheme: "light",
-    repoUrl: "https://github.com/mattiaskvist/topovision",
+    screenshots: [
+      {
+        image: "/topovision-pipeline.png",
+        caption: "TopoVision pipeline demonstrating how we go from 2D image to 3D model",
+        alt: "TopoVision pipeline"
+      }
+    ],
+    repoUrl: "https://github.com/kthaisociety/topovision",
     contributors: [
       { name: "Mattias Kvist", role: "Research Lead", email: "mattias@kthais.com" },
       { name: "Erik Lidman Hillbom", role: "Researcher" },
@@ -214,14 +221,10 @@ export const projects: Project[] = [
     affiliations: "ReGen Villages",
     timeline: {
       startDate: "2025-11-24",
-      currentPhase: "Development and research phase",
-      upcomingMilestones: [
-        "Complete synthetic training pipeline",
-        "Optimize 2D-to-3D reconstruction algorithm",
-        "Project completion by Jan 31, 2025"
-      ]
+      currentPhase: "Completed in February 2026",
+      upcomingMilestones: []
     },
-    maintenancePlan: "Research project with active development by KTH AI Society team in collaboration with ReGen Villages",
+    maintenancePlan: "Research project completed by KTH AI Society team in collaboration with ReGen Villages",
     contact: "mattias@kthais.com"
   },
   {

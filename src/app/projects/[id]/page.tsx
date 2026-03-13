@@ -220,17 +220,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <p className="text-sm font-medium mb-1">Current Phase</p>
                     <p className="text-lg text-secondary-black font-serif">{project.timeline.currentPhase}</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium mb-2">Upcoming Milestones</p>
-                    <ul className="space-y-2">
-                      {project.timeline.upcomingMilestones.map((milestone) => (
-                        <li key={milestone} className="flex items-center gap-2 text-secondary-black">
-                          <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                          {milestone}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  {project.timeline.upcomingMilestones && project.timeline.upcomingMilestones.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">Upcoming Milestones</p>
+                      <ul className="space-y-2">
+                        {project.timeline.upcomingMilestones.map((milestone) => (
+                          <li key={milestone} className="flex items-center gap-2 text-secondary-black">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                            {milestone}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
 
