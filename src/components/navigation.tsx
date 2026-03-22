@@ -199,7 +199,7 @@ export function Navigation() {
     return (
       <div className="items-center gap-6 hidden md:flex">
         <Link
-          href="/"
+          href="/about"
           className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
         >
           About
