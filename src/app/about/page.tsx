@@ -10,78 +10,78 @@ import { ChevronDown } from "lucide-react";
 
 const TEAMS_DATA = {
   "2023/2024": [
-    {
-      id: "elsa-andersson",
-      name: "Elsa Andersson",
-      role: "President",
-      department: "Board",
-      image:
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400&h=400",
-      bio: "Overseeing strategic vision and long-term university partnerships.",
-      tags: ["Leadership", "Strategy"],
-    },
-    {
-      id: "lucas-berg",
-      name: "Lucas Berg",
-      role: "Head of AI Research",
-      department: "Research",
-      image:
-        "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400&h=400",
-      bio: "Leading the NLP research group and coordinating with our corporate sponsors.",
-      tags: ["NLP", "Deep Learning"],
-    },
-    {
-      id: "sara-ahmed",
-      name: "Sara Ahmed",
-      role: "Fullstack Developer",
-      department: "IT & Dev",
-      image:
-        "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400&h=400",
-      bio: "Maintaining the KTHAIS portal and building internal tools for event management.",
-      tags: ["React", "Python"],
-    },
-    {
-      id: "viktor-lind",
-      name: "Viktor Lind",
-      role: "Corporate Relations",
-      department: "Business",
-      image:
-        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400&h=400",
-      bio: "Connecting top-tier students with industry leaders for internships and R&D.",
-      tags: ["B2B", "Networking"],
-    },
-    {
-      id: "maria-chen",
-      name: "Maria Chen",
-      role: "Events Lead",
-      department: "Events",
-      image:
-        "https://images.unsplash.com/photo-1598550874175-4d0ef436c909?auto=format&fit=crop&q=80&w=400&h=400",
-      bio: "Organizing our flagship annual hackathon and weekly guest lectures.",
-      tags: ["Logistics", "Marketing"],
-    },
+    // {
+    //   id: "elsa-andersson",
+    //   name: "Elsa Andersson",
+    //   role: "President",
+    //   department: "Board",
+    //   image:
+    //     "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400&h=400",
+    //   bio: "Overseeing strategic vision and long-term university partnerships.",
+    //   tags: ["Leadership", "Strategy"],
+    // },
+    // {
+    //   id: "lucas-berg",
+    //   name: "Lucas Berg",
+    //   role: "Head of AI Research",
+    //   department: "Research",
+    //   image:
+    //     "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400&h=400",
+    //   bio: "Leading the NLP research group and coordinating with our corporate sponsors.",
+    //   tags: ["NLP", "Deep Learning"],
+    // },
+    // {
+    //   id: "sara-ahmed",
+    //   name: "Sara Ahmed",
+    //   role: "Fullstack Developer",
+    //   department: "IT & Dev",
+    //   image:
+    //     "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400&h=400",
+    //   bio: "Maintaining the KTHAIS portal and building internal tools for event management.",
+    //   tags: ["React", "Python"],
+    // },
+    // {
+    //   id: "viktor-lind",
+    //   name: "Viktor Lind",
+    //   role: "Corporate Relations",
+    //   department: "Business",
+    //   image:
+    //     "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400&h=400",
+    //   bio: "Connecting top-tier students with industry leaders for internships and R&D.",
+    //   tags: ["B2B", "Networking"],
+    // },
+    // {
+    //   id: "maria-chen",
+    //   name: "Maria Chen",
+    //   role: "Events Lead",
+    //   department: "Events",
+    //   image:
+    //     "https://images.unsplash.com/photo-1598550874175-4d0ef436c909?auto=format&fit=crop&q=80&w=400&h=400",
+    //   bio: "Organizing our flagship annual hackathon and weekly guest lectures.",
+    //   tags: ["Logistics", "Marketing"],
+    // },
   ],
   "2022/2023": [
-    {
-      id: "johan-svensson",
-      name: "Johan Svensson",
-      role: "Former President",
-      department: "Board",
-      image:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400&h=400",
-      bio: "Established the current organizational structure and IT sub-teams.",
-      tags: ["Alumni", "Leadership"],
-    },
-    {
-      id: "linnea-karlsson",
-      name: "Linnea Karlsson",
-      role: "Head of AI Research",
-      department: "Research",
-      image:
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400&h=400",
-      bio: "Pioneered our first joint research paper with industry sponsors.",
-      tags: ["Computer Vision", "Ethics"],
-    },
+    // {
+    //   id: "johan-svensson",
+    //   name: "Johan Svensson",
+    //   role: "Former President",
+    //   department: "Board",
+    //   image:
+    //     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400&h=400",
+    //   bio: "Established the current organizational structure and IT sub-teams.",
+    //   tags: ["Alumni", "Leadership"],
+    // },
+    // {
+    //   id: "linnea-karlsson",
+    //   name: "Linnea Karlsson",
+    //   role: "Head of AI Research",
+    //   department: "Research",
+    //   image:
+    //     "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400&h=400",
+    //   bio: "Pioneered our first joint research paper with industry sponsors.",
+    //   tags: ["Computer Vision", "Ethics"],
+    // },
   ],
 };
 
@@ -89,9 +89,11 @@ const DEPARTMENTS = [
   "All",
   "Board",
   "Research",
-  "IT & Dev",
+  "IT",
+  "Development",
   "Business",
-  "Events",
+  "Growth",
+  "Alumni",
 ];
 
 export default function AboutPage() {
@@ -126,13 +128,14 @@ export default function AboutPage() {
     setAboutTextMask(dataUrl);
   }, []);
 
-  const filteredTeam = useMemo(() => {
-    const teamForYear = TEAMS_DATA[activeYear as keyof typeof TEAMS_DATA] || [];
-    if (activeDepartment === "All") return teamForYear;
-    return teamForYear.filter(
-      (member) => member.department === activeDepartment,
-    );
-  }, [activeYear, activeDepartment]);
+  const filteredTeam = useMemo(() => {return []}, [activeYear, activeDepartment]);
+  // const filteredTeam = useMemo(() => {
+  //   const teamForYear = TEAMS_DATA[activeYear as keyof typeof TEAMS_DATA] || [];
+  //   if (activeDepartment === "All") return teamForYear;
+  //   return teamForYear.filter(
+  //     (member) => member.department === activeDepartment,
+  //   );
+  // }, [activeYear, activeDepartment]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -279,7 +282,7 @@ export default function AboutPage() {
             </div>
 
             {/* Department Filter Pills */}
-            <div className="flex flex-wrap gap-3 mb-10">
+            <div className="flex flex-wrap gap-2 mb-10">
               {DEPARTMENTS.map((dept) => (
                 <button
                   key={dept}
@@ -297,54 +300,55 @@ export default function AboutPage() {
 
             {/* Member Grid */}
             {filteredTeam.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredTeam.map((member) => (
-                  <Link
-                    key={member.id}
-                    href={`/team/${member.id}`}
-                    className="group flex flex-col h-full bg-white border border-secondary-light-gray/60 rounded-2xl p-4 hover:shadow-md hover:border-primary/40 transition-all duration-300"
-                  >
-                    {/* Image & Department Badge */}
-                    <div className="relative aspect-square bg-secondary-light-gray mb-4 overflow-hidden rounded-xl">
-                      <img
-                        src={member.image}
-                        alt={member.name}
-                        className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-500"
-                      />
-                      <div className="absolute top-3 right-3 bg-primary backdrop-blur-sm px-2.5 py-1 rounded-2xl text-[10px] font-mono font-bold text-white/95 tracking-tight shadow-sm">
-                        {member.department}
-                      </div>
-                    </div>
+              // <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              //   {filteredTeam.map((member) => (
+              //     <Link
+              //       key={member.id}
+              //       href={`/team/${member.id}`}
+              //       className="group flex flex-col h-full bg-white border border-secondary-light-gray/60 rounded-2xl p-4 hover:shadow-md hover:border-primary/40 transition-all duration-300"
+              //     >
+              //       {/* Image & Department Badge */}
+              //       <div className="relative aspect-square bg-secondary-light-gray mb-4 overflow-hidden rounded-xl">
+              //         <img
+              //           src={member.image}
+              //           alt={member.name}
+              //           className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-500"
+              //         />
+              //         <div className="absolute top-3 right-3 bg-primary backdrop-blur-sm px-2.5 py-1 rounded-2xl text-[10px] font-mono font-bold text-white/95 tracking-tight shadow-sm">
+              //           {member.department}
+              //         </div>
+              //       </div>
 
-                    {/* Info */}
-                    <div className="flex-grow flex flex-col px-1">
-                      <h3 className="font-arial font-bold text-lg text-secondary-black group-hover:text-primary transition-colors tracking-tight-1">
-                        {member.name}
-                      </h3>
-                      <p className="font-mono text-xs mt-1 text-secondary-gray group-hover:text-secondary-black transition-colors">
-                        {member.role}
-                      </p>
+              //       {/* Info */}
+              //       <div className="flex-grow flex flex-col px-1">
+              //         <h3 className="font-arial font-bold text-lg text-secondary-black group-hover:text-primary transition-colors tracking-tight-1">
+              //           {member.name}
+              //         </h3>
+              //         <p className="font-mono text-xs mt-1 text-secondary-gray group-hover:text-secondary-black transition-colors">
+              //           {member.role}
+              //         </p>
 
-                      {/* Short Bio */}
-                      <p className="font-serif text-sm text-secondary-black/70 mt-3 line-clamp-2 leading-relaxed">
-                        {member.bio}
-                      </p>
+              //         {/* Short Bio */}
+              //         <p className="font-serif text-sm text-secondary-black/70 mt-3 line-clamp-2 leading-relaxed">
+              //           {member.bio}
+              //         </p>
 
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-2 mt-auto pt-5">
-                        {member.tags.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className="bg-neutral-100 border border-secondary-light-gray/50 text-secondary-black px-2 py-1 rounded text-[10px] font-mono uppercase"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              //         {/* Tags */}
+              //         <div className="flex flex-wrap gap-2 mt-auto pt-5">
+              //           {member.tags.map((tag, idx) => (
+              //             <span
+              //               key={idx}
+              //               className="bg-neutral-100 border border-secondary-light-gray/50 text-secondary-black px-2 py-1 rounded text-[10px] font-mono uppercase"
+              //             >
+              //               {tag}
+              //             </span>
+              //           ))}
+              //         </div>
+              //       </div>
+              //     </Link>
+              //   ))}
+              // </div>
+              <div></div>
             ) : (
               /* Empty State */
               <div className="py-24 text-center border border-dashed border-secondary-gray/50 rounded-2xl bg-white">
