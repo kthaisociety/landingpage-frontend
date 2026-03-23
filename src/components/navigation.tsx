@@ -131,7 +131,7 @@ export function Navigation() {
     if (!isLoggedIn || !user) {
       return (
         <Link
-          href="/contact"
+          href="mailto:contact@kthais.com"
           className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
         >
           Contact
