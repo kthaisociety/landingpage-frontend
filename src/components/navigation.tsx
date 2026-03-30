@@ -15,15 +15,40 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TextMorph } from "@/components/ui/text-morph";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/auth";
+import { useAuth } from "@/components/providers/auth-provider/authProvider";
 
 export function Navigation() {
-  const { user, isLoggedIn, logoutUser: logout } = useAuth();
+  // const { user, isLoggedIn, logoutUser: logout } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const logout = async () =>{
+    const data = await fetch("/api/auth/logout",{
+      method: "GET",
+      credentials: "include",
+    });
+    data.json().then((res)=>{
+      if(res.success){
+        console.log("Logout successful");
+        router.push("/")
+      } else {
+        console.error("Logout failed");
+      }
+    })
+    console.log("Logging out...");
+  }
+
+  const user = {
+    name: "Daniel Ekblom",
+    role: "admin",
+  
+  }
+
   useEffect(function () {
     function handleScroll() {
       const newLocal = window.scrollY > 50;
@@ -128,7 +153,7 @@ export function Navigation() {
   }
 
   function renderAuthDropdown() {
-    if (!isLoggedIn || !user) {
+    if (!isAuthenticated || !user) {
       return (
         <Link
           href="mailto:contact@kthais.com"
@@ -286,7 +311,7 @@ export function Navigation() {
                 Newsletter
               </Link>
 
-              {!isLoggedIn && (
+              {!isAuthenticated && (
                 <Link
                   href="mailto:contact@kthais.com"
                   className="block py-3 text-base text-foreground/70 hover:text-foreground"
@@ -296,7 +321,7 @@ export function Navigation() {
                 </Link>
               )}
 
-              {isLoggedIn && user && (
+              {isAuthenticated && user && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <div className="px-2 mb-2">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">
@@ -334,6 +359,10 @@ export function Navigation() {
         )}
       </AnimatePresence>
     );
+  }
+
+  if(isLoading){
+    return(<div>Loading...</div>)
   }
 
   return (

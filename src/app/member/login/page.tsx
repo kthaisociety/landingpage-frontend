@@ -3,13 +3,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { GoogleLoginButton } from "@/components/google-auth/google-signin-button";
-import { useAuth } from "@/hooks/auth";
+import { useAuth } from "@/components/providers/auth-provider/authProvider";
 
 function MemberLogin() {
   const [loginTextMask, setLoginTextMask] = useState<string | undefined>();
 
   const router = useRouter();
-  const { isLoggedIn } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   useEffect(
     function () {
@@ -19,7 +19,7 @@ function MemberLogin() {
       const ctx = canvas.getContext("2d");
 
       if (!ctx) return;
-      if (isLoggedIn) {
+      if (isAuthenticated) {
         router.push("/");
       }
 
@@ -36,7 +36,7 @@ function MemberLogin() {
         return setLoginTextMask(dataUrl);
       });
     },
-    [isLoggedIn, router],
+    [isAuthenticated, router],
   );
 
   return (

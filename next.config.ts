@@ -23,6 +23,19 @@ const nextConfig: NextConfig = {
     ],
   },
   output: "standalone",
+  async rewrites() {
+    if (process.env.NODE_ENV !== "development") {
+      return { beforeFiles: [] };
+    }
+    return {
+      beforeFiles: [
+        {
+          source: "/api/:path*",
+          destination: "http://localhost:8080/api/v1/:path*",
+        },
+      ],
+    };
+  },
 };
 
 export default nextConfig;
