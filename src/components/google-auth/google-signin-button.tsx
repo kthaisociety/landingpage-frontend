@@ -1,19 +1,33 @@
 "use client";
-import { useGoogleLogin } from "@react-oauth/google";
-import { useAuth } from "@/hooks/auth";
+// import { useGoogleLogin } from "@react-oauth/google";
+// import { useAuth } from "@/components/providers/auth-provider/authProvider";
 
 export function GoogleLoginButton() {
-  const { loginUser } = useAuth();
+  // const { loginUser } = useAuth();
 
-  const login = useGoogleLogin({
-    flow: "auth-code",
-    onSuccess: async function (codeResponse) {
-      loginUser(codeResponse.code);
-    },
-    onError: function () {
-      return console.error("Google login failed");
-    },
-  });
+  // const login = useGoogleLogin({
+  //   flow: "auth-code",
+  //   onSuccess: async function (codeResponse) {
+  //     loginUser(codeResponse.code);
+  //   },
+  //   onError: function () {
+  //     return console.error("Google login failed");
+  //   },
+  // });
+
+  const login = async () =>{
+    try {
+      // Thanks to your next.config.ts, Next.js routes this to your Go backend!
+      const response = await fetch("/api/auth/google");
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Failed to fetch login URL:", error);
+    }
+  }
 
   return (
     <button

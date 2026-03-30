@@ -1,104 +1,109 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import { useRouter } from "next/navigation";
-import { useGoogleLoginMutation, useLazyGetMeQuery, useLogoutMutation } from "@/lib/apis/internal-apis";
-import type { User } from "@/types/auth";
-import { AuthContext } from "@/hooks/auth";
-import { checkUserCache, saveUserToCache, clearUserCache } from "./authCache";
+
+export interface UserProfile {
+  userId: string;
+  email: string;
+  roles: string[];
+  firstName: string;
+  lastName: string;
+  university: string;
+  programme: string;
+  graduationYear: number;
+  githubLink: string;
+  linkedInLink: string;
+  exists: boolean;
+}
+
+// Define the shape of the Context
+interface AuthContextType {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  user: UserProfile | null;
+  logout: () => Promise<void>;
+}
+
+// Update the initial Context state
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  isLoading: true,
+  user: null,
+  logout: async () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const router = useRouter();
-  const [triggerGetMe] = useLazyGetMeQuery();
-  const [triggerLogout] = useLogoutMutation();
-  const [triggerGoogleLogin] = useGoogleLoginMutation();
 
-  const loginUser = useCallback(
-    async function (code: string) {
+  useEffect(() => {
+    async function checkStatus() {
       try {
-        const result = await triggerGoogleLogin(code).unwrap();
-        if (result.user) {
-          setUser(result.user);
-          saveUserToCache(result.user);
-          router.push("/");
+        const response = await fetch("/api/profile/me");
+        if (response.ok) {
+          const data = await response.json();
+          setIsAuthenticated(true);
+          setUser(data);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
         }
       } catch (error) {
-        console.error("Login failed", error);
-      }
-    },
-    [triggerGoogleLogin, router],
-  );
-
-  const logoutUser = useCallback(
-    async function () {
-      setUser(null);
-      clearUserCache();
-      try {
-        await triggerLogout().unwrap();
-      } catch {
-        /* empty */
-      }
-    },
-    [triggerLogout],
-  );
-
-  useEffect(
-    function () {
-      async function initializeAuth() {
-        setIsLoading(true);
-        const { exists, isExpired, user: cachedUser } = checkUserCache();
-        const hasCheckedCache =
-          localStorage.getItem("_kthais_auth_checked") === "true";
-
-        if (exists && !isExpired && cachedUser) {
-          setUser(cachedUser);
-          setIsLoading(false);
-          return;
-        }
-        if (exists && isExpired) {
-          try {
-            const data = await triggerGetMe().unwrap();
-            if (data?.user) {
-                setUser(data.user);
-                saveUserToCache(data.user);
-            } else {
-              logoutUser();
-            }
-          } catch {
-            logoutUser();
-          }
-          localStorage.setItem("_kthais_auth_checked", "true");
-          setIsLoading(false);
-          return;
-        }
-        if (!hasCheckedCache) {
-          await logoutUser();
-          localStorage.setItem("_kthais_auth_checked", "true");
-        }
-
+        console.error("Auth check failed:", error);
+        setIsAuthenticated(false);
+        setUser(null);
+      } finally {
         setIsLoading(false);
       }
+    }
 
-      initializeAuth();
-    },
-    [triggerGetMe, loginUser, logoutUser],
-  );
+    checkStatus();
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(false);
+        setUser(null);
+        router.push("/");
+      } else {
+        console.error("Logout failed with status:", response.status);
+      }
+    } catch (error) {
+      console.error("Failed to reach the logout endpoint:", error);
+    }
+  }, [router]); 
 
   const contextValue = useMemo(
     () => ({
-      user,
-      isLoggedIn: !!user,
+      isAuthenticated,
       isLoading,
-      loginUser,
-      logoutUser,
+      user,
+      logout,
     }),
-    [user, isLoading, loginUser, logoutUser],
+    [isAuthenticated, isLoading, user, logout],
   );
 
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = () => useContext(AuthContext);
 
