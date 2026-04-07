@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 import Link from "next/link"
 import { motion, useReducedMotion } from "framer-motion"
 import { AsciiGrid } from "@/components/ui/ascii-grid"
@@ -75,14 +75,18 @@ const buttonGroupVariants = {
   },
 }
 
+function subscribeToHydration() {
+  return () => {}
+}
+
 export function Hero() {
-  const [isHydrated, setIsHydrated] = useState(false)
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false
+  )
   const prefersReducedMotion = useReducedMotion()
   const enableInteractionMotion = isHydrated && !prefersReducedMotion
-
-  useEffect(() => {
-    setIsHydrated(true)
-  }, [])
 
   return (
     <section className="relative min-h-screen pb-12 w-full flex items-end justify-center">
