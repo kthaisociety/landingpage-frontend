@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useForm } from "@tanstack/react-form"
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
+import { WarningCircleIcon, CheckCircleIcon, SpinnerIcon } from "@phosphor-icons/react"
 import { z } from "zod"
 
 import { cn } from "@/lib/utils"
 import { AsciiGrid } from "@/components/ui/ascii-grid"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import {
   Field,
   FieldDescription,
@@ -187,9 +188,9 @@ function NewsletterFormFields({
 
         {submitState ? (
           <Alert
-            variant={submitState.type === "error" ? "destructive" : "success"}
+            variant={submitState.type === "error" ? "destructive" : "default"}
           >
-            {submitState.type === "error" ? <AlertCircle /> : <CheckCircle2 />}
+            {submitState.type === "error" ? <WarningCircleIcon /> : <CheckCircleIcon />}
             <AlertTitle>
               {submitState.type === "error"
                 ? "Subscription failed"
@@ -208,7 +209,7 @@ function NewsletterFormFields({
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 data-icon="inline-start" className="animate-spin" />
+                  <SpinnerIcon data-icon="inline-start" className="animate-spin" />
                   Subscribing...
                 </>
               ) : (
@@ -260,11 +261,11 @@ export function NewsletterForm({
   }
 
   return (
-    <div className="min-h-screen">
-      <section className="relative overflow-hidden bg-white pt-64 pb-24 text-secondary-black">
+    <div className="min-h-screen bg-background">
+      <section className="relative overflow-hidden bg-background pt-64 pb-24 text-foreground">
         <div className="pointer-events-none absolute inset-0">
           <AsciiGrid
-            color="rgba(0, 0, 0, 0.2)"
+            color="var(--color-primary)"
             cellSize={12}
             logoSrc={newsletterTextMask}
             logoPosition="center"
@@ -272,8 +273,8 @@ export function NewsletterForm({
             enableDripping={false}
             className="h-full w-full"
           />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_40%,white_100%)]" />
-          <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-32 bg-linear-to-t from-white via-white/50 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_40%,var(--color-background)_100%)]" />
+          <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-32 bg-linear-to-t from-muted via-background/50 to-transparent" />
         </div>
 
         <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-8 md:px-6">
@@ -290,22 +291,21 @@ export function NewsletterForm({
       </section>
 
       <div className="px-4 sm:px-6 md:px-8 lg:px-8 xl:px-8">
-        <section className="relative z-20 mx-auto -mt-24 mb-24 flex max-w-7xl flex-col gap-8 rounded-3xl border bg-neutral-50 p-4 shadow-lg md:p-8">
+        <section className="relative z-20 mx-auto -mt-24 mb-24 flex max-w-7xl flex-col gap-8 rounded-none bg-card text-card-foreground ring-1 ring-foreground/10 p-4 shadow-lg md:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="flex max-w-3xl flex-col gap-2">
-              <div>
-                <Link
-                  href="/"
-                  className="text-sm font-medium text-secondary-gray transition-colors hover:text-primary"
-                >
-                  Home
-                </Link>
-                <span className="mx-2 text-gray-300">/</span>
-                <span className="text-sm font-medium text-primary">
-                  Newsletter
-                </span>
-              </div>
-              <p className="max-w-2xl text-lg leading-relaxed opacity-95 md:text-xl">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>Newsletter</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+              <p className="max-w-2xl text-lg leading-relaxed tracking-tight text-muted-foreground md:text-xl">
                 Join our mailing list for major society updates, upcoming
                 events, new projects, and curated AI community news.
               </p>

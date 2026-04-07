@@ -4,8 +4,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import NumberFlow from '@number-flow/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeftIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { FadeIn } from '@/components/ui/fade-in';
 
 export interface TimelineEvent {
   year: number;
@@ -116,14 +119,23 @@ export function HistoryTimeline({
   };
 
   return (
-    <section id="about" className={cn('container mx-auto py-16 px-4 w-full max-w-7xl', className)}>
+    <section id="about" className={cn('container mx-auto py-20 px-4 w-full max-w-7xl', className)}>
+      {/* Section heading — consistent with other home sections */}
+      <FadeIn>
+        <div className="mb-10">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+            <span className="text-primary font-serif font-normal">(Our)</span> History
+          </h2>
+        </div>
+      </FadeIn>
+
         {/* Mobile Layout - Horizontal Timeline */}
         <div className="lg:hidden flex flex-col gap-8">
           {/* Image Display */}
           <div className="relative w-full aspect-3/2">
             <motion.div
               key={selectedEvent.year}
-              className="relative w-full h-full rounded-3xl border overflow-hidden"
+              className="relative w-full h-full rounded-3xl border border-border overflow-hidden"
             >
               <Image
                 src={selectedEvent.image}
@@ -138,11 +150,10 @@ export function HistoryTimeline({
           {/* Horizontal Timeline */}
           <div className="relative px-4">
             <div className="relative flex items-center w-full">
-              {/* Horizontal Line */}
-              <div 
-                className="absolute left-0 right-0 h-px top-[6px]" 
-                style={{ backgroundColor: 'var(--color-secondary-gray)' }} 
-              />
+              {/* Horizontal Line - using Separator color token */}
+              <div className="absolute left-0 right-0 top-[6px]">
+                <Separator className="bg-muted-foreground/30" />
+              </div>
               
               {/* Year Markers */}
               <div className="relative flex justify-between w-full">
@@ -168,45 +179,40 @@ export function HistoryTimeline({
                     >
                       {/* Dot */}
                       <div className="relative">
-                        {/* Outer circle (active state) */}
                         {isActive && (
                           <motion.div
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="absolute inset-0 rounded-full border-2"
+                            className="absolute inset-0 rounded-full border-2 border-primary"
                             style={{ 
                               width: '20px',
                               height: '20px',
                               margin: '-4px',
-                              borderColor: 'var(--color-primary)',
                             }}
                           />
                         )}
                         
-                        {/* Inner dot */}
                         <motion.div
                           animate={{
                             scale: isActive ? 1.2 : 1,
-                            backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-secondary-gray)',
                           }}
                           transition={{ duration: 0.3 }}
-                          className="w-3 h-3 rounded-full"
+                          className={cn(
+                            'w-3 h-3 rounded-full transition-colors duration-300',
+                            isActive ? 'bg-primary' : 'bg-muted-foreground/50'
+                          )}
                         />
                       </div>
 
                       {/* Year Label */}
-                      <motion.span
-                        animate={{
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                        transition={{ duration: 0.3 }}
+                      <span
                         className={cn(
-                          'text-xs sm:text-sm select-none whitespace-nowrap',
-                          isActive ? 'text-foreground font-semibold' : 'text-secondary-gray'
+                          'text-xs sm:text-sm select-none whitespace-nowrap transition-all duration-300',
+                          isActive ? 'text-foreground font-semibold' : 'text-muted-foreground'
                         )}
                       >
                         {event.year}
-                      </motion.span>
+                      </span>
                     </button>
                   );
                 })}
@@ -216,7 +222,6 @@ export function HistoryTimeline({
 
           {/* Content Panel */}
           <div className="flex flex-col">
-            {/* Large Year Number with NumberFlow Animation */}
             <div className="relative sm:mb-4 flex items-start">
               <NumberFlow
                 value={selectedEvent.year}
@@ -225,7 +230,6 @@ export function HistoryTimeline({
               />
             </div>
 
-            {/* Main Heading */}
             <motion.h2
               key={`${selectedEvent.year}-heading`}
               initial={{ opacity: 0, y: 10 }}
@@ -236,13 +240,12 @@ export function HistoryTimeline({
               {selectedEvent.heading}
             </motion.h2>
 
-            {/* Descriptive Text */}
             <motion.p
               key={`${selectedEvent.year}-description`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.2 }}
-              className="text-sm sm:text-base text-foreground/80 leading-relaxed"
+              className="text-sm sm:text-base text-muted-foreground leading-relaxed"
             >
               {selectedEvent.description}
             </motion.p>
@@ -254,7 +257,6 @@ export function HistoryTimeline({
           {/* Left Content Panel */}
           <div className="col-span-4 flex flex-col justify-between">
             <div>
-              {/* Large Year Number with NumberFlow Animation */}
               <div className="relative mb-6 flex items-start">
                 <NumberFlow
                   value={selectedEvent.year}
@@ -263,7 +265,6 @@ export function HistoryTimeline({
                 />
               </div>
 
-              {/* Main Heading */}
               <motion.h2
                 key={`${selectedEvent.year}-heading-desktop`}
                 initial={{ opacity: 0, y: 10 }}
@@ -274,13 +275,12 @@ export function HistoryTimeline({
                 {selectedEvent.heading}
               </motion.h2>
 
-              {/* Descriptive Text */}
               <motion.p
                 key={`${selectedEvent.year}-description-desktop`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
-                className="text-sm md:text-base text-foreground/80 leading-relaxed mb-6 flex flex-col justify-start items-start gap-2"
+                className="text-sm md:text-base text-muted-foreground leading-relaxed mb-6 flex flex-col justify-start items-start gap-2"
               >
                 {selectedEvent.description}
               </motion.p>
@@ -288,42 +288,34 @@ export function HistoryTimeline({
 
             {/* Navigation Buttons */}
             <div className="flex items-center gap-2 mt-auto">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={handlePrevious}
                 disabled={!canGoPrevious}
-                className={cn(
-                  'p-2 rounded-lg border transition-all duration-200',
-                  'hover:bg-accent hover:border-accent-foreground/20',
-                  'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent',
-                  canGoPrevious ? 'cursor-pointer' : 'cursor-not-allowed'
-                )}
                 aria-label="Previous year"
               >
-                <ChevronLeft className="w-5 h-5 text-foreground" />
-              </button>
-              <button
-                type="button"
+                <CaretLeftIcon className="size-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={handleNext}
                 disabled={!canGoNext}
-                className={cn(
-                  'p-2 rounded-lg border transition-all duration-200',
-                  'hover:bg-accent hover:border-accent-foreground/20',
-                  'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent',
-                  canGoNext ? 'cursor-pointer' : 'cursor-not-allowed'
-                )}
                 aria-label="Next year"
               >
-                <ChevronRight className="w-5 h-5 text-foreground" />
-              </button>
+                <CaretRightIcon className="size-4" />
+              </Button>
             </div>
           </div>
 
           {/* Central Vertical Timeline */}
           <div className="col-span-1 flex justify-center lg:justify-start relative">
             <div className="relative flex flex-col items-center h-full min-h-[500px]">
-              {/* Vertical Line */}
-              <div className="absolute top-0 bottom-0 w-px left-[5.5px]" style={{ backgroundColor: 'var(--color-secondary-gray)' }} />
+              {/* Vertical Line - using Separator color token */}
+              <div className="absolute top-0 bottom-0 left-[5.5px]">
+                <Separator orientation="vertical" className="h-full bg-muted-foreground/30" />
+              </div>
               
               {/* Year Markers */}
               <div className="relative flex flex-col justify-between h-full py-4">
@@ -349,45 +341,40 @@ export function HistoryTimeline({
                     >
                       {/* Dot */}
                       <div className="relative">
-                        {/* Outer circle (active state) */}
                         {isActive && (
                           <motion.div
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="absolute inset-0 rounded-full border-2"
+                            className="absolute inset-0 rounded-full border-2 border-primary"
                             style={{ 
                               width: '20px',
                               height: '20px',
                               margin: '-4px',
-                              borderColor: 'var(--color-primary)',
                             }}
                           />
                         )}
                         
-                        {/* Inner dot */}
                         <motion.div
                           animate={{
                             scale: isActive ? 1.2 : 1,
-                            backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-secondary-gray)',
                           }}
                           transition={{ duration: 0.3 }}
-                          className="w-3 h-3 rounded-full"
+                          className={cn(
+                            'w-3 h-3 rounded-full transition-colors duration-300',
+                            isActive ? 'bg-primary' : 'bg-muted-foreground/50'
+                          )}
                         />
                       </div>
 
                       {/* Year Label */}
-                      <motion.span
-                        animate={{
-                          fontWeight: isActive ? 600 : 400,
-                        }}
-                        transition={{ duration: 0.3 }}
+                      <span
                         className={cn(
-                          'text-sm md:text-base select-none',
-                          isActive ? 'text-foreground font-semibold' : 'text-secondary-gray'
+                          'text-sm md:text-base select-none transition-all duration-300',
+                          isActive ? 'text-foreground font-semibold' : 'text-muted-foreground'
                         )}
                       >
                         {event.year}
-                      </motion.span>
+                      </span>
                     </button>
                   );
                 })}
@@ -397,11 +384,10 @@ export function HistoryTimeline({
 
           {/* Right Content Panel */}
           <div className="col-span-7 flex flex-col">
-            {/* Image Display */}
             <div className="relative w-full aspect-3/2">
               <motion.div
                 key={`${selectedEvent.year}-image-desktop`}
-                className="relative w-full h-full rounded-3xl border overflow-hidden"
+                className="relative w-full h-full rounded-3xl border border-border overflow-hidden"
               >
                 <Image
                   src={selectedEvent.image}

@@ -37,7 +37,7 @@ export default function MemberDashboardPage() {
         {/* Ascii Grid Background */}
         <div className="absolute inset-0">
           <AsciiGrid
-            color="rgba(0, 0, 0, 0.2)"
+            color="var(--color-primary)"
             cellSize={12}
             logoSrc={dashboardTextMask}
             logoPosition="center"

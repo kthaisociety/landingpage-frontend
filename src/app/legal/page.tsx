@@ -65,7 +65,7 @@ export default function LegalPage() {
         {/* ASCII Grid Background */}
         <div className="absolute inset-0 pointer-events-none">
           <AsciiGrid
-            color="rgba(0, 0, 0, 0.2)"
+            color="var(--color-primary)"
             cellSize={12}
             logoSrc={textMask}
             logoPosition="center"

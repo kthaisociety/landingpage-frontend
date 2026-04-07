@@ -7,16 +7,15 @@ import { NewsletterSignup } from "./newsletter-signup"
 
 export function Homepage() {
   return (
-    <main className="flex min-h-screen flex-col">
+    <main className="flex min-h-screen flex-col bg-background text-foreground">
       <Hero />
+      <EventsPreview />
       <JobsPreview />
       <HistoryTimeline
         title="OUR HISTORY"
         introText="KTH AI Society has a rich history of building the AI community at KTH, bringing together students, industry leaders, and innovators to shape the future of artificial intelligence."
         defaultYear={2023}
       />
-      <EventsPreview />
-
       <ProjectsPreview />
       <NewsletterSignup />
     </main>
