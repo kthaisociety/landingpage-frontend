@@ -1,54 +1,89 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 import { AsciiGrid } from "@/components/ui/ascii-grid"
 import { Button } from "@/components/ui/button"
+
+const easeOutQuart = [0.25, 1, 0.5, 1] as const
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.2,
-      delayChildren: 0.1,
+      staggerChildren: 0.12,
+      delayChildren: 0.16,
     },
   },
 }
 
-const childVariants = {
+const titleVariants = {
   hidden: {
     opacity: 0,
-    scale: 0.98,
-    filter: 'blur(8px)',
-    y: 40,
+    scale: 0.985,
+    filter: "blur(12px)",
+    y: 24,
   },
   visible: {
     opacity: 1,
     scale: 1,
-    filter: 'blur(0)',
+    filter: "blur(0px)",
     y: 0,
-    transition: { duration: 1, ease: [0.25, 0.1, 0.25, 1] as const },
+    transition: { duration: 0.85, ease: easeOutQuart },
   },
 }
 
-const buttonVariants = {
+const descriptionVariants = {
   hidden: {
     opacity: 0,
-    scale: 0.95,
-    filter: 'blur(8px)',
-    y: 80,
+    filter: "blur(10px)",
+    y: 20,
   },
   visible: {
     opacity: 1,
-    scale: 1,
-    filter: 'blur(0)',
+    filter: "blur(0px)",
     y: 0,
-    transition: { duration: 1, ease: [0.25, 0.1, 0.25, 1] as const, delay: 0.4 },
+    transition: { duration: 0.7, ease: easeOutQuart },
+  },
+}
+
+const accentVariants = {
+  hidden: {
+    opacity: 0,
+    scaleX: 0.7,
+  },
+  visible: {
+    opacity: 1,
+    scaleX: 1,
+    transition: { duration: 0.7, ease: easeOutQuart, delay: 0.08 },
+  },
+}
+
+const buttonGroupVariants = {
+  hidden: {
+    opacity: 0,
+    filter: "blur(10px)",
+    y: 24,
+  },
+  visible: {
+    opacity: 1,
+    filter: "blur(0px)",
+    y: 0,
+    transition: { duration: 0.7, ease: easeOutQuart, delay: 0.18 },
   },
 }
 
 export function Hero() {
+  const [isHydrated, setIsHydrated] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
+  const enableInteractionMotion = isHydrated && !prefersReducedMotion
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
   return (
     <section className="relative min-h-screen pb-12 w-full flex items-end justify-center">
       {/* Background Grid */}
@@ -68,54 +103,68 @@ export function Hero() {
       {/* Content */}
       <div className="container relative z-20 px-4 md:px-6 text-center flex flex-col items-center justify-end h-full pt-20">
         <motion.div
-          className="space-y-4"
+          className="space-y-6"
           variants={containerVariants}
           initial="hidden"
-          animate="visible"
+          animate={isHydrated ? "visible" : "hidden"}
         >
-          <motion.h2
-            className="text-4xl tracking-tighter bg-clip-text text-black"
-            variants={childVariants}
-          >
-            AI Society
-            <span className=" text-[#1954A6] font-serif ml-2">
-              (KTH)
-            </span>
-          </motion.h2>
-
           <motion.h1
-            className="text-2xl sm:text-5xl md:text-6xl text-black tracking-tight max-w-2xl mx-auto leading-tight"
-            variants={childVariants}
+            className="mx-auto max-w-3xl text-4xl leading-none tracking-tight text-black sm:text-6xl md:text-7xl"
+            variants={titleVariants}
           >
-            Cultivating the next generation of AI leaders
+            KTH <span className="font-serif text-[#1954A6]">AI Society</span>
           </motion.h1>
+
+          <motion.p
+            className="mx-auto max-w-2xl text-base leading-7 text-black/72 sm:text-xl sm:leading-8"
+            variants={descriptionVariants}
+          >
+            Cultivating the next generation of AI leaders.
+          </motion.p>
+
+          <motion.div
+            aria-hidden="true"
+            className="mx-auto h-px w-24 origin-center bg-[linear-gradient(90deg,transparent,rgba(25,84,166,0.75),transparent)]"
+            variants={accentVariants}
+          />
 
           <motion.div
             className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4"
-            variants={buttonVariants}
+            variants={buttonGroupVariants}
           >
-            <Button
-              size="xl"
-              asChild
+            <motion.div
+              whileHover={enableInteractionMotion ? { y: -2, scale: 1.015 } : undefined}
+              whileTap={enableInteractionMotion ? { y: 0, scale: 0.985 } : undefined}
+              transition={{ duration: 0.18, ease: easeOutQuart }}
             >
-              <Link href="/events" className="flex items-center gap-1">
-               Upcoming Events
-              </Link>
-            </Button>
+              <Button
+                size="lg"
+                asChild
+              >
+                <Link href="/events" className="flex items-center gap-1">
+                 Upcoming Events
+                </Link>
+              </Button>
+            </motion.div>
 
-            <Button
-              variant="outline"
-              size="xl"
-              asChild
+            <motion.div
+              whileHover={enableInteractionMotion ? { y: -2, scale: 1.015 } : undefined}
+              whileTap={enableInteractionMotion ? { y: 0, scale: 0.985 } : undefined}
+              transition={{ duration: 0.18, ease: easeOutQuart }}
             >
-              <Link href="mailto:business@kthais.com">
-                For Sponsors
-              </Link>
-            </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+              >
+                <Link href="mailto:business@kthais.com">
+                  For Sponsors
+                </Link>
+              </Button>
+            </motion.div>
           </motion.div>
         </motion.div>
       </div>
     </section>
   )
 }
-

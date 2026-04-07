@@ -8,35 +8,37 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-  TooltipArrow,
-  type TooltipProviderProps,
-  type TooltipProps,
-  type TooltipContentProps,
-  type TooltipArrowProps,
 } from '@/components/ui/tooltip';
+
+type TooltipProviderProps = React.ComponentProps<typeof TooltipProvider>;
+type TooltipContentProps = React.ComponentProps<typeof TooltipContent>;
+
+type AvatarGroupTooltipContextValue = Pick<
+  TooltipContentProps,
+  'side' | 'sideOffset' | 'align' | 'alignOffset'
+>;
+
+const AvatarGroupTooltipContext =
+  React.createContext<AvatarGroupTooltipContextValue>({
+    side: 'top',
+    sideOffset: 0,
+    align: 'center',
+    alignOffset: 0,
+  });
 
 type AvatarProps = Omit<HTMLMotionProps<'div'>, 'translate'> & {
   children: React.ReactNode;
   zIndex: number;
   translate?: string | number;
-} & Omit<TooltipProps, 'children'>;
+};
 
 function AvatarContainer({
   zIndex,
   translate,
-  side,
-  sideOffset,
-  align,
-  alignOffset,
   ...props
 }: AvatarProps) {
   return (
-    <Tooltip
-      side={side}
-      sideOffset={sideOffset}
-      align={align}
-      alignOffset={alignOffset}
-    >
+    <Tooltip>
       <TooltipTrigger asChild>
         <motion.div
           data-slot="avatar-container"
@@ -63,9 +65,8 @@ type AvatarGroupProps = Omit<React.ComponentProps<'div'>, 'translate'> & {
   invertOverlap?: boolean;
   translate?: string | number;
   transition?: Transition;
-  tooltipTransition?: Transition;
 } & Omit<TooltipProviderProps, 'children'> &
-  Omit<TooltipProps, 'children'>;
+  AvatarGroupTooltipContextValue;
 
 function AvatarGroup({
   ref,
@@ -74,50 +75,51 @@ function AvatarGroup({
   transition = { type: 'spring', stiffness: 300, damping: 17 },
   invertOverlap = false,
   translate = '-30%',
-  openDelay = 0,
-  closeDelay = 0,
+  delayDuration = 0,
   side = 'top',
   sideOffset = 25,
   align = 'center',
   alignOffset = 0,
-  tooltipTransition = { type: 'spring', stiffness: 300, damping: 35 },
   style,
   ...props
 }: AvatarGroupProps) {
+  const tooltipContextValue = {
+    side,
+    sideOffset,
+    align,
+    alignOffset,
+  };
+
   return (
     <TooltipProvider
-      id={id}
-      openDelay={openDelay}
-      closeDelay={closeDelay}
-      transition={tooltipTransition}
+      delayDuration={delayDuration}
     >
-      <div
-        ref={ref}
-        data-slot="avatar-group"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          ...style,
-        }}
-        {...props}
-      >
-        {children?.map((child, index) => (
-          <AvatarContainer
-            key={index}
-            zIndex={
-              invertOverlap ? React.Children.count(children) - index : index
-            }
-            transition={transition}
-            translate={translate}
-            side={side}
-            sideOffset={sideOffset}
-            align={align}
-            alignOffset={alignOffset}
-          >
-            {child}
-          </AvatarContainer>
-        ))}
-      </div>
+      <AvatarGroupTooltipContext.Provider value={tooltipContextValue}>
+        <div
+          ref={ref}
+          id={id}
+          data-slot="avatar-group"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            ...style,
+          }}
+          {...props}
+        >
+          {children?.map((child, index) => (
+            <AvatarContainer
+              key={index}
+              zIndex={
+                invertOverlap ? React.Children.count(children) - index : index
+              }
+              transition={transition}
+              translate={translate}
+            >
+              {child}
+            </AvatarContainer>
+          ))}
+        </div>
+      </AvatarGroupTooltipContext.Provider>
     </TooltipProvider>
   );
 }
@@ -125,20 +127,14 @@ function AvatarGroup({
 type AvatarGroupTooltipProps = TooltipContentProps;
 
 function AvatarGroupTooltip(props: AvatarGroupTooltipProps) {
-  return <TooltipContent {...props} />;
-}
+  const tooltipContextValue = React.useContext(AvatarGroupTooltipContext);
 
-type AvatarGroupTooltipArrowProps = TooltipArrowProps;
-
-function AvatarGroupTooltipArrow(props: AvatarGroupTooltipArrowProps) {
-  return <TooltipArrow {...props} />;
+  return <TooltipContent {...tooltipContextValue} {...props} />;
 }
 
 export {
   AvatarGroup,
   AvatarGroupTooltip,
-  AvatarGroupTooltipArrow,
   type AvatarGroupProps,
   type AvatarGroupTooltipProps,
-  type AvatarGroupTooltipArrowProps,
 };

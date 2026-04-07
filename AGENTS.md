@@ -32,3 +32,4 @@ The repo currently contains `package-lock.json`. Prefer `npm` unless the branch 
 - `.agent-docs/architecture.md`: folder responsibilities, runtime behavior, and current mixed data sources
 - `.agent-docs/env.md`: frontend environment variables and gotchas
 - `.agent-docs/workflow.md`: coding conventions, verification, and testing notes
+- `.impeccable.md`: Design system

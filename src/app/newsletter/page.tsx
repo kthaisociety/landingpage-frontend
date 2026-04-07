@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 }
 
 export default function NewsletterPage() {
-  return <NewsletterForm />
+  return <NewsletterForm variant="page" />
 }
