@@ -129,3 +129,4 @@ This project adheres to [Conventional Commits](https://www.conventionalcommits.o
 This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more information.
 
 This does **not** apply to logos, icons, and images used in this project. They are the property of KTH AI Society and are not licensed for public, commercial, or personal use. If you wish to use them, please contact us at [contact@kthais.com](mailto:contact@kthais.com).
+ 
