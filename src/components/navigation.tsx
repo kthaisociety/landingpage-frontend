@@ -15,15 +15,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TextMorph } from "@/components/ui/text-morph";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/auth";
+import { useAuth } from "@/components/providers/auth-provider/authProvider";
 
 export function Navigation() {
-  const { user, isLoggedIn, logoutUser: logout } = useAuth();
+  // const { user, isLoggedIn, logoutUser: logout } = useAuth();
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
   useEffect(function () {
     function handleScroll() {
       const newLocal = window.scrollY > 50;
@@ -128,7 +130,7 @@ export function Navigation() {
   }
 
   function renderAuthDropdown() {
-    if (!isLoggedIn || !user) {
+    if (!isAuthenticated || !user) {
       return (
         <Link
           href="mailto:contact@kthais.com"
@@ -138,6 +140,7 @@ export function Navigation() {
         </Link>
       );
     }
+    
 
     return (
       <div className="relative" ref={profileRef}>
@@ -146,7 +149,7 @@ export function Navigation() {
           onClick={handleProfileDropdownToggle}
           className="flex items-center gap-2 text-md font-medium text-foreground/80 hover:text-foreground transition-colors focus:outline-none"
         >
-          {user.name}
+          {user.firstName}
           <ChevronDown
             className={`h-4 w-4 transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`}
           />
@@ -163,7 +166,9 @@ export function Navigation() {
             >
               <div className="px-4 py-2 border-b border-gray-100">
                 <p className="text-xs text-muted-foreground">Signed in as</p>
-                <p className="text-sm font-semibold truncate">{user.name}</p>
+                <p className="text-sm font-semibold truncate">
+                  {user.firstName}
+                </p>
               </div>
               <button
                 type="button"
@@ -172,7 +177,7 @@ export function Navigation() {
               >
                 <LayoutDashboard className="h-4 w-4" /> Dashboard
               </button>
-              {user.role === "admin" && (
+              {user?.roles?.includes("admin") && (
                 <button
                   type="button"
                   onClick={handleAdminDashboardClick}
@@ -199,7 +204,7 @@ export function Navigation() {
     return (
       <div className="items-center gap-6 hidden md:flex">
         <Link
-          href="/"
+          href="/about"
           className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
         >
           About
@@ -286,7 +291,7 @@ export function Navigation() {
                 Newsletter
               </Link>
 
-              {!isLoggedIn && (
+              {!isAuthenticated && (
                 <Link
                   href="mailto:contact@kthais.com"
                   className="block py-3 text-base text-foreground/70 hover:text-foreground"
@@ -296,7 +301,7 @@ export function Navigation() {
                 </Link>
               )}
 
-              {isLoggedIn && user && (
+              {isAuthenticated && user && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <div className="px-2 mb-2">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">
@@ -308,10 +313,10 @@ export function Navigation() {
                     className="w-full justify-start pl-0 text-base font-medium hover:bg-transparent"
                     onClick={handleProfileClick}
                   >
-                    <LayoutDashboard className="mr-2 h-4 w-4" /> {user.name}{" "}
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> {user.firstName}{" "}
                     (Dashboard)
                   </Button>
-                  {user.role === "admin" && (
+                  {user?.roles?.includes("admin") && (
                     <Button
                       variant="ghost"
                       className="w-full justify-start pl-0 text-base font-medium hover:bg-transparent"
@@ -334,6 +339,10 @@ export function Navigation() {
         )}
       </AnimatePresence>
     );
+  }
+
+  if(isLoading){
+    return(<div>Loading...</div>)
   }
 
   return (

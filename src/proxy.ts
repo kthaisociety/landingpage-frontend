@@ -1,15 +1,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { jwtVerify, importSPKI } from "jose";
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET||"test-secret-key");
+const getJwtPublicKey = (): string => {
+  const publicKey = process.env.JWT_PUBLIC_KEY;
+
+  if (!publicKey) {
+    throw new Error("Missing JWT_PUBLIC_KEY environment variable");
+  }
+
+  return publicKey.replace(/\\n/g, "\n");
+};
+
 
 export async function proxy(req: NextRequest) {
   const url = req.nextUrl.clone();
-  const token = req.cookies.get("auth_token")?.value;
   const { pathname } = url;
+  const token = req.cookies.get("jwt")?.value;
 
-  // Handle COOP/COEP headers
   if (pathname.startsWith("/member/login")) {
     const res = NextResponse.next();
     res.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
@@ -18,7 +26,7 @@ export async function proxy(req: NextRequest) {
   }
 
   const isDashboard = pathname.startsWith("/member/dashboard");
-  const isAdmin = pathname.startsWith("/member/admin")
+  const isAdmin = pathname.startsWith("/member/admin");
 
   if (!isDashboard && !isAdmin) {
     return NextResponse.next();
@@ -30,36 +38,43 @@ export async function proxy(req: NextRequest) {
   }
 
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    const role = payload.role as string | undefined;
+    const publicKeyString = getJwtPublicKey();
 
-    if (isAdmin) {
-      if (role !== "admin") {
-        url.pathname = "/"; 
-        return NextResponse.redirect(url);
-      }
-      return NextResponse.next();
+    const publicKey = await importSPKI(publicKeyString, "RS256");
+
+    const { payload } = await jwtVerify(token, publicKey);
+
+    const roles = (payload.roles as string[]) || [];
+
+    if (isAdmin && !roles.includes("admin")) {
+      url.pathname = "/"; // Send non-admins away
+      return NextResponse.redirect(url);
     }
 
-    if (isDashboard) {
-      if (!["admin", "member"].includes(role ?? "")) {
-        url.pathname = "/";
-        return NextResponse.redirect(url);
-      }
-      return NextResponse.next();
+
+    if (isDashboard && !roles.includes("user") && !roles.includes("admin")) {
+      url.pathname = "/";
+      return NextResponse.redirect(url);
     }
-    
+
     return NextResponse.next();
-
   } catch (error) {
-    console.error("Proxy Auth Error:", error);
+    console.error("Middleware Auth Error:", error);
+
     url.pathname = "/member/login";
     const response = NextResponse.redirect(url);
-    response.cookies.delete("auth_token");
+
+    response.cookies.delete("jwt");
+    response.cookies.delete("roles");
+
     return response;
   }
 }
 
 export const config = {
-  matcher: ["/member/login/:path*", "/member/dashboard/:path*", "/member/admin/:path*"],
+  matcher: [
+    "/member/login/:path*",
+    "/member/dashboard/:path*",
+    "/member/admin/:path*",
+  ],
 };

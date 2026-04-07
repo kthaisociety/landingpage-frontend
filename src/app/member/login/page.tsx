@@ -1,47 +1,81 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
-import { GoogleLoginButton } from "@/components/google-auth/google-signin-button";
-import { useAuth } from "@/hooks/auth";
+import { useAuth } from "@/components/providers/auth-provider/authProvider";
 
-function MemberLogin() {
-  const [loginTextMask, setLoginTextMask] = useState<string | undefined>();
+function GoogleLoginButton() {
+  const login = async () => {
+    try {
+      const response = await fetch("/api/auth/google");
+      const data = await response.json();
 
-  const router = useRouter();
-  const { isLoggedIn } = useAuth();
-
-  useEffect(
-    function () {
-      const canvas = document.createElement("canvas");
-      canvas.width = 1200;
-      canvas.height = 400;
-      const ctx = canvas.getContext("2d");
-
-      if (!ctx) return;
-      if (isLoggedIn) {
-        router.push("/");
+      if (data.url) {
+        window.location.href = data.url;
       }
+    } catch (error) {
+      console.error("Failed to fetch login URL:", error);
+    }
+  };
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "white";
-      ctx.font = "bold 200px system-ui, -apple-system, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      const text = "Login";
-      ctx.fillText(text, canvas.width / 2, 0);
-      const dataUrl = canvas.toDataURL("image/png");
-      requestAnimationFrame(function () {
-        return setLoginTextMask(dataUrl);
-      });
-    },
-    [isLoggedIn, router],
+  return (
+    <button
+      type="button"
+      onClick={login}
+      className="
+        inline-flex items-center justify-center
+        rounded-xl px-6 py-3
+        text-base font-semibold
+        bg-primary text-white
+        transition-all duration-300 ease-out
+        hover:bg-primary/90
+        hover:shadow-lg hover:-translate-y-0.5
+      "
+    >
+      Member Login
+    </button>
   );
+}
+
+export default function MemberLogin() {
+  const [loginTextMask, setLoginTextMask] = useState<string | undefined>();
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/");
+      return;
+    }
+
+    // Generate Canvas Mask for AsciiGrid
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 400;
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "white";
+    ctx.font = "bold 200px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    const text = "Login";
+    ctx.fillText(text, canvas.width / 2, 0);
+
+    const dataUrl = canvas.toDataURL("image/png");
+
+    requestAnimationFrame(() => {
+      setLoginTextMask(dataUrl);
+    });
+  }, [isAuthenticated, router]);
 
   return (
     <div className="min-w-screen">
-      <section className="relative bg-white text-secondary-black pt-64 pb-24  overflow-hidden">
+      <section className="relative bg-white text-secondary-black pt-64 pb-24 overflow-hidden">
         {/* Ascii Grid Background */}
         <div className="absolute inset-0 ">
           <AsciiGrid
@@ -55,6 +89,7 @@ function MemberLogin() {
           />
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white via-white/50 to-transparent pointer-events-none" />
         </div>
+
         <div className="container max-w-7xl relative z-10 mx-auto px-4 md:px-6 pb-8">
           {/* Main Title */}
           <h4 className="text-3xl mb-2 tracking-tighter">
@@ -67,6 +102,7 @@ function MemberLogin() {
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter">
             Login
           </h1>
+
           <p className="text-lg md:text-xl mb-8 max-w-2xl opacity-95 leading-relaxed font-serif">
             Access to this platform is restricted to members of the{" "}
             <span className="font-semibold">KTH AI Society</span>. If you are
@@ -76,21 +112,23 @@ function MemberLogin() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
+            {/* Embedded Google Login Button */}
             <GoogleLoginButton />
+
             <a
               href="https://kthaisociety.se/apply"
               target="_blank"
               rel="noopener noreferrer"
               className="
-        inline-flex items-center justify-center
-        rounded-xl px-6 py-3
-        text-base font-semibold
-        border border-primary/30
-        text-primary
-        transition-all duration-300 ease-out
-        hover:bg-primary/5
-        hover:shadow-md hover:-translate-y-0.5
-      "
+                inline-flex items-center justify-center
+                rounded-xl px-6 py-3
+                text-base font-semibold
+                border border-primary/30
+                text-primary
+                transition-all duration-300 ease-out
+                hover:bg-primary/5
+                hover:shadow-md hover:-translate-y-0.5
+              "
             >
               Apply for Membership
             </a>
@@ -100,5 +138,3 @@ function MemberLogin() {
     </div>
   );
 }
-
-export default MemberLogin;
