@@ -19,35 +19,34 @@ import { useAuth } from "@/components/providers/auth-provider/authProvider";
 
 export function Navigation() {
   // const { user, isLoggedIn, logoutUser: logout } = useAuth();
-  const { isAuthenticated, isLoading } = useAuth();
-
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const logout = async () =>{
-    const data = await fetch("/api/auth/logout",{
-      method: "GET",
-      credentials: "include",
-    });
-    data.json().then((res)=>{
-      if(res.success){
-        console.log("Logout successful");
-        router.push("/")
-      } else {
-        console.error("Logout failed");
-      }
-    })
-    console.log("Logging out...");
-  }
+//  const logout = async () => {
+//    console.log("Logging out...");
 
-  const user = {
-    name: "Daniel Ekblom",
-    role: "admin",
-  
-  }
+//    try {
+//      const response = await fetch("/api/auth/logout", {
+//        method: "GET",
+//        credentials: "include",
+//      });
+//      if (response.ok) {
+//        console.log("Logout successful");
+//        router.push("/");
+//      } else {
+//        console.error(
+//          `Logout failed. Server responded with status: ${response.status}`,
+//        );
+//      }
+//    } catch (error) {
+//      console.error("Failed to reach the logout endpoint:", error);
+//    }
+//  };
+
 
   useEffect(function () {
     function handleScroll() {
@@ -163,6 +162,7 @@ export function Navigation() {
         </Link>
       );
     }
+    
 
     return (
       <div className="relative" ref={profileRef}>
@@ -171,7 +171,7 @@ export function Navigation() {
           onClick={handleProfileDropdownToggle}
           className="flex items-center gap-2 text-md font-medium text-foreground/80 hover:text-foreground transition-colors focus:outline-none"
         >
-          {user.name}
+          {user.firstName}
           <ChevronDown
             className={`h-4 w-4 transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`}
           />
@@ -188,7 +188,9 @@ export function Navigation() {
             >
               <div className="px-4 py-2 border-b border-gray-100">
                 <p className="text-xs text-muted-foreground">Signed in as</p>
-                <p className="text-sm font-semibold truncate">{user.name}</p>
+                <p className="text-sm font-semibold truncate">
+                  {user.firstName}
+                </p>
               </div>
               <button
                 type="button"
@@ -197,7 +199,7 @@ export function Navigation() {
               >
                 <LayoutDashboard className="h-4 w-4" /> Dashboard
               </button>
-              {user.role === "admin" && (
+              {user?.roles?.includes("admin") && (
                 <button
                   type="button"
                   onClick={handleAdminDashboardClick}
@@ -333,10 +335,10 @@ export function Navigation() {
                     className="w-full justify-start pl-0 text-base font-medium hover:bg-transparent"
                     onClick={handleProfileClick}
                   >
-                    <LayoutDashboard className="mr-2 h-4 w-4" /> {user.name}{" "}
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> {user.firstName}{" "}
                     (Dashboard)
                   </Button>
-                  {user.role === "admin" && (
+                  {user?.roles?.includes("admin") && (
                     <Button
                       variant="ghost"
                       className="w-full justify-start pl-0 text-base font-medium hover:bg-transparent"
