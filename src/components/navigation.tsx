@@ -260,7 +260,7 @@ export function Navigation() {
           >
             <div className="max-w-7xl mx-auto px-6 pt-18 pb-6 flex flex-col gap-1">
               <Link
-                href="/"
+                href="/about"
                 className="block py-3 text-base text-foreground/70 hover:text-foreground"
                 onClick={handleMobileLinkClick}
               >

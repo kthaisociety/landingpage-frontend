@@ -44,6 +44,17 @@ const FOOTER_SECTIONS: FooterSection[] = [
 export function Footer() {
   return (
     <footer className="relative w-full overflow-hidden font-mono bg-primary text-white">
+      <div className="absolute left-1/2 -bottom-20 md:top-20 -translate-x-1/2 max-h-[1500px] w-full md:w-auto aspect-square rounded-lg overflow-hidden opacity-30 bg-muted pointer-events-none -z-1 motion-reduce:hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover scale-160 brightness-101 saturate-0 "
+        >
+          <source src="/videos/kth-spin.mp4" type="video/mp4" />
+        </video>
+      </div>
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {FOOTER_SECTIONS.map((section) => (
@@ -68,22 +79,7 @@ export function Footer() {
               </nav>
             </div>
           ))}
-         </div>
-
-          <div className="space-y-4">
-            
-            <div className="absolute left-1/2 -bottom-20 md:top-20 -translate-x-1/2 max-h-[1500px] w-full md:w-auto aspect-square rounded-lg overflow-hidden opacity-30 bg-muted pointer-events-none -z-1 motion-reduce:hidden">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover scale-160 brightness-101 saturate-0 "
-              >
-                <source src="/videos/kth-spin.mp4" type="video/mp4" />
-              </video>
-            </div>
-          </div>
+        </div>
 
         {/* Bottom Bar */}
         <div className="mt-16 pt-8">
@@ -96,8 +92,7 @@ export function Footer() {
             </p>
           </div>
         </div>
-        </div>
+      </div>
     </footer>
   );
 }
-

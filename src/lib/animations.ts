@@ -23,7 +23,7 @@ export function useAnimationReady() {
     return () => cancelAnimationFrame(id)
   }, [])
   return mounted
-h}
+}
 
 // ---------------------------------------------------------------------------
 // Shared entrance variants (used by the Hero stagger cascade)
