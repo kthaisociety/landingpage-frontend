@@ -43,12 +43,12 @@ const FOOTER_SECTIONS: FooterSection[] = [
 
 export function Footer() {
   return (
-    <footer className="relative w-full overflow-hidden font-mono">
+    <footer className="relative w-full overflow-hidden font-mono bg-primary text-white">
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {FOOTER_SECTIONS.map((section) => (
             <div key={section.title} className="space-y-4">
-              <h3 className="text-sm font-semibold text-foreground/60 uppercase tracking-wider">
+              <h3 className="text-sm font-semibold text-white/90 uppercase tracking-wider">
                 {section.title}
               </h3>
               <nav className="flex flex-col gap-3 text-sm">
@@ -56,7 +56,7 @@ export function Footer() {
                   <Link
                     key={link.label}
                     href={link.href}
-                    className="text-foreground/80 hover:text-foreground transition-colors"
+                    className="text-white hover:text-white/80 transition-colors"
                     {...(link.external && {
                       target: "_blank",
                       rel: "noopener noreferrer",
@@ -72,7 +72,7 @@ export function Footer() {
 
           <div className="space-y-4">
             
-            <div className="absolute left-1/2 -bottom-20 md:top-20 -translate-x-1/2 max-h-[1500px] w-full md:w-auto aspect-square rounded-lg overflow-hidden opacity-30 bg-muted pointer-events-none -z-1 ">
+            <div className="absolute left-1/2 -bottom-20 md:top-20 -translate-x-1/2 max-h-[1500px] w-full md:w-auto aspect-square rounded-lg overflow-hidden opacity-30 bg-muted pointer-events-none -z-1 motion-reduce:hidden">
               <video
                 autoPlay
                 loop
@@ -88,10 +88,10 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-16 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-white/90">
               © {new Date().getFullYear()} KTH AI Society. All rights reserved.
             </p>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-white/90">
               Building the future of AI at KTH
             </p>
           </div>

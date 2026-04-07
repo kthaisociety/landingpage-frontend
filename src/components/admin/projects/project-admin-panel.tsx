@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useProjectPosts, type ProjectInput } from "@/hooks/projects";
 
@@ -321,7 +321,7 @@ export function ProjectAdminPanel() {
 
               <div className="space-y-2">
                 <Label htmlFor="project-status">Status</Label>
-                <Select
+                <NativeSelect
                   id="project-status"
                   value={form.status}
                   onChange={handleChange("status")}
@@ -331,7 +331,7 @@ export function ProjectAdminPanel() {
                       {status}
                     </option>
                   ))}
-                </Select>
+                </NativeSelect>
               </div>
 
               <div className="space-y-2">

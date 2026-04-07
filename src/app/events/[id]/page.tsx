@@ -3,9 +3,12 @@
 import { useState, useEffect, useMemo, useTransition } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { Calendar, ExternalLink, ArrowLeft, User } from "lucide-react"
+import { CalendarIcon, ArrowSquareOutIcon, ArrowLeftIcon, UserIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { AsciiGrid } from "@/components/ui/ascii-grid"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty"
 import { useEvent } from "@/hooks/events"
 import { EventDetailSkeleton } from "@/components/events/event-detail-skeleton"
 
@@ -18,14 +21,11 @@ export default function EventDetailPage() {
   const [eventTextMask, setEventTextMask] = useState<string | undefined>(undefined)
   const { data: event, isLoading: loading, error: queryError } = useEvent(eventId)
 
-  // Optimize text mask generation - use requestIdleCallback for non-critical operations
   useEffect(() => {
-    // Only generate mask when event name exists
     if (!event?.name) {
       return
     }
 
-    // Use requestIdleCallback to defer non-critical canvas operations
     const generateTextMask = () => {
       const canvas = document.createElement("canvas")
       canvas.width = 1200
@@ -48,12 +48,10 @@ export default function EventDetailPage() {
       })
     }
 
-    // Use requestIdleCallback if available, otherwise use requestAnimationFrame
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
       const callbackId = requestIdleCallback(generateTextMask, { timeout: 2000 })
       return () => cancelIdleCallback(callbackId)
     } else {
-      // Fallback: use requestAnimationFrame for better performance than immediate execution
       const frameId = requestAnimationFrame(generateTextMask)
       return () => cancelAnimationFrame(frameId)
     }
@@ -61,7 +59,6 @@ export default function EventDetailPage() {
 
   const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null
 
-  // Memoize date formatters to avoid recreating on every render
   const dateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat("en-US", {
@@ -83,8 +80,6 @@ export default function EventDetailPage() {
     []
   )
 
-  // Memoize computed dates to avoid recalculating on every render
-  // Must be called before any early returns to maintain hook order
   const { startDate, endDate, isPast, formattedStartDate, formattedEndTime, hostName } = useMemo(() => {
     if (!event) {
       return {
@@ -117,22 +112,34 @@ export default function EventDetailPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-lg text-red-500">Error: {error}</p>
-        <Button asChild variant="outline">
-          <Link href="/events">Back to Events</Link>
-        </Button>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle className="text-destructive">Error: {error}</EmptyTitle>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button asChild variant="outline">
+              <Link href="/events">Back to Events</Link>
+            </Button>
+          </EmptyContent>
+        </Empty>
       </div>
     )
   }
 
   if (!event && !loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-lg text-secondary-gray">Event not found</p>
-        <Button asChild variant="outline">
-          <Link href="/events">Back to Events</Link>
-        </Button>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <Empty>
+          <EmptyHeader>
+            <EmptyTitle>Event not found</EmptyTitle>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button asChild variant="outline">
+              <Link href="/events">Back to Events</Link>
+            </Button>
+          </EmptyContent>
+        </Empty>
       </div>
     )
   }
@@ -142,13 +149,13 @@ export default function EventDetailPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Dark Blue Header Section */}
-      <section className="relative bg-white text-secondary-black pt-64 pb-24 overflow-hidden">
+    <div className="min-h-screen bg-background">
+      {/* Header Section */}
+      <section className="relative bg-background text-foreground pt-64 pb-24 overflow-hidden">
         {/* Ascii Grid Background */}
         <div className="absolute inset-0 pointer-events-none">
           <AsciiGrid 
-            color="rgba(0, 0, 0, 0.2)" 
+            color="var(--color-primary)" 
             cellSize={12} 
             logoSrc={eventTextMask}
             logoPosition="center"
@@ -156,7 +163,7 @@ export default function EventDetailPage() {
             enableDripping={false}
             className="w-full h-full"
           />
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white via-white/50 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-muted via-background/50 to-transparent pointer-events-none" />
         </div>
         <div className="container max-w-7xl relative z-10 mx-auto px-4 md:px-6 pb-8">
           {/* Back Button */}
@@ -165,16 +172,16 @@ export default function EventDetailPage() {
             onClick={() => router.back()}
             className="mb-6 -ml-4"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeftIcon className="size-4 mr-2" />
             Back
           </Button>
 
           {/* Status Badge */}
           {isPast && (
             <div className="mb-4">
-              <span className="px-3 py-1 text-xs font-medium rounded-full bg-primary backdrop-blur-sm text-white font-mono capitalize">
+              <Badge variant="default" className="font-mono capitalize">
                 Past Event
-              </span>
+              </Badge>
             </div>
           )}
 
@@ -186,8 +193,8 @@ export default function EventDetailPage() {
           {/* Event Details */}
           <div className="flex flex-col gap-4 mb-8">
             {startDate && formattedStartDate && (
-              <div className="flex items-center gap-2 md:text-md text-sm text-black/90 font-mono">
-                <Calendar className="h-5 w-5" />
+              <div className="flex items-center gap-2 md:text-md text-sm text-foreground/90 font-mono">
+                <CalendarIcon className="size-5" />
                 <span>{formattedStartDate}</span>
                 {formattedEndTime && (
                   <span>
@@ -203,8 +210,8 @@ export default function EventDetailPage() {
             )}
 
             {hostName && (
-              <div className="flex items-center gap-2 md:text-md text-sm text-black/90 font-mono">
-                <User className="h-5 w-5" />
+              <div className="flex items-center gap-2 md:text-md text-sm text-foreground/90 font-mono">
+                <UserIcon className="size-5" />
                 <span>Hosted by {hostName}</span>
               </div>
             )}
@@ -212,39 +219,41 @@ export default function EventDetailPage() {
         </div>
       </section>
 
-      {/* White Content Area */}
+      {/* Content Area */}
       <div className="px-4 sm:px-6 md:px-8 lg:px-8 xl:px-8">
-        <section className="relative max-w-7xl mx-auto z-20 -mt-24 bg-neutral-50 rounded-3xl p-4 md:p-8 mb-24 shadow-lg border">
+        <section className="relative max-w-7xl mx-auto z-20 -mt-24 bg-card text-card-foreground rounded-none p-4 md:p-8 mb-24 shadow-lg ring-1 ring-foreground/10">
           <div className="container mx-auto">
           {/* Breadcrumbs */}
-          <div className="mb-8 flex items-center">
-            <Link href="/" className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium">
-              Home
-            </Link>
-            <span className="text-gray-300 mx-2">/</span>
-            <Link href="/events" className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium">
-              Events
-            </Link>
-            <span className="text-gray-300 mx-2">/</span>
-            <span className="text-primary font-medium text-sm truncate max-w-md inline-block">
-              {event.name}
-            </span>
+          <div className="mb-8">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/events">Events</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="truncate max-w-md">{event.name}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
-
-        
 
           {/* Event Description */}
           {(event.description || event.description_html) && (
             <div className="mb-8">
-              <h2 className="text-xl font-base mb-4 text-secondary-black">About Event</h2>
+              <h2 className="text-xl font-base mb-4 text-foreground">About Event</h2>
                           {event.description_html ? (
                 <div 
-                  className="prose prose-lg max-w-none text-secondary-black leading-relaxed"
+                  className="prose prose-lg max-w-none text-foreground leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: event.description_html }}
                 />
               ) : (
                 <div 
-                  className="prose prose-lg max-w-none text-secondary-black leading-relaxed whitespace-pre-wrap"
+                  className="prose prose-lg max-w-none text-foreground leading-relaxed whitespace-pre-wrap"
                   dangerouslySetInnerHTML={{ 
                     __html: (event.description || "").replace(/\n/g, "<br />") 
                   }}
@@ -256,8 +265,8 @@ export default function EventDetailPage() {
           {/* Show message if no description */}
           {!event.description && !event.description_html && (
             <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4 text-secondary-black">About</h2>
-              <p className="text-secondary-black">No description available for this event.</p>
+              <h2 className="text-2xl font-bold mb-4 text-foreground">About</h2>
+              <p className="text-muted-foreground">No description available for this event.</p>
             </div>
           )}
 
@@ -267,7 +276,7 @@ export default function EventDetailPage() {
               <Button variant="default" asChild>
                 <Link href={event.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                   View on Luma
-                  <ExternalLink className="h-4 w-4" />
+                  <ArrowSquareOutIcon className="size-4" />
                 </Link>
               </Button>
             )}

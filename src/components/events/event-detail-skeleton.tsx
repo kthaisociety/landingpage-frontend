@@ -3,13 +3,13 @@ import { AsciiGrid } from "@/components/ui/ascii-grid"
 
 export function EventDetailSkeleton() {
   return (
-    <div className="min-h-screen">
-      {/* Dark Blue Header Section */}
-      <section className="relative bg-white text-secondary-black pt-64 pb-24 overflow-hidden">
+    <div className="min-h-screen bg-background">
+      {/* Header Section */}
+      <section className="relative bg-background text-foreground pt-64 pb-24 overflow-hidden">
         {/* Ascii Grid Background */}
         <div className="absolute inset-0 pointer-events-none">
           <AsciiGrid 
-            color="rgba(0, 0, 0, 0.2)" 
+            color="var(--color-primary)" 
             cellSize={12} 
             enableDripping={false}
             className="w-full h-full"
@@ -39,8 +39,8 @@ export function EventDetailSkeleton() {
         </div>
       </section>
 
-      {/* White Content Area */}
-      <section className="relative max-w-7xl mx-4 sm:mx-auto z-20 -mt-24 bg-neutral-50 rounded-3xl p-4 md:p-8 mb-24 shadow-lg border">
+      {/* Content Area */}
+      <section className="relative max-w-7xl mx-4 sm:mx-auto z-20 -mt-24 bg-card text-card-foreground rounded-none p-4 md:p-8 mb-24 shadow-lg ring-1 ring-foreground/10">
         <div className="container mx-auto">
           {/* Breadcrumbs Skeleton */}
           <div className="mb-8 flex items-center gap-2">
@@ -73,8 +73,3 @@ export function EventDetailSkeleton() {
     </div>
   )
 }
-
-
-
-
-

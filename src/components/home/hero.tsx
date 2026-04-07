@@ -1,171 +1,120 @@
 "use client"
 
-import { useSyncExternalStore } from "react"
 import Link from "next/link"
-import { motion, useReducedMotion } from "framer-motion"
+import { motion } from "framer-motion"
 import { AsciiGrid } from "@/components/ui/ascii-grid"
 import { Button } from "@/components/ui/button"
-
-const easeOutQuart = [0.25, 1, 0.5, 1] as const
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.16,
-    },
-  },
-}
-
-const titleVariants = {
-  hidden: {
-    opacity: 0,
-    scale: 0.985,
-    filter: "blur(12px)",
-    y: 24,
-  },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    filter: "blur(0px)",
-    y: 0,
-    transition: { duration: 0.85, ease: easeOutQuart },
-  },
-}
-
-const descriptionVariants = {
-  hidden: {
-    opacity: 0,
-    filter: "blur(10px)",
-    y: 20,
-  },
-  visible: {
-    opacity: 1,
-    filter: "blur(0px)",
-    y: 0,
-    transition: { duration: 0.7, ease: easeOutQuart },
-  },
-}
-
-const accentVariants = {
-  hidden: {
-    opacity: 0,
-    scaleX: 0.7,
-  },
-  visible: {
-    opacity: 1,
-    scaleX: 1,
-    transition: { duration: 0.7, ease: easeOutQuart, delay: 0.08 },
-  },
-}
-
-const buttonGroupVariants = {
-  hidden: {
-    opacity: 0,
-    filter: "blur(10px)",
-    y: 24,
-  },
-  visible: {
-    opacity: 1,
-    filter: "blur(0px)",
-    y: 0,
-    transition: { duration: 0.7, ease: easeOutQuart, delay: 0.18 },
-  },
-}
-
-function subscribeToHydration() {
-  return () => {}
-}
+import { Separator } from "@/components/ui/separator"
+import {
+  easeOutQuart,
+  useAnimationReady,
+  containerVariants,
+  titleVariants,
+  descriptionVariants,
+  accentVariants,
+  buttonGroupVariants,
+} from "@/lib/animations"
 
 export function Hero() {
-  const isHydrated = useSyncExternalStore(
-    subscribeToHydration,
-    () => true,
-    () => false
-  )
-  const prefersReducedMotion = useReducedMotion()
-  const enableInteractionMotion = isHydrated && !prefersReducedMotion
+  const ready = useAnimationReady()
+  const enableInteractionMotion = ready
 
   return (
-    <section className="relative min-h-screen pb-12 w-full flex items-end justify-center">
-      {/* Background Grid */}
-      <div className="absolute inset-0 z-0 h-[70vh]">
-        <AsciiGrid 
-          className="w-full h-full opacity-100" 
-          color="#1954A6" 
-          cellSize={10} 
+    <section className="relative min-h-screen pb-12 lg:pb-0 w-full flex items-end lg:items-center">
+      {/* Full-screen ASCII background — logo centred in the right half on desktop, centred on mobile */}
+      <div className="absolute inset-0 z-0">
+        {/* Mobile: logo centred in top 70vh */}
+        <div className="lg:hidden absolute inset-x-0 top-0 h-[70vh]">
+          <AsciiGrid
+            className="w-full h-full opacity-100"
+            color="var(--color-primary)"
+            cellSize={10}
+            logoSrc="/kthais-logo.svg"
+            logoPosition="center"
+            logoScale={0.6}
+          />
+        </div>
+        {/* Desktop: logo centred in full section height, positioned on right half */}
+        <AsciiGrid
+          className="hidden lg:block w-full h-full opacity-100"
+          color="var(--color-primary)"
+          cellSize={10}
           logoSrc="/kthais-logo.svg"
+          logoPosition="right"
+          logoScale={0.7}
         />
-        {/* White gradient overlay at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white via-white/50 to-transparent pointer-events-none" />
-        {/* Radial gradient overlay around edges */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_40%,white_100%)] pointer-events-none" />
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-linear-to-t from-background via-background/60 to-transparent pointer-events-none" />
+        {/* Radial vignette — stronger on the left on desktop so text is legible */}
+        <div className="absolute inset-0 lg:bg-[radial-gradient(ellipse_at_left_center,var(--color-background)_0%,transparent_50%)] pointer-events-none" />
+        {/* Edge vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_40%,var(--color-background)_100%)] pointer-events-none" />
       </div>
 
-      {/* Content */}
-      <div className="container relative z-20 px-4 md:px-6 text-center flex flex-col items-center justify-end h-full pt-20">
+      {/* Content — left-aligned on desktop, centred on mobile */}
+      <div className="container mx-auto max-w-7xl px-4 relative z-20 w-full">
         <motion.div
-          className="space-y-6"
+          className="space-y-6 text-center lg:text-left lg:max-w-lg"
           variants={containerVariants}
           initial="hidden"
-          animate={isHydrated ? "visible" : "hidden"}
+          animate={ready ? "visible" : "hidden"}
         >
           <motion.h1
-            className="mx-auto max-w-3xl text-4xl leading-none tracking-tight text-black sm:text-6xl md:text-7xl"
+            className="mx-auto lg:mx-0 max-w-3xl text-3xl leading-none tracking-tight text-foreground sm:text-4xl md:text-5xl"
             variants={titleVariants}
           >
-            KTH <span className="font-serif text-[#1954A6]">AI Society</span>
+            Sweden&apos;s Leading Student AI Community
           </motion.h1>
 
           <motion.p
-            className="mx-auto max-w-2xl text-base leading-7 text-black/72 sm:text-xl sm:leading-8"
+            className="mx-auto lg:mx-0 text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7"
             variants={descriptionVariants}
           >
-            Cultivating the next generation of AI leaders.
+            A community for students exploring, building, and shaping the future of artificial intelligence through research, collaboration, and continuous learning.
           </motion.p>
 
           <motion.div
             aria-hidden="true"
-            className="mx-auto h-px w-24 origin-center bg-[linear-gradient(90deg,transparent,rgba(25,84,166,0.75),transparent)]"
+            className="mx-auto lg:mx-0 w-24 origin-center lg:origin-left"
             variants={accentVariants}
-          />
+          >
+            <Separator className="bg-primary/75" />
+          </motion.div>
 
           <motion.div
-            className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4"
+            className="flex flex-col items-center lg:items-start gap-4 pt-4"
             variants={buttonGroupVariants}
           >
-            <motion.div
-              whileHover={enableInteractionMotion ? { y: -2, scale: 1.015 } : undefined}
-              whileTap={enableInteractionMotion ? { y: 0, scale: 0.985 } : undefined}
-              transition={{ duration: 0.18, ease: easeOutQuart }}
-            >
-              <Button
-                size="lg"
-                asChild
+            {/* Primary CTAs */}
+            <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3">
+              <motion.div
+            
+                transition={{ duration: 0.18, ease: easeOutQuart }}
               >
-                <Link href="/events" className="flex items-center gap-1">
-                 Upcoming Events
-                </Link>
-              </Button>
-            </motion.div>
+                <Button size="lg" asChild>
+                  <Link href="/events" className="flex items-center gap-1">
+                    Upcoming Events
+                  </Link>
+                </Button>
+              </motion.div>
 
-            <motion.div
-              whileHover={enableInteractionMotion ? { y: -2, scale: 1.015 } : undefined}
-              whileTap={enableInteractionMotion ? { y: 0, scale: 0.985 } : undefined}
-              transition={{ duration: 0.18, ease: easeOutQuart }}
-            >
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
+              <motion.div
+             
+                transition={{ duration: 0.18, ease: easeOutQuart }}
               >
-                <Link href="mailto:business@kthais.com">
-                  For Sponsors
-                </Link>
-              </Button>
-            </motion.div>
+                <Button variant="outline" size="lg" asChild>
+                  <Link href="/newsletter">Join the Society</Link>
+                </Button>
+              </motion.div>
+            </div>
+
+            {/* Secondary sponsor link */}
+            <Link
+              href="mailto:business@kthais.com"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4 decoration-muted-foreground/40 hover:decoration-foreground/40"
+            >
+              Partnering with us as a sponsor?
+            </Link>
           </motion.div>
         </motion.div>
       </div>

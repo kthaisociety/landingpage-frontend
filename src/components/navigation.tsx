@@ -130,6 +130,10 @@ export function Navigation() {
   }
 
   function renderAuthDropdown() {
+    if (isLoading) {
+      return <div className="w-16 h-4 rounded bg-foreground/10 animate-pulse" />;
+    }
+
     if (!isAuthenticated || !user) {
       return (
         <Link
@@ -339,10 +343,6 @@ export function Navigation() {
         )}
       </AnimatePresence>
     );
-  }
-
-  if(isLoading){
-    return(<div>Loading...</div>)
   }
 
   return (

@@ -38,7 +38,7 @@ export default function MemberAdminPage() {
       <section className="relative text-secondary-black pt-54 pb-24 overflow-hidden">
         <div className="absolute inset-0">
           <AsciiGrid
-            color="rgba(0, 0, 0, 0.2)"
+            color="var(--color-primary)"
             cellSize={12}
             logoSrc={adminTextMask}
             logoPosition="center"
