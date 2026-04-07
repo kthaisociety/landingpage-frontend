@@ -26,28 +26,6 @@ export function Navigation() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-//  const logout = async () => {
-//    console.log("Logging out...");
-
-//    try {
-//      const response = await fetch("/api/auth/logout", {
-//        method: "GET",
-//        credentials: "include",
-//      });
-//      if (response.ok) {
-//        console.log("Logout successful");
-//        router.push("/");
-//      } else {
-//        console.error(
-//          `Logout failed. Server responded with status: ${response.status}`,
-//        );
-//      }
-//    } catch (error) {
-//      console.error("Failed to reach the logout endpoint:", error);
-//    }
-//  };
-
-
   useEffect(function () {
     function handleScroll() {
       const newLocal = window.scrollY > 50;
