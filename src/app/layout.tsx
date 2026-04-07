@@ -1,13 +1,15 @@
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer"
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {  ToastProvider } from '@/components/ui/toast';
+import { cn } from "@/lib/utils";
 
+const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={cn("font-mono", jetbrainsMono.variable)}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
