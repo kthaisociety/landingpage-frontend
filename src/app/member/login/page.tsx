@@ -79,7 +79,7 @@ export default function MemberLogin() {
         {/* Ascii Grid Background */}
         <div className="absolute inset-0 ">
           <AsciiGrid
-            color="rgba(0, 0, 0, 0.2)"
+            color="var(--color-primary)"
             cellSize={12}
             logoSrc={loginTextMask}
             logoPosition="center"

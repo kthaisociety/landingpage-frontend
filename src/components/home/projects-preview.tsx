@@ -1,144 +1,193 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import Image from "next/image"
+import { ArrowRightIcon, GithubLogoIcon, ArrowSquareOutIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
-import { ImageCard } from "@/components/ui/image-card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { FadeIn } from "@/components/ui/fade-in"
 import {
   AvatarGroup,
   AvatarGroupTooltip,
 } from "@/components/ui/avatar-group"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { projects } from "@/lib/data/projects"
 import type { Project } from "@/lib/data/projects"
+import { cn } from "@/lib/utils"
 
-function ProjectCard({ project }: { project: Project }) {
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+function ZigzagCard({
+  project,
+  index,
+}: {
+  project: Project
+  index: number
+}) {
+  const [imgSrc, setImgSrc] = useState(project.coverImage || "/project-placeholder.webp")
+  const [hasError, setHasError] = useState(false)
+  const isReversed = index % 2 === 1
+
+  const handleError = () => {
+    if (!hasError) {
+      setImgSrc("/project-placeholder.webp")
+      setHasError(true)
+    }
   }
 
-  // Determine gradient and text colors based on cover image theme
-  const isLightBackground = project.coverImageTheme === "light"
-  
-  const gradientColors = isLightBackground
-    ? {
-        from: "from-white/100",
-        via: "via-white/90",
-        to: "to-transparent",
-      }
-    : {
-        from: "from-black/100",
-        via: "via-black/80",
-        to: "to-transparent",
-      }
-
-  const textColorClass = isLightBackground ? "text-secondary-black" : "text-white"
-  const shadowClass = isLightBackground ? "drop-shadow-sm" : "drop-shadow-lg"
-
   return (
-    <Link href={`/projects/${project.id}`} className="block">
-    <ImageCard
-      image={project.coverImage || "/project-placeholder.webp"}
-      alt={project.title}
-      blurHeight="70%"
-      gradientColors={gradientColors}
-      tags={project.tags}
+    <Link
+      href={`/projects/${project.id}`}
+      className="group block ring-1 ring-foreground/10 overflow-hidden transition-all duration-200 hover:ring-foreground/30"
     >
-        {/* Title with Repository */}
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className={`text-2xl font-bold ${shadowClass} tracking-tight ${textColorClass} `}>
-        {project.title}
-      </h3>
-          {project.repoUrl && project.repoUrl !== "#" && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                window.open(project.repoUrl, '_blank', 'noopener,noreferrer')
-              }}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              className="flex items-center justify-center w-5 h-5 transition-all hover:opacity-70 hover:scale-110 active:scale-95 cursor-pointer shrink-0"
-              aria-label="View repository"
-            >
-              <svg
-                className={`w-5 h-5 ${textColorClass}`}
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
+      <div
+        className={cn(
+          "flex flex-col md:flex-row",
+          isReversed && "md:flex-row-reverse"
+        )}
+      >
+        {/* Image side */}
+        <div className="relative w-full md:w-1/2 aspect-[4/3] md:aspect-auto md:min-h-[280px] overflow-hidden shrink-0">
+          <Image
+            src={imgSrc}
+            alt={project.title}
+            fill
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03] will-change-transform"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            onError={handleError}
+          />
+          {/* Tags overlay */}
+          <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-1.5 z-10">
+            {project.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground font-mono uppercase"
               >
-                <path
-                  fillRule="evenodd"
-                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-          )}
+                {tag}
+              </span>
+            ))}
+          </div>
         </div>
 
-      {/* Short Description */}
-      <p className={`text-base ${shadowClass} mb-3 ${textColorClass}`}>
-        {project.shortDescription}
-      </p>
+        {/* Content side */}
+        <div className="flex flex-col justify-between w-full md:w-1/2 bg-card text-card-foreground p-6 md:p-8 border-t md:border-t-0 border-foreground/10">
+          <div>
+            {/* Category label */}
+            <div className="text-xs font-mono text-muted-foreground uppercase tracking-widest mb-3">
+              {project.category}
+            </div>
 
-      {/* Contributors */}
-      <div className="flex items-center flex-wrap gap-2">
-        <AvatarGroup translate="-6%" sideOffset={10}>
-          {project.contributors.map((contributor) => (
-            <Avatar key={`${contributor.name}-${contributor.role}`} className="h-8 w-8 border mr-0.5">
-              <AvatarImage src={contributor.avatar} alt={contributor.name} />
-              <AvatarFallback className="bg-primary text-white text-xs">
-                {getInitials(contributor.name)}
-              </AvatarFallback>
-              <AvatarGroupTooltip className="bg-white text-black rounded-lg px-3 py-2 shadow-lg">
-                <div className="text-center">
-                  <div className="font-medium tracking-tight">{contributor.name}</div>
-                  <div className="text-sm font-serif text-primary">{contributor.role}</div>
+            {/* Title row */}
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <h3 className="text-xl md:text-2xl font-bold tracking-tight text-card-foreground leading-tight">
+                {project.title}
+              </h3>
+              <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                {project.repoUrl && project.repoUrl !== "#" && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          window.open(project.repoUrl, "_blank", "noopener,noreferrer")
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}
+                        className="flex items-center justify-center size-7 ring-1 ring-foreground/10 text-card-foreground transition-all hover:bg-foreground hover:text-background active:scale-95 cursor-pointer"
+                        aria-label="View repository"
+                      >
+                        <GithubLogoIcon className="size-4" weight="fill" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>View repository</TooltipContent>
+                  </Tooltip>
+                )}
+                <div className="flex items-center justify-center size-7 ring-1 ring-foreground/10 text-card-foreground transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:ring-primary">
+                  <ArrowSquareOutIcon className="size-4" />
                 </div>
-              </AvatarGroupTooltip>
-            </Avatar>
-          ))}
-        </AvatarGroup>
+              </div>
+            </div>
+
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+              {project.shortDescription}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            {/* Contributors */}
+            <AvatarGroup translate="-6%" sideOffset={10}>
+              {project.contributors.slice(0, 4).map((contributor) => (
+                <Avatar
+                  key={`${contributor.name}-${contributor.role}`}
+                  className="h-7 w-7 border border-foreground/10"
+                >
+                  <AvatarImage src={contributor.avatar} alt={contributor.name} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">
+                    {getInitials(contributor.name)}
+                  </AvatarFallback>
+                  <AvatarGroupTooltip className="bg-card text-card-foreground px-3 py-2 shadow-lg ring-1 ring-foreground/10">
+                    <div className="text-center">
+                      <div className="font-medium tracking-tight text-xs">{contributor.name}</div>
+                      <div className="text-xs text-primary font-serif">{contributor.role}</div>
+                    </div>
+                  </AvatarGroupTooltip>
+                </Avatar>
+              ))}
+            </AvatarGroup>
+
+            {/* Status badge */}
+            <span className="text-xs font-mono text-muted-foreground shrink-0">
+              {project.status}
+            </span>
+          </div>
+        </div>
       </div>
-    </ImageCard>
     </Link>
   )
 }
 
 export function ProjectsPreview() {
-  // Show first 3 projects for preview
-  const previewProjects = projects.slice(0, 3)
+  const featured = projects.slice(0, 3)
 
   return (
-    <section className="container mx-auto py-16 px-4 w-full max-w-7xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+    <section className="container mx-auto py-20 px-4 w-full max-w-7xl">
+      <FadeIn>
+        <div className="flex items-center justify-between mb-10">
+        <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
           <span className="text-primary font-serif font-normal">(Featured)</span> Projects
         </h2>
         <Button asChild>
           <Link href="/projects">
             <span className="hidden md:block">See more </span>Projects
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRightIcon className="size-4" />
           </Link>
         </Button>
       </div>
+      </FadeIn>
 
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {previewProjects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
+      <FadeIn delay={0.1}>
+        <div className="flex flex-col gap-6">
+        {featured.map((project, index) => (
+          <ZigzagCard key={project.id} project={project} index={index} />
         ))}
-      </div>
+        </div>
+      </FadeIn>
     </section>
   )
 }

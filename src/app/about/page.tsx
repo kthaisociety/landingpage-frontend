@@ -6,7 +6,11 @@ import { HistoryTimeline } from "@/components/home/history-timeline";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { CaretDownIcon } from "@phosphor-icons/react";
 
 const TEAMS_DATA = {
   "2023/2024": [
@@ -129,22 +133,15 @@ export default function AboutPage() {
   }, []);
 
   const filteredTeam = useMemo(() => {return []}, [activeYear, activeDepartment]);
-  // const filteredTeam = useMemo(() => {
-  //   const teamForYear = TEAMS_DATA[activeYear as keyof typeof TEAMS_DATA] || [];
-  //   if (activeDepartment === "All") return teamForYear;
-  //   return teamForYear.filter(
-  //     (member) => member.department === activeDepartment,
-  //   );
-  // }, [activeYear, activeDepartment]);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* --- Header Section (Styled like EventsPage) --- */}
-      <section className="relative bg-white text-secondary-black pt-64 pb-24 overflow-hidden">
+      {/* --- Header Section --- */}
+      <section className="relative bg-background text-foreground pt-64 pb-24 overflow-hidden">
         {/* Ascii Grid Background */}
         <div className="absolute inset-0 pointer-events-none">
           <AsciiGrid
-            color="rgba(0, 0, 0, 0.2)"
+            color="var(--color-primary)"
             cellSize={12}
             logoSrc={aboutTextMask}
             logoPosition="center"
@@ -152,7 +149,7 @@ export default function AboutPage() {
             enableDripping={false}
             className="w-full h-full"
           />
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-neutral-50 via-white/50 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-muted via-background/50 to-transparent pointer-events-none" />
         </div>
 
         <div className="container max-w-7xl relative z-10 mx-auto px-4 md:px-6 pb-8">
@@ -171,26 +168,27 @@ export default function AboutPage() {
 
       {/* --- Overlapping Content Area --- */}
       <div className="px-4 sm:px-6 md:px-8 lg:px-8 xl:px-8 pb-24">
-        <section className="relative max-w-7xl mx-auto z-20 -mt-24 bg-neutral-50 rounded-3xl p-4 md:p-8 lg:p-12 shadow-lg border">
+        <section className="relative max-w-7xl mx-auto z-20 -mt-24 bg-card text-card-foreground rounded-none p-4 md:p-8 lg:p-12 shadow-lg ring-1 ring-foreground/10">
           {/* Section A: Mission & Breadcrumbs */}
           <div className="flex flex-col gap-4 mb-20">
-            <div>
-              <Link
-                href="/"
-                className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium"
-              >
-                Home
-              </Link>
-              <span className="text-gray-300 mx-2">/</span>
-              <span className="text-primary font-medium text-sm">About</span>
-            </div>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>About</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
 
-            <p className="text-lg md:text-xl max-w-3xl opacity-95 leading-relaxed font-serif text-secondary-black mt-2">
+            <p className="text-lg md:text-xl max-w-3xl leading-relaxed tracking-tight text-muted-foreground mt-2">
               We are a student-led organization at KTH focused on artificial
               intelligence, research, and real-world applications.
             </p>
 
-            <div className="space-y-4 font-arial text-base leading-relaxed text-secondary-black/80 max-w-4xl mt-4">
+            <div className="space-y-4 text-base leading-relaxed text-muted-foreground max-w-4xl mt-4">
               <p>
                 The organization includes teams working with AI research and
                 development, often in collaboration with sponsors and partner
@@ -219,34 +217,32 @@ export default function AboutPage() {
             </div>
           </div>
 
-          <hr className="border-secondary-light-gray/60 mb-16" />
+          <Separator className="mb-16" />
 
           {/* Section B: Timeline */}
           <div className="mb-24">
             <div className="mb-10">
-              <h2 className="font-arial text-3xl font-bold text-secondary-black tracking-tight-2 mb-2">
-                Our History
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-2">
+                <span className="text-primary font-serif font-normal">(Our)</span> History
               </h2>
-              <p className="font-serif text-secondary-black/70 max-w-2xl text-lg">
+              <p className="text-muted-foreground max-w-2xl text-lg tracking-tight">
                 Key milestones, events, and initiatives from previous years.
               </p>
             </div>
 
-            <div className="bg-white p-6 md:p-10 border border-secondary-light-gray/60 rounded-2xl shadow-sm">
-              <HistoryTimeline />
-            </div>
+            <HistoryTimeline />
           </div>
 
-          <hr className="border-secondary-light-gray/60 mb-16" />
+          <Separator className="mb-16" />
 
           <div>
             {/* Header & Year Dropdown */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-8">
               <div>
-                <h2 className="font-arial text-3xl font-bold text-secondary-black tracking-tight-2 mb-2">
-                  The Team
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-2">
+                  <span className="text-primary font-serif font-normal">(The)</span> Team
                 </h2>
-                <p className="font-serif text-secondary-black/70 text-lg">
+                <p className="text-muted-foreground text-lg tracking-tight">
                   Discover the minds behind our initiatives.
                 </p>
               </div>
@@ -260,7 +256,7 @@ export default function AboutPage() {
                       className="font-mono text-sm h-11"
                     >
                       {activeYear}
-                      <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
+                      <CaretDownIcon className="size-4 opacity-50 ml-2" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-[220px]">
@@ -269,7 +265,7 @@ export default function AboutPage() {
                         key={year}
                         onClick={() => {
                           setActiveYear(year);
-                          setActiveDepartment("All"); // Reset department when year changes
+                          setActiveDepartment("All");
                         }}
                         className="font-mono text-sm cursor-pointer"
                       >
@@ -284,92 +280,45 @@ export default function AboutPage() {
             {/* Department Filter Pills */}
             <div className="flex flex-wrap gap-2 mb-10">
               {DEPARTMENTS.map((dept) => (
-                <button
+                <Badge
                   key={dept}
+                  variant={activeDepartment === dept ? "default" : "outline"}
+                  className="cursor-pointer font-mono text-xs px-4 py-2 transition-all duration-200"
                   onClick={() => setActiveDepartment(dept)}
-                  className={`font-mono text-xs px-4 py-2 rounded-full transition-all duration-200 border ${
-                    activeDepartment === dept
-                      ? "bg-primary text-white border-primary shadow-sm"
-                      : "bg-white text-secondary-black border-secondary-light-gray hover:border-primary"
-                  }`}
                 >
                   {dept}
-                </button>
+                </Badge>
               ))}
             </div>
 
             {/* Member Grid */}
             {filteredTeam.length > 0 ? (
-              // <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              //   {filteredTeam.map((member) => (
-              //     <Link
-              //       key={member.id}
-              //       href={`/team/${member.id}`}
-              //       className="group flex flex-col h-full bg-white border border-secondary-light-gray/60 rounded-2xl p-4 hover:shadow-md hover:border-primary/40 transition-all duration-300"
-              //     >
-              //       {/* Image & Department Badge */}
-              //       <div className="relative aspect-square bg-secondary-light-gray mb-4 overflow-hidden rounded-xl">
-              //         <img
-              //           src={member.image}
-              //           alt={member.name}
-              //           className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-500"
-              //         />
-              //         <div className="absolute top-3 right-3 bg-primary backdrop-blur-sm px-2.5 py-1 rounded-2xl text-[10px] font-mono font-bold text-white/95 tracking-tight shadow-sm">
-              //           {member.department}
-              //         </div>
-              //       </div>
-
-              //       {/* Info */}
-              //       <div className="flex-grow flex flex-col px-1">
-              //         <h3 className="font-arial font-bold text-lg text-secondary-black group-hover:text-primary transition-colors tracking-tight-1">
-              //           {member.name}
-              //         </h3>
-              //         <p className="font-mono text-xs mt-1 text-secondary-gray group-hover:text-secondary-black transition-colors">
-              //           {member.role}
-              //         </p>
-
-              //         {/* Short Bio */}
-              //         <p className="font-serif text-sm text-secondary-black/70 mt-3 line-clamp-2 leading-relaxed">
-              //           {member.bio}
-              //         </p>
-
-              //         {/* Tags */}
-              //         <div className="flex flex-wrap gap-2 mt-auto pt-5">
-              //           {member.tags.map((tag, idx) => (
-              //             <span
-              //               key={idx}
-              //               className="bg-neutral-100 border border-secondary-light-gray/50 text-secondary-black px-2 py-1 rounded text-[10px] font-mono uppercase"
-              //             >
-              //               {tag}
-              //             </span>
-              //           ))}
-              //         </div>
-              //       </div>
-              //     </Link>
-              //   ))}
-              // </div>
               <div></div>
             ) : (
               /* Empty State */
-              <div className="py-24 text-center border border-dashed border-secondary-gray/50 rounded-2xl bg-white">
-                <p className="font-mono text-secondary-gray text-sm">
-                  No members found in{" "}
-                  <span className="text-secondary-black font-bold">
-                    {activeDepartment}
-                  </span>{" "}
-                  for{" "}
-                  <span className="text-secondary-black font-bold">
-                    {activeYear}
-                  </span>
-                  .
-                </p>
-                <button
-                  onClick={() => setActiveDepartment("All")}
-                  className="mt-4 text-primary font-mono text-xs hover:underline"
-                >
-                  Clear filters
-                </button>
-              </div>
+              <Empty className="border border-dashed border-border py-24 bg-card rounded-2xl">
+                <EmptyHeader>
+                  <EmptyTitle>
+                    No members found in{" "}
+                    <span className="text-foreground font-bold">
+                      {activeDepartment}
+                    </span>{" "}
+                    for{" "}
+                    <span className="text-foreground font-bold">
+                      {activeYear}
+                    </span>
+                  </EmptyTitle>
+                </EmptyHeader>
+                <EmptyContent>
+                  <Button
+                    variant="link"
+                    onClick={() => setActiveDepartment("All")}
+                    className="font-mono text-xs"
+                  >
+                    Clear filters
+                  </Button>
+                </EmptyContent>
+              </Empty>
             )}
           </div>
         </section>

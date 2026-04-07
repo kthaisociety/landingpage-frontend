@@ -6,7 +6,7 @@
 
 @theme {
   /* Primary colors */
-  --color-primary: #1751A6;
+  --color-primary: #1954A6;
   --color-primary-foreground: #FFFFFF;
 
   /* Secondary colors */
@@ -62,8 +62,8 @@
     --card-foreground: var(--color-card-foreground);
     --popover: var(--color-popover);
     --popover-foreground: var(--color-popover-foreground);
-    --primary: var(--color-primary);
-    --primary-foreground: var(--color-primary-foreground);
+    --primary: #1954A6;
+    --primary-foreground: #FFFFFF;
     --secondary: var(--color-secondary);
     --secondary-foreground: var(--color-secondary-foreground);
     --muted: var(--color-muted);
@@ -90,8 +90,8 @@
     --card-foreground: oklch(98% 0 0);
     --popover: oklch(3.9% 0 0);
     --popover-foreground: oklch(98% 0 0);
-    --primary: var(--color-primary);
-    --primary-foreground: var(--color-primary-foreground);
+    --primary: #1954A6;
+    --primary-foreground: #FFFFFF;
     --secondary: oklch(14.9% 0 0);
     --secondary-foreground: oklch(98% 0 0);
     --muted: oklch(14.9% 0 0);
@@ -115,8 +115,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-arial);
+    @apply bg-background text-foreground font-mono;
   }
   html {
     @apply font-mono;
@@ -172,8 +171,8 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #1954A6;
+  --primary-foreground: #FFFFFF;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -209,8 +208,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: #1954A6;
+  --primary-foreground: #FFFFFF;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);

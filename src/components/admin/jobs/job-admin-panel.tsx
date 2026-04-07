@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useJobPosts, type JobPostInput } from "@/hooks/jobs";
 import { useCompanies } from "@/hooks/companies";
@@ -93,7 +93,7 @@ export function JobAdminPanel() {
 
                 <div className="space-y-2">
                   <Label htmlFor="job-type">Type</Label>
-                  <Select
+                  <NativeSelect
                     id="job-type"
                     value={form.type}
                     onChange={handleChange("type")}
@@ -104,7 +104,7 @@ export function JobAdminPanel() {
                         {option}
                       </option>
                     ))}
-                  </Select>
+                  </NativeSelect>
                 </div>
 
                 <div className="space-y-2">
@@ -151,7 +151,7 @@ export function JobAdminPanel() {
 
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="job-company">Company</Label>
-                  <Select
+                  <NativeSelect
                     id="job-company"
                     value={form.companyId}
                     onChange={handleChange("companyId")}
@@ -168,7 +168,7 @@ export function JobAdminPanel() {
                         {company.name}
                       </option>
                     ))}
-                  </Select>
+                  </NativeSelect>
                   {!hasCompanies ? (
                     <p className="text-xs text-muted-foreground">
                       Add at least one company in the Companies tab.
