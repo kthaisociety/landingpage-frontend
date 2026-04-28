@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+// Add this import
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,15 +15,23 @@ import {
 import { CompanyAdminPanel } from "@/components/admin/companies/company-admin-panel";
 import { JobAdminPanel } from "@/components/admin/jobs/job-admin-panel";
 import { ProjectAdminPanel } from "@/components/admin/projects/project-admin-panel";
+import { UserAdminPanel } from "@/components/admin/users/user-admin-panel"; // Import the new panel
 
+// Added "users" to the ID union type
 type AdminSection = {
-  id: "companies" | "jobs" | "projects";
+  id: "users" | "companies" | "jobs" | "projects";
   label: string;
   description: string;
   content: ReactNode;
 };
 
 const adminSections: AdminSection[] = [
+  {
+    id: "users",
+    label: "Users",
+    description: "Manage users and assign admin roles.",
+    content: <UserAdminPanel />,
+  },
   {
     id: "companies",
     label: "Companies",
@@ -45,7 +54,7 @@ const adminSections: AdminSection[] = [
 
 export function AdminWorkspace() {
   const [activeSectionId, setActiveSectionId] =
-    useState<AdminSection["id"]>("companies");
+    useState<AdminSection["id"]>("users"); // Defaulting to the new users tab
 
   const activeSection = useMemo(() => {
     return (
@@ -59,7 +68,9 @@ export function AdminWorkspace() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p className="text-sm font-medium">{activeSection.label}</p>
-          <p className="text-sm text-muted-foreground">{activeSection.description}</p>
+          <p className="text-sm text-muted-foreground">
+            {activeSection.description}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="sm:hidden">
