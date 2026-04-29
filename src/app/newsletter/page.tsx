@@ -1,9 +1,13 @@
-import { NewsletterSignup } from "@/components/home/newsletter-signup"
+import type { Metadata } from "next"
+
+import { NewsletterForm } from "./newsletter-form"
+
+export const metadata: Metadata = {
+  title: "Newsletter",
+  description:
+    "Subscribe to KTH AI newsletter updates about events, projects, and community news.",
+}
 
 export default function NewsletterPage() {
-  return (
-    <div className="min-h-screen pt-32">
-      <NewsletterSignup />
-    </div>
-  )
+  return <NewsletterForm variant="page" />
 }

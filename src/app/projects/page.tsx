@@ -16,7 +16,6 @@ import { ImageCard } from "@/components/ui/image-card"
 import {
   AvatarGroup,
   AvatarGroupTooltip,
-  AvatarGroupTooltipArrow,
 } from "@/components/ui/avatar-group"
 import { projects, getAllTags } from "@/lib/constants/projects"
 
@@ -108,7 +107,6 @@ function ProjectCard({ project }: { project: typeof projects[0] }) {
                 {getInitials(contributor.name)}
               </AvatarFallback>
             <AvatarGroupTooltip className="bg-white text-black rounded-lg px-3 py-2 shadow-lg">
-              <AvatarGroupTooltipArrow className="fill-white stroke-black" />
               <div className="text-center">
                 <div className="font-medium tracking-tight">{contributor.name}</div>
                 <div className="text-sm font-serif text-primary">{contributor.role}</div>

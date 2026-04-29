@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { HistoryTimeline } from "@/components/home/history-timeline";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
 
 const TEAMS_DATA = {
   "2023/2024": [
@@ -128,7 +128,7 @@ export default function AboutPage() {
     setAboutTextMask(dataUrl);
   }, []);
 
-  const filteredTeam = useMemo(() => {return []}, [activeYear, activeDepartment]);
+  const filteredTeam = useMemo(() => {return []}, []);
   // const filteredTeam = useMemo(() => {
   //   const teamForYear = TEAMS_DATA[activeYear as keyof typeof TEAMS_DATA] || [];
   //   if (activeDepartment === "All") return teamForYear;
@@ -285,8 +285,7 @@ export default function AboutPage() {
             <div className="flex flex-wrap gap-2 mb-10">
               {DEPARTMENTS.map((dept) => (
                 <button
-                  key={dept}
-                  onClick={() => setActiveDepartment(dept)}
+                  key={dept}                  type="button"                  onClick={() => setActiveDepartment(dept)}
                   className={`font-mono text-xs px-4 py-2 rounded-full transition-all duration-200 border ${
                     activeDepartment === dept
                       ? "bg-primary text-white border-primary shadow-sm"
@@ -364,6 +363,7 @@ export default function AboutPage() {
                   .
                 </p>
                 <button
+                  type="button"
                   onClick={() => setActiveDepartment("All")}
                   className="mt-4 text-primary font-mono text-xs hover:underline"
                 >

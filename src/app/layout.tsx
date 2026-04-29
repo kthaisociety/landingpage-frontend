@@ -1,9 +1,12 @@
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer"
+import { TooltipProvider } from '@/components/ui/tooltip';
+import {  ToastProvider } from '@/components/ui/toast';
 
 
 const geistSans = Geist({
@@ -41,7 +44,7 @@ export default function RootLayout({
       >
         <Providers>
           <Navigation />
-          {children}
+          <ToastProvider><TooltipProvider>{children}</TooltipProvider></ToastProvider>
           <Footer />
         </Providers>
       </body>

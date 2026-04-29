@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   AvatarGroup,
   AvatarGroupTooltip,
-  AvatarGroupTooltipArrow,
 } from "@/components/ui/avatar-group"
 import { projects } from "@/lib/constants/projects"
 import type { Project } from "@/lib/constants/projects"
@@ -101,7 +100,6 @@ function ProjectCard({ project }: { project: Project }) {
                 {getInitials(contributor.name)}
               </AvatarFallback>
               <AvatarGroupTooltip className="bg-white text-black rounded-lg px-3 py-2 shadow-lg">
-                <AvatarGroupTooltipArrow className="fill-white stroke-black" />
                 <div className="text-center">
                   <div className="font-medium tracking-tight">{contributor.name}</div>
                   <div className="text-sm font-serif text-primary">{contributor.role}</div>
