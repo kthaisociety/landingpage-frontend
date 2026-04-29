@@ -1,4 +1,6 @@
 "use client";
+
+// Make sure to adjust this import path to where your hook is actually defined
 import { useProjects } from "@/hooks/projects";
 
 export function MemberProjectSelection() {
