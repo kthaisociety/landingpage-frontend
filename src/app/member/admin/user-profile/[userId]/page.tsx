@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import{studyPrograms} from "@/lib/constants/study-programs"
 import {
   Select,
   SelectContent,
@@ -32,28 +33,6 @@ interface ProfileFormData {
   linkedinLink: string;
   aboutMe: string;
 }
-
-const studyPrograms = [
-  "Machine Learning",
-  "Applied Mathematics",
-  "Bio Technology",
-  "Engineering Physics",
-  "Computer Science",
-  "Electrical Engineering",
-  "Industrial Management",
-  "Information and Communication Technology",
-  "Chemical Science and Engineering",
-  "Mechanical Engineering",
-  "Mathematics",
-  "Material Science and Engineering",
-  "Medical Engineering",
-  "Environmental Engineering",
-  "The Built Environment",
-  "Technology and Economics",
-  "Technology and Health",
-  "Technology and Learning",
-  "Technology and Management",
-];
 
 
 // ... (your other imports stay the same)
