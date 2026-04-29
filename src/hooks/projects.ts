@@ -1,4 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+
+const API_URL = `${
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+}/api/v1`;
 
 export type ProjectInput = {
   title: string;
@@ -80,4 +85,49 @@ export function useProjectPosts() {
     projects,
     createProject,
   };
+}
+
+export type ProjectStatus = "planning" | "active" | "completed";
+
+export interface Project {
+  // Fields inherited from gorm.Model
+  ID?: number;
+  CreatedAt?: string;
+  UpdatedAt?: string;
+  DeletedAt?: string | null;
+
+  // Explicit fields from the Project struct
+  project_id: string; // Maps to uuid.UUID
+  name: string;
+  description: string;
+  skills: string[];
+  status: ProjectStatus;
+}
+
+// 2. Create the async fetch function
+async function fetchProjects(): Promise<Project[]> {
+  const response = await fetch(`${API_URL}/projects`, {
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch projects: ${response.status}`);
+  }
+
+  // Depending on your API, it might return an array directly or wrap it in an object.
+  // We assume an array is returned directly here. Adjust if it returns `{ projects: [...] }`.
+  return response.json();
+}
+
+// 3. Create the custom hook using useQuery
+export function useProjects() {
+  return useQuery<Project[]>({
+    queryKey: ["projects"],
+    queryFn: fetchProjects,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: 1,
+  });
 }
