@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { AsciiGrid } from "@/components/ui/ascii-grid"
 import { Markdown } from "@/components/ui/markdown"
-import { getProjectById } from "@/lib/data/projects"
+import { getProjectById } from "@/lib/constants/projects"
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
