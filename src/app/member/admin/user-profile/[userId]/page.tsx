@@ -1,6 +1,4 @@
 "use client";
-
-// 1. Import `use` from react
 import {  use } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
@@ -18,7 +16,6 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
-// Ensure this path matches where you saved the admin hooks
 import {
   useAdminUserProfile,
   useUpdateAdminUserProfile,
