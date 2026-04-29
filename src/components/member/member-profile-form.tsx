@@ -96,7 +96,7 @@ export function MemberProfileForm() {
         ...formData,
         graduationYear: formData.graduationYear
           ? parseInt(formData.graduationYear, 10)
-          : 0,
+          : undefined,
       });
 
       toast({
