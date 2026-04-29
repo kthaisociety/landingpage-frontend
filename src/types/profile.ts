@@ -21,3 +21,15 @@ export interface ProfileData {
   showEmail: boolean;
   showLocation: boolean;
 }
+
+export interface ProfileFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  university: string;
+  programme: string;
+  graduationYear: string;
+  githubLink: string;
+  linkedinLink: string;
+  aboutMe: string;
+}

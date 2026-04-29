@@ -10,8 +10,8 @@ import {
   AvatarGroupTooltip,
   AvatarGroupTooltipArrow,
 } from "@/components/ui/avatar-group"
-import { projects } from "@/lib/data/projects"
-import type { Project } from "@/lib/data/projects"
+import { projects } from "@/lib/constants/projects"
+import type { Project } from "@/lib/constants/projects"
 
 function ProjectCard({ project }: { project: Project }) {
   const getInitials = (name: string) => {

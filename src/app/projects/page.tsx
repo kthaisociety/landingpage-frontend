@@ -18,7 +18,7 @@ import {
   AvatarGroupTooltip,
   AvatarGroupTooltipArrow,
 } from "@/components/ui/avatar-group"
-import { projects, getAllTags } from "@/lib/data/projects"
+import { projects, getAllTags } from "@/lib/constants/projects"
 
 function ProjectCard({ project }: { project: typeof projects[0] }) {
   const getInitials = (name: string) => {
