@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
-import { useAuth } from "@/components/providers/auth-provider/authProvider";
+import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 
 function GoogleLoginButton() {
   const login = async () => {
