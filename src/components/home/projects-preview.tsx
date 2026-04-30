@@ -1,30 +1,34 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { ImageCard } from "@/components/ui/image-card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  AvatarGroup,
-  AvatarGroupTooltip,
-} from "@/components/ui/avatar-group"
-import { projects } from "@/lib/constants/projects"
-import type { Project } from "@/lib/constants/projects"
+import Link from "next/link";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ImageCard } from "@/components/ui/image-card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarGroup, AvatarGroupTooltip } from "@/components/ui/avatar-group";
+import { useProjects, type ExtendedProjectInput } from "@/hooks/projects"; 
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project }: { project: ExtendedProjectInput }) {
   const getInitials = (name: string) => {
+    if (!name) return "U";
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
-  // Determine gradient and text colors based on cover image theme
-  const isLightBackground = project.coverImageTheme === "light"
-  
+  const coverImage =
+    project.coverImage ||
+    (project.screenshots?.length > 0
+      ? project.screenshots[0].image
+      : "/project-placeholder.webp");
+
+  const tags = project.categories || [];
+
+  const isLightBackground = false;
+
   const gradientColors = isLightBackground
     ? {
         from: "from-white/100",
@@ -35,36 +39,40 @@ function ProjectCard({ project }: { project: Project }) {
         from: "from-black/100",
         via: "via-black/80",
         to: "to-transparent",
-      }
+      };
 
-  const textColorClass = isLightBackground ? "text-secondary-black" : "text-white"
-  const shadowClass = isLightBackground ? "drop-shadow-sm" : "drop-shadow-lg"
+  const textColorClass = isLightBackground
+    ? "text-secondary-black"
+    : "text-white";
+  const shadowClass = isLightBackground ? "drop-shadow-sm" : "drop-shadow-lg";
 
   return (
     <Link href={`/projects/${project.id}`} className="block">
-    <ImageCard
-      image={project.coverImage || "/project-placeholder.webp"}
-      alt={project.title}
-      blurHeight="70%"
-      gradientColors={gradientColors}
-      tags={project.tags}
-    >
+      <ImageCard
+        image={coverImage}
+        alt={project.title}
+        blurHeight="70%"
+        gradientColors={gradientColors}
+        tags={tags}
+      >
         {/* Title with Repository */}
         <div className="flex items-center gap-2 mb-1">
-          <h3 className={`text-2xl font-bold ${shadowClass} tracking-tight ${textColorClass} `}>
-        {project.title}
-      </h3>
+          <h3
+            className={`text-2xl font-bold ${shadowClass} tracking-tight ${textColorClass} `}
+          >
+            {project.title}
+          </h3>
           {project.repoUrl && project.repoUrl !== "#" && (
             <button
               type="button"
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                window.open(project.repoUrl, '_blank', 'noopener,noreferrer')
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(project.repoUrl, "_blank", "noopener,noreferrer");
               }}
               onMouseDown={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
+                e.preventDefault();
+                e.stopPropagation();
               }}
               className="flex items-center justify-center w-5 h-5 transition-all hover:opacity-70 hover:scale-110 active:scale-95 cursor-pointer shrink-0"
               aria-label="View repository"
@@ -85,60 +93,97 @@ function ProjectCard({ project }: { project: Project }) {
           )}
         </div>
 
-      {/* Short Description */}
-      <p className={`text-base ${shadowClass} mb-3 ${textColorClass}`}>
-        {project.shortDescription}
-      </p>
+        {/* Short Description */}
+        <p
+          className={`text-base ${shadowClass} mb-3 ${textColorClass} line-clamp-2`}
+        >
+          {project.shortDescription || project.oneLineDescription}
+        </p>
 
-      {/* Contributors */}
-      <div className="flex items-center flex-wrap gap-2">
-        <AvatarGroup translate="-6%" sideOffset={10}>
-          {project.contributors.map((contributor) => (
-            <Avatar key={`${contributor.name}-${contributor.role}`} className="h-8 w-8 border mr-0.5">
-              <AvatarImage src={contributor.avatar} alt={contributor.name} />
-              <AvatarFallback className="bg-primary text-white text-xs">
-                {getInitials(contributor.name)}
-              </AvatarFallback>
-              <AvatarGroupTooltip className="bg-white text-black rounded-lg px-3 py-2 shadow-lg">
-                <div className="text-center">
-                  <div className="font-medium tracking-tight">{contributor.name}</div>
-                  <div className="text-sm font-serif text-primary">{contributor.role}</div>
-                </div>
-              </AvatarGroupTooltip>
-            </Avatar>
-          ))}
-        </AvatarGroup>
-      </div>
-    </ImageCard>
+        {/* Contributors */}
+        <div className="flex items-center flex-wrap gap-2">
+          <AvatarGroup translate="-6%" sideOffset={10}>
+            {project.contributors?.map((contributor) => {
+              const displayName = contributor.name || contributor.email;
+              const uniqueKey = `${contributor.email}-${contributor.role}`;
+
+              return (
+                <Avatar key={uniqueKey} className="h-8 w-8 border mr-0.5">
+                  <AvatarImage src={contributor.avatar} alt={displayName} />
+                  <AvatarFallback className="bg-primary text-white text-xs">
+                    {getInitials(displayName)}
+                  </AvatarFallback>
+                  <AvatarGroupTooltip className="bg-white text-black rounded-lg px-3 py-2 shadow-lg">
+                    <div className="text-center">
+                      <div className="font-medium tracking-tight">
+                        {displayName}
+                      </div>
+                      <div className="text-sm font-serif text-primary">
+                        {contributor.role || "Member"}
+                      </div>
+                    </div>
+                  </AvatarGroupTooltip>
+                </Avatar>
+              );
+            })}
+          </AvatarGroup>
+        </div>
+      </ImageCard>
     </Link>
-  )
+  );
 }
 
 export function ProjectsPreview() {
+  const { data: projects, isLoading, isError } = useProjects();
+
   // Show first 3 projects for preview
-  const previewProjects = projects.slice(0, 3)
+  const previewProjects = projects ? projects.slice(0, 3) : [];
 
   return (
     <section className="container mx-auto py-16 px-4 w-full max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-          <span className="text-primary font-serif font-normal">(Featured)</span> Projects
+          <span className="text-primary font-serif font-normal">
+            (Featured)
+          </span>{" "}
+          Projects
         </h2>
         <Button asChild>
           <Link href="/projects">
             <span className="hidden md:block">See more </span>Projects
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4 ml-1" />
           </Link>
         </Button>
       </div>
 
+      {/* States */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {isError && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>Failed to load projects. Please try again later.</p>
+        </div>
+      )}
+
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {previewProjects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
+      {!isLoading && !isError && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {previewProjects.length > 0 ? (
+            previewProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))
+          ) : (
+            <div className="col-span-3 text-center py-12 text-muted-foreground">
+              <p>No featured projects found.</p>
+            </div>
+          )}
+        </div>
+      )}
     </section>
-  )
+  );
 }
