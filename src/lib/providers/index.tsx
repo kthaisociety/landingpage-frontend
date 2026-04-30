@@ -1,6 +1,6 @@
 "use client";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { AuthProvider } from "@/components/providers/auth-provider/authProvider";
+import { AuthProvider } from "@/lib/providers/auth-provider/authProvider";
 import { QueryProvider } from "./query-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
