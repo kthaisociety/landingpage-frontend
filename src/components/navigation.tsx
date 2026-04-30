@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TextMorph } from "@/components/ui/text-morph";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/components/providers/auth-provider/authProvider";
+import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 
 export function Navigation() {
   // const { user, isLoggedIn, logoutUser: logout } = useAuth();
