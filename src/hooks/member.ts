@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { LumaEvent } from "@/app/api/events/route";
-
-const API_URL = `${
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-}/api/v1`;
+import { API_URL } from "@/config";
 
 // Matches the exact JSON structure returned by GET /profile/me
 export interface MemberProfile {
@@ -29,7 +26,7 @@ export interface UpdateMemberProfileData {
   programme?: string;
   graduationYear?: number;
   githubLink?: string;
-  linkedinLink?: string; // PUT expects lowercase 'i'
+  linkedinLink?: string; 
   aboutMe?: string;
 }
 
