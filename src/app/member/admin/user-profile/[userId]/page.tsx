@@ -34,9 +34,6 @@ interface ProfileFormData {
   aboutMe: string;
 }
 
-
-// ... (your other imports stay the same)
-
 export default function AdminEditUserProfilePage({
   params,
 }: {
@@ -103,8 +100,6 @@ export default function AdminEditUserProfilePage({
         description: "The member's profile has been successfully updated.",
       });
 
-      // Optional: Redirect back to the admin workspace after saving
-      // router.push("/admin");
     } catch {
       toast({
         title: "Error",
