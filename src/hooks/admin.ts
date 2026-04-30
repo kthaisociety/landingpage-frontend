@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {AdminProfileData,UpdateAdminUserProfileData, AdminUser} from "@/types/admin"
-
-const API_URL = `${
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-}/api/v1`;
+import {API_URL} from "@/config"
 
 
 async function fetchAllUsers(): Promise<AdminUser[]> {
@@ -63,7 +60,6 @@ export function useDemoteAdmin() {
 
 
 
-// Fetch a single profile as an admin
 async function fetchAdminUserProfile(
   userId: string,
 ): Promise<AdminProfileData> {
@@ -73,13 +69,9 @@ async function fetchAdminUserProfile(
   });
 
   if (!response.ok) {
-    // if (response.status === 404) return null as any; // Handle "No profile yet" gracefully
     throw new Error(`Failed to fetch profile: ${response.status}`);
   }
-  const test = response.json()
-  console.log(test)
-  return test;
-//   return response.json();
+  return response.json()
 }
 
 // Update a profile as an admin
@@ -122,6 +114,109 @@ export function useUpdateAdminUserProfile() {
       queryClient.invalidateQueries({
         queryKey: ["admin-profile", variables.userId],
       });
+    },
+  });
+}
+
+
+export interface CreateProjectDTO {
+  title: string;
+  oneLineDescription: string;
+  categories: string;
+  techStack: string;
+  problemImpact: string;
+  keyFeatures: string;
+  status: string;
+  screenshots: string; // JSON.stringify'd array
+  repoUrl: string;
+  contributors: string[]; // JSON.stringify'd object
+  affiliations: string;
+  timeline: string; // JSON.stringify'd object
+  maintenancePlan: string;
+  contact: string;
+  teamName: string;
+}
+
+// The actual fetch call
+async function postProject(projectData: CreateProjectDTO) {
+  const response = await fetch(`${API_URL}/projects`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include", // Included to match your fetchAllUsers setup
+    body: JSON.stringify(projectData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || "Failed to create project");
+  }
+
+  return response.json();
+}
+
+// The React Query Hook
+export function useProjectPosts() {
+  // const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: postProject,
+    onSuccess: () => {
+      // Optional: Invalidate and refetch the projects list if you have a query for it
+      // queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+    onError: (error) => {
+      console.error("Error creating project:", error);
+    },
+  });
+
+  return {
+    createProject: mutation.mutate, // Use this for fire-and-forget
+    createProjectAsync: mutation.mutateAsync, // Use this if you need to await the result in your component
+    isCreating: mutation.isPending,
+    isSuccess: mutation.isSuccess,
+    error: mutation.error,
+  };
+}
+
+// Delete a project
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`${API_URL}/projects/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to delete project");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+// Update a project
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<CreateProjectDTO> }) => {
+      const response = await fetch(`${API_URL}/projects/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to update project");
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", variables.id] });
     },
   });
 }
