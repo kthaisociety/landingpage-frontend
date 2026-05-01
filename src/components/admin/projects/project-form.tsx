@@ -3,6 +3,7 @@
 import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
+import {toast} from "sonner"
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -31,11 +32,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   useAdminUsers,
-  useProjectPosts, 
-  useUpdateProject, 
+  useProjectPosts,
+  useUpdateProject,
   type CreateProjectDTO,
 } from "@/hooks/admin";
-import {useProject} from "@/hooks/projects"
+import { useProject } from "@/hooks/projects";
 
 export type ExtendedProjectInput = {
   title: string;
@@ -137,14 +138,9 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
 
     // Compute custom teams
     const newCustomTeams: string[] = [];
-    if (
-      initialData.categories &&
-      Array.isArray(initialData.categories)
-    ) {
+    if (initialData.categories && Array.isArray(initialData.categories)) {
       newCustomTeams.push(
-        ...initialData.categories.filter(
-          (c) => !teamPresets.includes(c),
-        ),
+        ...initialData.categories.filter((c) => !teamPresets.includes(c)),
       );
     }
 
@@ -359,56 +355,74 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
       )
     : [];
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (form.categories.length === 0) {
-      setTeamWarning("Select at least one associated team.");
-      return;
-    }
+   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+     event.preventDefault();
+     if (form.categories.length === 0) {
+       setTeamWarning("Select at least one associated team.");
+       return;
+     }
 
-    const finalTeamName = form.teamName.trim() || `${form.title} Team`;
+     const finalTeamName = form.teamName.trim() || `${form.title} Team`;
 
-    const payload: CreateProjectDTO = {
-      title: form.title,
-      oneLineDescription: form.oneLineDescription,
-      categories: form.categories.join(", "),
-      techStack: form.techStack.join(", "),
-      problemImpact: form.problemImpact,
-      keyFeatures: form.keyFeatures.join("<SEP>"),
-      status: form.status,
-      screenshots: JSON.stringify(form.screenshots),
-      repoUrl: form.repoUrl,
-      contributors: form.contributors.map(
-        (c) => `${c.email}:${c.role}:${c.team}`,
-      ),
-      affiliations: form.affiliations,
-      timeline: JSON.stringify(form.timeline),
-      maintenancePlan: form.maintenancePlan,
-      contact: form.contact,
-      teamName: finalTeamName,
-    };
+     const payload: CreateProjectDTO = {
+       title: form.title,
+       oneLineDescription: form.oneLineDescription,
+       categories: form.categories.join(", "),
+       techStack: form.techStack.join(", "),
+       problemImpact: form.problemImpact,
+       keyFeatures: form.keyFeatures.join("<SEP>"),
+       status: form.status,
+       screenshots: JSON.stringify(form.screenshots),
+       repoUrl: form.repoUrl,
+       contributors: form.contributors.map(
+         (c) => `${c.email}:${c.role}:${c.team}`,
+       ),
+       affiliations: form.affiliations,
+       timeline: JSON.stringify(form.timeline),
+       maintenancePlan: form.maintenancePlan,
+       contact: form.contact,
+       teamName: finalTeamName,
+     };
 
-    if (projectId) {
-      updateProject({ id: projectId, data: payload });
-    } else {
-      createProject(payload);
-      setForm(emptyForm);
-      setCustomTeams([]);
-    }
+     if (projectId) {
+       updateProject(
+         { id: projectId, data: payload },
+         {
+           onSuccess: () => {
+             toast.success("Project updated successfully!");
+           },
+           onError: (error) => {
+             console.error("Failed to update project:", error);
+             toast.error("Something went wrong while updating the project.");
+           },
+         },
+       );
+     } else {
+       createProject(payload, {
+         onSuccess: () => {
+           setForm(emptyForm);
+           setCustomTeams([]);
+           toast.success("Project created successfully!");
+         },
+         onError: (error) => {
+           console.error("Failed to create project:", error);
+           toast.error("Something went wrong while creating the project.");
+         },
+       });
+     }
 
-    setTeamWarning(null);
-    setTeamInput("");
-    setTechStackInput("");
-    setUserSearch("");
-    setMemberWarning(null);
-  };
+     setTeamWarning(null);
+     setTeamInput("");
+     setTechStackInput("");
+     setUserSearch("");
+     setMemberWarning(null);
+   }; 
 
   if (isFetching) {
     return <p className="text-muted-foreground p-6">Loading project data...</p>;
   }
 
   const isSubmitting = isCreating || isUpdating;
-
 
   return (
     <div className="flex justify-center mt-24 px-24">

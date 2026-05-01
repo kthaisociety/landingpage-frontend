@@ -3,6 +3,7 @@ import {  use } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useState, useEffect } from "react";
+import {toast} from "sonner"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast";
 
 import {
   useAdminUserProfile,
@@ -41,9 +42,6 @@ export default function AdminEditUserProfilePage({
   params: Promise<{ userId: string }>;
 }) {
   const router = useRouter();
-  const { toast } = useToast();
-
-  // 3. Unwrap the params Promise using React.use()
   const { userId } = use(params);
 
   const { data: profile, isLoading, isError } = useAdminUserProfile(userId);
@@ -95,17 +93,10 @@ export default function AdminEditUserProfilePage({
         },
       });
 
-      toast({
-        title: "Profile updated",
-        description: "The member's profile has been successfully updated.",
-      });
+      toast.success("The member's profile has been successfully updated.");
 
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("Failed to update profile. Please try again.");
     }
   };
 

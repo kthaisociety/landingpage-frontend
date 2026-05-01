@@ -2,9 +2,9 @@
 
 import Link from "next/link"; 
 import { useState } from "react";
+import {toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
-import { useToast } from "@/hooks/use-toast";
 
 import {
   useAdminUsers,
@@ -13,7 +13,6 @@ import {
 } from "@/hooks/admin"; 
 
 export function UserAdminPanel() {
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: users = [], isLoading, isError } = useAdminUsers();
@@ -27,29 +26,18 @@ export function UserAdminPanel() {
   const handlePromote = async (userId: string, email: string) => {
     try {
       await promoteMutation.mutateAsync(userId);
-      toast({ title: "Success", description: `${email} is now an admin.` });
+      toast.success(`${email} is now an admin.`);
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to promote user.",
-        variant: "destructive",
-      });
+      toast.error("Failed to promote user.");
     }
   };
 
   const handleDemote = async (userId: string, email: string) => {
     try {
       await demoteMutation.mutateAsync(userId);
-      toast({
-        title: "Success",
-        description: `${email} is no longer an admin.`,
-      });
+      toast.success(`${email} is no longer an admin.`);
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to demote user.",
-        variant: "destructive",
-      });
+      toast.error("Failed to demote user.");
     }
   };
 
