@@ -8,7 +8,7 @@ export function MemberProjectSelection() {
   const { data: projects = [], isLoading, isError } = useProjects();
 
   const { isLoading: userIsLoading, user } = useAuth();
-  let currentUserEmail = "test@example.com";
+  let currentUserEmail = null;
   if (!userIsLoading && user?.email) currentUserEmail = user.email;
 
   const myProjects = projects.filter((project) =>

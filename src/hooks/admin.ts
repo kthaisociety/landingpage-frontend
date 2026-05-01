@@ -99,7 +99,7 @@ export function useAdminUserProfile(userId: string) {
   return useQuery({
     queryKey: ["admin-profile", userId],
     queryFn: () => fetchAdminUserProfile(userId),
-    enabled: !!userId, // Only run if userId exists
+    enabled: !!userId, 
     retry: 1,
   });
 }
@@ -137,14 +137,14 @@ export interface CreateProjectDTO {
   teamName: string;
 }
 
-// The actual fetch call
+
 async function postProject(projectData: CreateProjectDTO) {
   const response = await fetch(`${API_URL}/projects`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    credentials: "include", // Included to match your fetchAllUsers setup
+    credentials: "include", 
     body: JSON.stringify(projectData),
   });
 
@@ -156,15 +156,15 @@ async function postProject(projectData: CreateProjectDTO) {
   return response.json();
 }
 
-// The React Query Hook
+
 export function useProjectPosts() {
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: postProject,
     onSuccess: () => {
       // Optional: Invalidate and refetch the projects list if you have a query for it
-      // queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
     onError: (error) => {
       console.error("Error creating project:", error);
