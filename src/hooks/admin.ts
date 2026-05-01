@@ -216,7 +216,7 @@ export function useUpdateProject() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["projects", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
     },
   });
 }
