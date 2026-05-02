@@ -50,7 +50,13 @@ export function ImageCard({
   }
 
   return (
-    <Card className={cn("group relative overflow-hidden cursor-pointer w-full", aspectRatio, className)}>
+    <Card
+      className={cn(
+        "group relative overflow-hidden cursor-pointer w-full",
+        aspectRatio,
+        className,
+      )}
+    >
       {/* Background Image */}
       <div className="absolute inset-0 transition-transform duration-300 ease-out group-hover:scale-[1.02] will-change-transform">
         <Image
@@ -60,6 +66,7 @@ export function ImageCard({
           className="object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           onError={handleError}
+          unoptimized
         />
       </div>
 
@@ -75,10 +82,10 @@ export function ImageCard({
         className="absolute inset-0 pointer-events-none z-15"
         style={{
           background: `linear-gradient(to bottom, 
-            ${gradientColors.from.includes('black') ? 'rgba(0, 0, 0, 0)' : 'rgba(255, 255, 255, 0)'} 0%, 
-            ${gradientColors.from.includes('black') ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'} 50%, 
-            ${gradientColors.from.includes('black') ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)'} 80%, 
-            ${gradientColors.from.includes('black') ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)'} 100%)`
+            ${gradientColors.from.includes("black") ? "rgba(0, 0, 0, 0)" : "rgba(255, 255, 255, 0)"} 0%, 
+            ${gradientColors.from.includes("black") ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)"} 50%, 
+            ${gradientColors.from.includes("black") ? "rgba(0, 0, 0, 0.6)" : "rgba(255, 255, 255, 0.6)"} 80%, 
+            ${gradientColors.from.includes("black") ? "rgba(0, 0, 0, 0.8)" : "rgba(255, 255, 255, 0.8)"} 100%)`,
         }}
       />
 
@@ -99,9 +106,9 @@ export function ImageCard({
 
       {/* Content Overlay */}
       <div className="absolute inset-0 flex flex-col justify-end p-6 z-20">
-          {children}
+        {children}
       </div>
     </Card>
-  )
+  );
 }
 
