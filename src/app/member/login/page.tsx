@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 function GoogleLoginButton() {
   const login = async () => {
     try {
-      const response = await fetch("/api/auth/google");
+      const response = await fetch("/api/v1/auth/google");
       const data = await response.json();
 
       if (data.url) {
