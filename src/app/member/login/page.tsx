@@ -9,7 +9,10 @@ import { API_URL } from "@/config";
 function GoogleLoginButton() {
   const login = async () => {
     try {
-      const response = await fetch(`${API_URL}/auth/google`);
+      const response = await fetch(`${API_URL}/auth/google`, {
+        method: "GET",
+        credentials: "include",
+      });
       const data = await response.json();
 
       if (data.url) {

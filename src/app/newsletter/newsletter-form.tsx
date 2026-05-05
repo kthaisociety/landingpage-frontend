@@ -73,6 +73,7 @@ function NewsletterFormFields({
 
       const response = await fetch(`${API_URL}/newsletter/subscribe`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
