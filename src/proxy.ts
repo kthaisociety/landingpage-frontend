@@ -18,7 +18,7 @@ export async function proxy(req: NextRequest) {
   const { pathname } = url;
   const token = req.cookies.get("jwt")?.value;
 
-  if (pathname.startsWith("/member/login")) {
+  if (pathname.startsWith("/login")) {
     const res = NextResponse.next();
     res.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
     res.headers.set("Cross-Origin-Embedder-Policy", "unsafe-none");
@@ -33,7 +33,7 @@ export async function proxy(req: NextRequest) {
   }
 
   if (!token) {
-    url.pathname = "/member/login";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
@@ -66,7 +66,7 @@ export async function proxy(req: NextRequest) {
   } catch (error) {
     console.error("Middleware Auth Error:", error);
 
-    url.pathname = "/member/login";
+    url.pathname = "/login";
     const response = NextResponse.redirect(url);
 
     response.cookies.delete("jwt");
@@ -78,7 +78,7 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/member/login/:path*",
+    "/login/:path*",
     "/member/dashboard/:path*",
     "/member/admin/:path*",
   ],
