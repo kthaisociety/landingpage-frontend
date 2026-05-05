@@ -50,7 +50,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function checkStatus() {
       try {
-        const response = await fetch(`${API_URL}/profile/me`);
+        const response = await fetch(`${API_URL}/profile/me`, {
+          method: "GET",
+          credentials: "include",
+        });
         if (response.ok) {
           const data = await response.json();
           setIsAuthenticated(true);
