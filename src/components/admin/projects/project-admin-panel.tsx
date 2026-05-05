@@ -19,7 +19,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useProjectPosts, type ProjectInput } from "@/hooks/projects";
 
@@ -74,9 +80,7 @@ export function ProjectAdminPanel() {
 
   const handleChange =
     (field: keyof ProjectInput) =>
-    (
-      event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-    ) => {
+    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
@@ -322,15 +326,21 @@ export function ProjectAdminPanel() {
               <div className="space-y-2">
                 <Label htmlFor="project-status">Status</Label>
                 <Select
-                  id="project-status"
                   value={form.status}
-                  onChange={handleChange("status")}
+                  onValueChange={(value) =>
+                    setForm((prev) => ({ ...prev, status: value }))
+                  }
                 >
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
+                  <SelectTrigger id="project-status" className="w-full">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
 
