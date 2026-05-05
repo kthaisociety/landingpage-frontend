@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useJob } from "@/hooks/admin";
+import { useJob } from "@/hooks/jobs";
 import { SharedJobView } from "@/components/jobs/shared-job-view";
 
 export default function JobDetailPage() {

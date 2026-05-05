@@ -363,3 +363,103 @@ export function useUpdateCompany() {
     },
   });
 }
+
+// --- Admin job listings (`/joblistings/job`) — used by `job-form` / shared views ---
+
+export type ContactDTO = {
+  name: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+};
+
+/** Payload for admin job create/edit forms (distinct from `hooks/jobs` local demo type). */
+export type JobPostInput = {
+  title: string;
+  description: string;
+  jobType: string;
+  location: { place: string; tag: string };
+  salary: string;
+  companyId: string;
+  startdate: string;
+  enddate: string;
+  appurl: string;
+  contacts: ContactDTO[];
+};
+
+export type FullJobListing = JobPostInput & {
+  id: string;
+  company?: string;
+};
+
+function serializeJobListingPayload(data: JobPostInput) {
+  return {
+    title: data.title,
+    description: data.description,
+    jobType: data.jobType,
+    location: JSON.stringify(data.location),
+    salary: data.salary,
+    company: data.companyId,
+    startdate: data.startdate || null,
+    enddate: data.enddate || null,
+    appurl: data.appurl,
+    contact: JSON.stringify(data.contacts),
+  };
+}
+
+export function useCreateJob() {
+  return useMutation({
+    mutationFn: async (data: JobPostInput) => {
+      const response = await fetch(`${API_URL}/joblistings/job`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(serializeJobListingPayload(data)),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => null);
+        throw new Error(err?.message || err?.error || "Failed to create job");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.success("Job published");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to create job");
+    },
+  });
+}
+
+export function useUpdateJob() {
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: JobPostInput;
+    }) => {
+      const response = await fetch(
+        `${API_URL}/joblistings/job?id=${encodeURIComponent(id)}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(serializeJobListingPayload(data)),
+        },
+      );
+      if (!response.ok) {
+        const err = await response.json().catch(() => null);
+        throw new Error(err?.message || err?.error || "Failed to update job");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.success("Job updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update job");
+    },
+  });
+}
