@@ -1,124 +1,205 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { AsciiGrid } from "@/components/ui/ascii-grid"
-import { JobsSkeleton } from "@/components/jobs/job-card-skeleton"
-import { ImageCard } from "@/components/ui/image-card"
-import { useJobs } from "@/hooks/jobs"
-import type { JobListing } from "@/hooks/jobs"
+} from "@/components/ui/dropdown-menu";
+import { AsciiGrid } from "@/components/ui/ascii-grid";
+import { JobsSkeleton } from "@/components/jobs/job-card-skeleton";
+import { ImageCard } from "@/components/ui/image-card";
+import { useJobs } from "@/hooks/admin"; // Fixed import path
+import { useCompanies } from "@/hooks/admin"; // Fixed import path
+import type { SmallJobListing } from "@/hooks/admin";
+import { API_URL } from "@/config";
+import { NIL_UUID } from "@/lib/constants/companies";
 
-type JobFilter = "all" | "internship" | "summer-internship" | "part-time" | "full-time" | "volunteering" | "master-thesis" | "other"
+type JobFilter =
+  | "all"
+  | "internship"
+  | "summer-internship"
+  | "part-time"
+  | "full-time"
+  | "volunteering"
+  | "master-thesis"
+  | "other";
 
-function JobCard({ job }: { job: JobListing }) {
-  // Determine gradient colors - using a consistent dark gradient for jobs
+function JobCard({ job }: { job: SmallJobListing & { companyLogo?: string | null } }) {
+  // Determine gradient colors
   const gradientColors = {
     from: "from-white/60",
     via: "via-white/20",
     to: "to-transparent",
-  }
+  };
 
   // Create tags array from job properties
-  const tags: string[] = []
-  if (job.jobType) tags.push(job.jobType)
-  if (job.tags && job.tags.length) tags.push(...job.tags)
-  if (job.location) tags.push(job.location)
+  const tags: string[] = [];
+  if (job.jobType) tags.push(job.jobType);
 
-  // Prefer explicit company logo if provided, otherwise fall back to generated cover path
-  const companySlug = job.company.toLowerCase().replace(/\s+/g, "-")
-  const coverImage = job.companyLogo || `/cover-${companySlug}.jpg`
+  // Safely parse the stringified location from the backend if it exists
+  if (job.location) {
+    try {
+      const parsedLoc =
+        typeof job.location === "string"
+          ? JSON.parse(job.location)
+          : job.location;
+      if (parsedLoc.place) tags.push(parsedLoc.place);
+      if (parsedLoc.tag) tags.push(parsedLoc.tag);
+    } catch {
+      tags.push(job.location); // Fallback if it's just a raw string
+    }
+  }
+
+  const companySlug = (job.company || "company")
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+
+  // Since we are showing the logo separately now, we can use a generic cover
+  // or the logo itself as a fallback background.
+  const coverImage = `/cover-${companySlug}.jpg`;
 
   return (
     <Link href={`/business/jobs/${job.id}`}>
       <ImageCard
-        image={coverImage}
-        alt={job.company}
+        image={job.companyLogo || coverImage} // Falls back to cover if no logo
+        alt={job.company || "Company"}
         blurHeight="70%"
         gradientColors={gradientColors}
         tags={tags}
+        
       >
         {/* Title */}
-        <h3 className="text-2xl font-base mb-1 drop-shadow-lg tracking-tight text-black">
+        <h3 className="text-2xl font-base mb-2 drop-shadow-lg tracking-tight text-black">
           {job.title}
         </h3>
 
-        {/* Company Name */}
-        <p className="text-base drop-shadow-lg mb-3 font-mono text-black">
-          {job.company}
-        </p>
+        {/* Company Logo and Name */}
+        <div className="flex items-center gap-3 mb-2">
+          {/* Using Image component for the logo */}
+          {job.companyLogo ? (
+            <Image
+              src={job.companyLogo}
+              alt={`${job.company} logo`}
+              width={32}
+              height={32}
+              className="rounded object-contain bg-white border border-gray-200/50 shadow-sm"
+              unoptimized
+            />
+          ) : (
+            <div className="h-8 w-8 rounded bg-white/70 border border-gray-200/50 shadow-sm flex items-center justify-center text-xs font-bold text-black">
+              {(job.company || "C")[0].toUpperCase()}
+            </div>
+          )}
+          <p className="text-base drop-shadow-lg font-mono text-black">
+            {job.company}
+          </p>
+        </div>
       </ImageCard>
     </Link>
-  )
+  );
 }
 
 export default function JobListingPage() {
-  const [jobsTextMask, setJobsTextMask] = useState<string | undefined>(undefined)
-  const [selectedFilter, setSelectedFilter] = useState<JobFilter>("all")
-  const { data: jobs, isLoading: loading, error: queryError } = useJobs()
+  const [jobsTextMask, setJobsTextMask] = useState<string | undefined>(
+    undefined,
+  );
+  const [selectedFilter, setSelectedFilter] = useState<JobFilter>("all");
+
+  // Fetch both jobs and companies in parallel
+  const { data: jobs, isLoading: jobsLoading, error: jobsError } = useJobs();
+  const { data: companies, isLoading: companiesLoading } = useCompanies();
+
+  const loading = jobsLoading || companiesLoading;
+  const queryError = jobsError;
 
   useEffect(() => {
     // Create a canvas-based text mask for "JOBS"
-    const canvas = document.createElement("canvas")
-    canvas.width = 1200
-    canvas.height = 400
-    const ctx = canvas.getContext("2d")
-    
-    if (!ctx) return
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 400;
+    const ctx = canvas.getContext("2d");
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.fillStyle = "white"
-    ctx.font = "bold 200px system-ui, -apple-system, sans-serif"
-    ctx.textAlign = "left"
-    ctx.textBaseline = "top"
-    
-    const text = "JOBS"
-    ctx.fillText(text, 50, 50)
-    
-    const dataUrl = canvas.toDataURL("image/png")
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "white";
+    ctx.font = "bold 200px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+
+    const text = "JOBS";
+    ctx.fillText(text, 50, 50);
+
+    const dataUrl = canvas.toDataURL("image/png");
     requestAnimationFrame(() => {
-      setJobsTextMask(dataUrl)
-    })
-  }, [])
+      setJobsTextMask(dataUrl);
+    });
+  }, []);
 
-  const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null
+  const error =
+    queryError instanceof Error
+      ? queryError.message
+      : queryError
+        ? String(queryError)
+        : null;
 
-  const filteredJobs = (jobs ?? []).filter((job) => {
-    if (selectedFilter === "all") return true
-    // Normalize job type for comparison (lowercase, replace spaces with hyphens)
-    const normalizedJobType = job.jobType?.toLowerCase().replace(/\s+/g, '-')
-    return normalizedJobType === selectedFilter
-  })
+  // Merge company logos into the jobs array using the new companyId mapping
+  const enrichedJobs = useMemo(() => {
+    if (!jobs) return [];
+
+    return jobs.map((job) => {
+      // Find the company to grab its logo safely using companyId
+      const companyData = companies?.find(
+        (c) => c.id === job.companyId || c.name === job.company,
+      );
+
+      // Check if logo exists and is not NIL_UUID
+      const hasValidLogo = companyData?.logo && companyData.logo !== NIL_UUID;
+
+      return {
+        ...job,
+        companyLogo: hasValidLogo
+          ? `${API_URL}/company/logo?id=${companyData.logo}`
+          : null,
+      };
+    });
+  }, [jobs, companies]);
+
+  // Filter the enriched jobs
+  const filteredJobs = enrichedJobs.filter((job) => {
+    if (selectedFilter === "all") return true;
+    const normalizedJobType = job.jobType?.toLowerCase().replace(/\s+/g, "-");
+    return normalizedJobType === selectedFilter;
+  });
 
   const getFilterLabel = (filter: JobFilter): string => {
     switch (filter) {
       case "all":
-        return "Show all"
+        return "Show all";
       case "internship":
-        return "Internship"
+        return "Internship";
       case "summer-internship":
-        return "Summer internship"
+        return "Summer internship";
       case "part-time":
-        return "Part-time job"
+        return "Part-time job";
       case "full-time":
-        return "Full-time job"
+        return "Full-time job";
       case "volunteering":
-        return "Volunteering"
+        return "Volunteering";
       case "master-thesis":
-        return "Master thesis"
+        return "Master thesis";
       case "other":
-        return "Other"
+        return "Other";
       default:
-        return "Show all"
+        return "Show all";
     }
-  }
+  };
 
   return (
     <div className="min-h-screen">
@@ -126,26 +207,27 @@ export default function JobListingPage() {
       <section className="relative bg-white text-secondary-black pt-64 pb-24 overflow-hidden">
         {/* Ascii Grid Background */}
         <div className="absolute inset-0 pointer-events-none">
-          <AsciiGrid 
-            color="rgba(0, 0, 0, 0.2)" 
-            cellSize={12} 
+          <AsciiGrid
+            color="rgba(0, 0, 0, 0.2)"
+            cellSize={12}
             logoSrc={jobsTextMask}
             logoPosition="center"
             logoScale={0.6}
             enableDripping={false}
             className="w-full h-full"
           />
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white via-white/50 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/50 to-transparent pointer-events-none" />
         </div>
         <div className="container max-w-7xl relative z-10 mx-auto px-4 md:px-6 pb-8">
-          {/* Main Title */}
           <h4 className="text-3xl mb-2 tracking-tighter">
-            <span className="font-serif font-normal text-primary">(Career)</span> Opportunities
+            <span className="font-serif font-normal text-primary">
+              (Career)
+            </span>{" "}
+            Opportunities
           </h4>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter">
             Job Board
           </h1>
-
         </div>
       </section>
 
@@ -155,15 +237,23 @@ export default function JobListingPage() {
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8">
             <div className="flex flex-col gap-2">
               <div>
-                <Link href="/" className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium">
+                <Link
+                  href="/"
+                  className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium"
+                >
                   Home
                 </Link>
                 <span className="text-gray-300 mx-2">/</span>
                 <span className="text-primary font-medium text-sm">Jobs</span>
               </div>
               <p className="text-lg md:text-xl max-w-3xl opacity-95 leading-relaxed font-serif">
-                Connecting our members with industry opportunities. Browse current openings below.
-                If you want to make a job posting contact us at <a href="mailto:jobs@kthais.com" className="text-primary">jobs@kthais.com</a>.
+                Connecting our members with industry opportunities. Browse
+                current openings below. If you want to make a job posting
+                contact us at{" "}
+                <a href="mailto:jobs@kthais.com" className="text-primary">
+                  jobs@kthais.com
+                </a>
+                .
               </p>
             </div>
 
@@ -175,26 +265,42 @@ export default function JobListingPage() {
                   <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="bottom" className="min-w-[220px]">
+              <DropdownMenuContent
+                align="end"
+                side="bottom"
+                className="min-w-[220px]"
+              >
                 <DropdownMenuItem onClick={() => setSelectedFilter("all")}>
                   Show all
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSelectedFilter("internship")}>
+                <DropdownMenuItem
+                  onClick={() => setSelectedFilter("internship")}
+                >
                   Internship
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSelectedFilter("summer-internship")}>
+                <DropdownMenuItem
+                  onClick={() => setSelectedFilter("summer-internship")}
+                >
                   Summer internship
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSelectedFilter("part-time")}>
+                <DropdownMenuItem
+                  onClick={() => setSelectedFilter("part-time")}
+                >
                   Part-time job
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSelectedFilter("full-time")}>
+                <DropdownMenuItem
+                  onClick={() => setSelectedFilter("full-time")}
+                >
                   Full-time job
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSelectedFilter("volunteering")}>
+                <DropdownMenuItem
+                  onClick={() => setSelectedFilter("volunteering")}
+                >
                   Volunteering
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSelectedFilter("master-thesis")}>
+                <DropdownMenuItem
+                  onClick={() => setSelectedFilter("master-thesis")}
+                >
                   Master thesis
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setSelectedFilter("other")}>
@@ -227,5 +333,5 @@ export default function JobListingPage() {
         </section>
       </div>
     </div>
-  )
+  );
 }

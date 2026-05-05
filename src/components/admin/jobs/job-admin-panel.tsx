@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import Fuse from "fuse.js";
+import { Plus, Search, Edit, Trash2, Briefcase } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -61,16 +66,18 @@ export function JobAdminPanel() {
     setForm(emptyForm);
   };
 
-  const hasCompanies = companies.length > 0;
-  const canSubmitJob = hasCompanies && Boolean(form.companyId);
+  const filteredJobs = useMemo(() => {
+    if (!jobSearchQuery) return jobs;
+    return jobFuse.search(jobSearchQuery).map((result) => result.item);
+  }, [jobSearchQuery, jobs, jobFuse]);
 
   return (
     <section className="space-y-10">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Job posts</h2>
+          <h2 className="text-2xl font-semibold">Job Posts</h2>
           <p className="text-sm text-muted-foreground">
-            Create, update, and publish roles for the KTH AIS community.
+            Manage roles for the KTH AIS community.
           </p>
         </div>
         <span className="text-xs text-muted-foreground">
@@ -129,26 +136,66 @@ export function JobAdminPanel() {
                     required
                   />
                 </div>
+              ) : (
+                <div className="divide-y max-h-[600px] overflow-y-auto">
+                  {filteredJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center hover:bg-secondary/10 transition-colors"
+                    >
+                      {/* Left Side: Job Info */}
+                      <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                        <div className="h-10 w-10 shrink-0 rounded-md border bg-white flex items-center justify-center text-muted-foreground">
+                          <Briefcase className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1 overflow-hidden">
+                          <p className="font-medium truncate">{job.title}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {job.company} • {job.jobType}
+                          </p>
+                        </div>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="job-salary">Salary</Label>
-                  <Input
-                    id="job-salary"
-                    value={form.salary}
-                    onChange={handleChange("salary")}
-                    placeholder="SEK 30,000/month"
-                    required
-                  />
-                </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link href={`/member/admin/jobs/${job.id}`}>
+                          <Button variant="outline" size="sm">
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </Button>
+                        </Link>
 
-                <div className="space-y-2">
-                  <Label htmlFor="job-publish-at">Publish date</Label>
-                  <Input
-                    id="job-publish-at"
-                    type="datetime-local"
-                    value={form.publishAt || ""}
-                    onChange={handleChange("publishAt")}
-                  />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={isDeleting}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the job post{" "}
+                                <strong>{job.title}</strong> at {job.company}.
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteJob(job.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Yes, delete job
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="space-y-2">
