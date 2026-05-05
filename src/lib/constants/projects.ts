@@ -38,7 +38,7 @@ export interface Project {
   contact: string
 }
 
-export const projects: Project[] = [
+export const projectsLocal: Project[] = [
   {
     id: "gnosis",
     title: "GNOSIS",
@@ -342,15 +342,15 @@ export const projects: Project[] = [
 ]
 
 export function getProjectById(id: string): Project | undefined {
-  return projects.find(project => project.id === id)
+  return projectsLocal.find(project => project.id === id)
 }
 
 export function getProjectsByTag(tag: string): Project[] {
-  return projects.filter(project => 
-    project.tags.some(t => t.toLowerCase() === tag.toLowerCase())
-  )
+  return projectsLocal.filter((project) =>
+    project.tags.some((t) => t.toLowerCase() === tag.toLowerCase()),
+  );
 }
 
 export function getAllTags(): string[] {
-  return Array.from(new Set(projects.flatMap(p => p.tags))).sort()
+  return Array.from(new Set(projectsLocal.flatMap((p) => p.tags))).sort();
 }
