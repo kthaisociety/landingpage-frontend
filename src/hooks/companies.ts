@@ -1,72 +1,40 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { API_URL } from "@/config";
 
-export type CompanyInput = {
-  name: string;
-  logoUrl: string;
-  websiteUrl: string;
-};
-
-export type Company = CompanyInput & {
+export type Company = {
   id: string;
-  createdAt: string;
-  updatedAt: string;
+  name: string;
+  logo: string;
 };
 
-const STORAGE_KEY = "kthais-companies";
-
-const getNowIso = () => new Date().toISOString();
-
-const getStoredCompanies = (): Company[] => {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw) as Company[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-const persistCompanies = (companies: Company[]) => {
-  if (typeof window === "undefined") {
-    return;
-  }
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
-};
 
 export function useCompanies() {
-  const [companies, setCompanies] = useState<Company[]>(() =>
-    getStoredCompanies(),
-  );
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    persistCompanies(companies);
-  }, [companies]);
+    async function fetchCompanies() {
+      try {
+        const res = await fetch(`${API_URL}/company/getAllCompanies`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch companies");
+        }
+        const data = await res.json();
+        setCompanies(data || []);
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+        toast.error("Failed to load companies.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
-  const createCompany = (input: CompanyInput) => {
-    const now = getNowIso();
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const newCompany: Company = {
-      ...input,
-      id,
-      createdAt: now,
-      updatedAt: now,
-    };
-    setCompanies((prev) => [newCompany, ...prev]);
-    return newCompany;
-  };
+    fetchCompanies();
+  }, []);
 
   return {
     companies,
-    createCompany,
+    isLoading,
   };
 }

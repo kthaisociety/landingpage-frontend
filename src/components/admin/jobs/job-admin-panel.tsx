@@ -15,6 +15,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useJobPosts, type JobPostInput } from "@/hooks/jobs";
 import { useCompanies } from "@/hooks/companies";
+import { API_URL } from "@/config";
 
 const jobTypeOptions = ["Full time", "Part time"];
 
@@ -31,19 +32,27 @@ const emptyForm: JobPostInput = {
 
 export function JobAdminPanel() {
   const { createJob } = useJobPosts();
-  const { companies } = useCompanies();
+  const { companies, isLoading } = useCompanies(); // Added isLoading here
   const [form, setForm] = useState<JobPostInput>(emptyForm);
   const [dateWarning, setDateWarning] = useState<string | null>(null);
 
   const handleChange =
     (field: keyof JobPostInput) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    (
+      event: ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (form.publishAt && form.unpublishAt && form.unpublishAt < form.publishAt) {
+    if (
+      form.publishAt &&
+      form.unpublishAt &&
+      form.unpublishAt < form.publishAt
+    ) {
       setDateWarning("Unpublish date must be after publish date.");
       return;
     }
@@ -56,7 +65,7 @@ export function JobAdminPanel() {
   const canSubmitJob = hasCompanies && Boolean(form.companyId);
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-10">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Job posts</h2>
@@ -65,10 +74,13 @@ export function JobAdminPanel() {
           </p>
         </div>
         <span className="text-xs text-muted-foreground">
-          Stored locally for now
+          {isLoading
+            ? "Loading companies..."
+            : `${companies.length} companies available`}
         </span>
       </div>
 
+      {/* --- JOB POST FORM --- */}
       <div className="grid gap-6">
         <Card>
           <CardHeader>
@@ -156,12 +168,14 @@ export function JobAdminPanel() {
                     value={form.companyId}
                     onChange={handleChange("companyId")}
                     required
-                    disabled={!hasCompanies}
+                    disabled={!hasCompanies || isLoading}
                   >
                     <option value="" disabled>
-                      {hasCompanies
-                        ? "Select a company"
-                        : "Add a company first"}
+                      {isLoading
+                        ? "Loading companies..."
+                        : hasCompanies
+                          ? "Select a company"
+                          : "Add a company first"}
                     </option>
                     {companies.map((company) => (
                       <option key={company.id} value={company.id}>
@@ -169,7 +183,7 @@ export function JobAdminPanel() {
                       </option>
                     ))}
                   </Select>
-                  {!hasCompanies ? (
+                  {!hasCompanies && !isLoading ? (
                     <p className="text-xs text-muted-foreground">
                       Add at least one company in the Companies tab.
                     </p>
@@ -201,6 +215,54 @@ export function JobAdminPanel() {
             </form>
           </CardContent>
         </Card>
+      </div>
+
+      {/* --- AVAILABLE COMPANIES GRID --- */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-medium">Available Companies</h3>
+          <p className="text-sm text-muted-foreground">
+            Companies fetched directly from the database.
+          </p>
+        </div>
+
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        ) : companies.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No companies found. Create one in the Companies tab!
+          </p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {companies.map((company) => {
+              const imageUrl = company.logo
+                ? `${API_URL}/company/logo?id=${company.logo}`
+                : "/placeholder.png";
+
+              return (
+                <Card key={company.id} className="bg-secondary/10">
+                  <CardHeader className="p-4 flex flex-row items-center gap-4">
+                    {company.logo && (
+                      <img
+                        src={imageUrl}
+                        alt={`${company.name || "Company"} logo preview`}
+                        className="h-40 w-40 rounded-md object-contain border bg-white"
+                      />
+                    )}
+                    <div>
+                      <CardTitle className="text-base">
+                        {company.name}
+                      </CardTitle>
+                      <CardDescription className="text-xs break-all truncate">
+                        ID: {company.id}
+                      </CardDescription>
+                    </div>
+                  </CardHeader>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
