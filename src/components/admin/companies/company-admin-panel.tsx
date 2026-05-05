@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Plus,
   Search,
@@ -130,10 +131,13 @@ export function CompanyAdminPanel() {
                           >
                             {/* 3. Because of your setup here, if logoUrl is null, it automatically renders the placeholder! */}
                             {logoUrl ? (
-                              <img
+                              <Image
                                 src={logoUrl}
                                 alt={`${company.name || "Company"} logo preview`}
-                                className="h-12 w-12 rounded-md object-contain border bg-white"
+                                width={48}
+                                height={48}
+                                className="rounded-md object-contain border bg-white"
+                              unoptimized
                               />
                             ) : (
                               <div className="h-12 w-12 rounded-md border bg-secondary flex items-center justify-center text-muted-foreground">
