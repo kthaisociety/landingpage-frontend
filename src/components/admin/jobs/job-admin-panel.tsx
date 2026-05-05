@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import Fuse from "fuse.js";
+import { Plus, Search, Edit, Trash2, Briefcase } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -11,22 +16,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useJobPosts, type JobPostInput } from "@/hooks/jobs";
-import { useCompanies } from "@/hooks/admin";
+import { useCompanies } from "@/hooks/companies";
 import { API_URL } from "@/config";
 
 const jobTypeOptions = ["Full time", "Part time"];
-
-/** Radix Select items cannot use `value=""`; map empty company to this sentinel. */
-const NO_COMPANY_VALUE = "__none__";
 
 const emptyForm: JobPostInput = {
   title: "",
@@ -41,19 +37,27 @@ const emptyForm: JobPostInput = {
 
 export function JobAdminPanel() {
   const { createJob } = useJobPosts();
-  const { data: companies = [], isLoading } = useCompanies();
+  const { companies, isLoading } = useCompanies(); // Added isLoading here
   const [form, setForm] = useState<JobPostInput>(emptyForm);
   const [dateWarning, setDateWarning] = useState<string | null>(null);
 
   const handleChange =
     (field: keyof JobPostInput) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (
+      event: ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (form.publishAt && form.unpublishAt && form.unpublishAt < form.publishAt) {
+    if (
+      form.publishAt &&
+      form.unpublishAt &&
+      form.unpublishAt < form.publishAt
+    ) {
       setDateWarning("Unpublish date must be after publish date.");
       return;
     }
@@ -62,16 +66,18 @@ export function JobAdminPanel() {
     setForm(emptyForm);
   };
 
-  const hasCompanies = companies.length > 0;
-  const canSubmitJob = hasCompanies && Boolean(form.companyId);
+  const filteredJobs = useMemo(() => {
+    if (!jobSearchQuery) return jobs;
+    return jobFuse.search(jobSearchQuery).map((result) => result.item);
+  }, [jobSearchQuery, jobs, jobFuse]);
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-10">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Job posts</h2>
+          <h2 className="text-2xl font-semibold">Job Posts</h2>
           <p className="text-sm text-muted-foreground">
-            Create, update, and publish roles for the KTH AIS community.
+            Manage roles for the KTH AIS community.
           </p>
         </div>
         <span className="text-xs text-muted-foreground">
@@ -81,6 +87,7 @@ export function JobAdminPanel() {
         </span>
       </div>
 
+      {/* --- JOB POST FORM --- */}
       <div className="grid gap-6">
         <Card>
           <CardHeader>
@@ -106,21 +113,16 @@ export function JobAdminPanel() {
                 <div className="space-y-2">
                   <Label htmlFor="job-type">Type</Label>
                   <Select
+                    id="job-type"
                     value={form.type}
-                    onValueChange={(value) =>
-                      setForm((prev) => ({ ...prev, type: value }))
-                    }
+                    onChange={handleChange("type")}
+                    required
                   >
-                    <SelectTrigger id="job-type" className="w-full">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobTypeOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                    {jobTypeOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
                   </Select>
                 </div>
 
@@ -134,26 +136,66 @@ export function JobAdminPanel() {
                     required
                   />
                 </div>
+              ) : (
+                <div className="divide-y max-h-[600px] overflow-y-auto">
+                  {filteredJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center hover:bg-secondary/10 transition-colors"
+                    >
+                      {/* Left Side: Job Info */}
+                      <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                        <div className="h-10 w-10 shrink-0 rounded-md border bg-white flex items-center justify-center text-muted-foreground">
+                          <Briefcase className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1 overflow-hidden">
+                          <p className="font-medium truncate">{job.title}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {job.company} • {job.jobType}
+                          </p>
+                        </div>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="job-salary">Salary</Label>
-                  <Input
-                    id="job-salary"
-                    value={form.salary}
-                    onChange={handleChange("salary")}
-                    placeholder="SEK 30,000/month"
-                    required
-                  />
-                </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link href={`/member/admin/jobs/${job.id}`}>
+                          <Button variant="outline" size="sm">
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </Button>
+                        </Link>
 
-                <div className="space-y-2">
-                  <Label htmlFor="job-publish-at">Publish date</Label>
-                  <Input
-                    id="job-publish-at"
-                    type="datetime-local"
-                    value={form.publishAt || ""}
-                    onChange={handleChange("publishAt")}
-                  />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={isDeleting}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the job post{" "}
+                                <strong>{job.title}</strong> at {job.company}.
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteJob(job.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Yes, delete job
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="space-y-2">
@@ -169,42 +211,24 @@ export function JobAdminPanel() {
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="job-company">Company</Label>
                   <Select
-                    value={
-                      form.companyId === "" ? NO_COMPANY_VALUE : form.companyId
-                    }
-                    onValueChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        companyId: value === NO_COMPANY_VALUE ? "" : value,
-                      }))
-                    }
+                    id="job-company"
+                    value={form.companyId}
+                    onChange={handleChange("companyId")}
+                    required
                     disabled={!hasCompanies || isLoading}
                   >
-                    <SelectTrigger id="job-company" className="w-full">
-                      <SelectValue
-                        placeholder={
-                          isLoading
-                            ? "Loading companies..."
-                            : hasCompanies
-                              ? "Select a company"
-                              : "Add a company first"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_COMPANY_VALUE}>
-                        {isLoading
-                          ? "Loading companies..."
-                          : hasCompanies
-                            ? "Select a company"
-                            : "Add a company first"}
-                      </SelectItem>
-                      {companies.map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                    <option value="" disabled>
+                      {isLoading
+                        ? "Loading companies..."
+                        : hasCompanies
+                          ? "Select a company"
+                          : "Add a company first"}
+                    </option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
                   </Select>
                   {!hasCompanies && !isLoading ? (
                     <p className="text-xs text-muted-foreground">
@@ -240,11 +264,12 @@ export function JobAdminPanel() {
         </Card>
       </div>
 
+      {/* --- AVAILABLE COMPANIES GRID --- */}
       <div className="space-y-4">
         <div>
-          <h3 className="text-lg font-medium">Available companies</h3>
+          <h3 className="text-lg font-medium">Available Companies</h3>
           <p className="text-sm text-muted-foreground">
-            Companies from the API (used when publishing jobs).
+            Companies fetched directly from the database.
           </p>
         </div>
 
@@ -252,7 +277,7 @@ export function JobAdminPanel() {
           <p className="text-sm text-muted-foreground">Loading...</p>
         ) : companies.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No companies found. Create one in the Companies tab.
+            No companies found. Create one in the Companies tab!
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -263,18 +288,19 @@ export function JobAdminPanel() {
 
               return (
                 <Card key={company.id} className="bg-secondary/10">
-                  <CardHeader className="flex flex-row items-center gap-4 p-4">
-                    {company.logo ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- dynamic API logo URL
+                  <CardHeader className="p-4 flex flex-row items-center gap-4">
+                    {company.logo && (
                       <img
                         src={imageUrl}
-                        alt=""
-                        className="h-16 w-16 rounded-md border bg-white object-contain"
+                        alt={`${company.name || "Company"} logo preview`}
+                        className="h-40 w-40 rounded-md object-contain border bg-white"
                       />
-                    ) : null}
+                    )}
                     <div>
-                      <CardTitle className="text-base">{company.name}</CardTitle>
-                      <CardDescription className="text-xs break-all">
+                      <CardTitle className="text-base">
+                        {company.name}
+                      </CardTitle>
+                      <CardDescription className="text-xs break-all truncate">
                         ID: {company.id}
                       </CardDescription>
                     </div>

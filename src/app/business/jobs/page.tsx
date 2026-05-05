@@ -14,8 +14,9 @@ import {
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { JobsSkeleton } from "@/components/jobs/job-card-skeleton";
 import { ImageCard } from "@/components/ui/image-card";
-import { useJobs, type ExtendedJobListing } from "@/hooks/jobs";
-import { useCompanies } from "@/hooks/admin";
+import { useJobs } from "@/hooks/admin"; // Fixed import path
+import { useCompanies } from "@/hooks/admin"; // Fixed import path
+import type { SmallJobListing } from "@/hooks/admin";
 import { API_URL } from "@/config";
 import { NIL_UUID } from "@/lib/constants/companies";
 
@@ -29,11 +30,7 @@ type JobFilter =
   | "master-thesis"
   | "other";
 
-function JobCard({
-  job,
-}: {
-  job: ExtendedJobListing & { companyLogo?: string | null };
-}) {
+function JobCard({ job }: { job: SmallJobListing & { companyLogo?: string | null } }) {
   // Determine gradient colors
   const gradientColors = {
     from: "from-white/60",
@@ -115,10 +112,8 @@ export default function JobListingPage() {
   const [selectedFilter, setSelectedFilter] = useState<JobFilter>("all");
 
   // Fetch both jobs and companies in parallel
-  const { data: jobs = [], isLoading: jobsLoading, error: jobsError } =
-    useJobs();
-  const { data: companies = [], isLoading: companiesLoading } =
-    useCompanies();
+  const { data: jobs, isLoading: jobsLoading, error: jobsError } = useJobs();
+  const { data: companies, isLoading: companiesLoading } = useCompanies();
 
   const loading = jobsLoading || companiesLoading;
   const queryError = jobsError;
