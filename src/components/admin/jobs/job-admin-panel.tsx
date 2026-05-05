@@ -11,21 +11,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useJobPosts, type JobPostInput } from "@/hooks/jobs";
 import { useCompanies } from "@/hooks/companies";
 
 const jobTypeOptions = ["Full time", "Part time"];
-
-/** Radix Select cannot use `value=""` on items; map empty company selection to this sentinel. */
-const NO_COMPANY_VALUE = "__none__";
 
 const emptyForm: JobPostInput = {
   title: "",
@@ -46,7 +37,7 @@ export function JobAdminPanel() {
 
   const handleChange =
     (field: keyof JobPostInput) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }));
     };
 
@@ -103,22 +94,16 @@ export function JobAdminPanel() {
                 <div className="space-y-2">
                   <Label htmlFor="job-type">Type</Label>
                   <Select
+                    id="job-type"
                     value={form.type}
-                    onValueChange={(value) =>
-                      setForm((prev) => ({ ...prev, type: value }))
-                    }
+                    onChange={handleChange("type")}
                     required
                   >
-                    <SelectTrigger id="job-type" className="w-full">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobTypeOptions.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                    {jobTypeOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
                   </Select>
                 </div>
 
@@ -167,40 +152,22 @@ export function JobAdminPanel() {
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="job-company">Company</Label>
                   <Select
-                    value={
-                      form.companyId === "" ? NO_COMPANY_VALUE : form.companyId
-                    }
-                    onValueChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        companyId:
-                          value === NO_COMPANY_VALUE ? "" : value,
-                      }))
-                    }
+                    id="job-company"
+                    value={form.companyId}
+                    onChange={handleChange("companyId")}
                     required
                     disabled={!hasCompanies}
                   >
-                    <SelectTrigger id="job-company" className="w-full">
-                      <SelectValue
-                        placeholder={
-                          hasCompanies
-                            ? "Select a company"
-                            : "Add a company first"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_COMPANY_VALUE}>
-                        {hasCompanies
-                          ? "Select a company"
-                          : "Add a company first"}
-                      </SelectItem>
-                      {companies.map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                    <option value="" disabled>
+                      {hasCompanies
+                        ? "Select a company"
+                        : "Add a company first"}
+                    </option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
                   </Select>
                   {!hasCompanies ? (
                     <p className="text-xs text-muted-foreground">
