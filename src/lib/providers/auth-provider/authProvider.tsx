@@ -9,6 +9,7 @@ import {
   useCallback,
 } from "react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/config";
 
 export interface UserProfile {
   userId: string;
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function checkStatus() {
       try {
-        const response = await fetch("/api/profile/me");
+        const response = await fetch(`${API_URL}/profile/me`);
         if (response.ok) {
           const data = await response.json();
           setIsAuthenticated(true);
@@ -72,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      const response = await fetch("/api/auth/logout", {
+      const response = await fetch(`${API_URL}/auth/logout`, {
         method: "GET",
         credentials: "include",
       });

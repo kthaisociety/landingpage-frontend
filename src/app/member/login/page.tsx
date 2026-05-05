@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { useAuth } from "@/lib/providers/auth-provider/authProvider";
+import { API_URL } from "@/config";
 
 function GoogleLoginButton() {
   const login = async () => {
     try {
-      const response = await fetch("/api/v1/auth/google");
+      const response = await fetch(`${API_URL}/auth/google`);
       const data = await response.json();
 
       if (data.url) {

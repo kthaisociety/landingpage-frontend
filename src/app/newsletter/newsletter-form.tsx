@@ -23,6 +23,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group"
+import { API_URL } from "@/config"
 
 const newsletterSchema = z.object({
   name: z
@@ -70,7 +71,7 @@ function NewsletterFormFields({
     onSubmit: async ({ value }) => {
       setSubmitState(null)
 
-      const response = await fetch("/api/newsletter/subscribe", {
+      const response = await fetch(`${API_URL}/newsletter/subscribe`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
