@@ -13,7 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useMemberProfile, useUpdateMemberProfile } from "@/hooks/member";
+import {
+  ProfileApiError,
+  useMemberProfile,
+  useUpdateMemberProfile,
+} from "@/hooks/member";
 
 interface ProfileFormData {
   firstName: string;
@@ -51,8 +55,9 @@ const studyPrograms = [
 
 export function MemberProfileForm() {
   const { toast } = useToast();
-  const { data: profile, isLoading } = useMemberProfile();
+  const { data: profile, isLoading, isError, error } = useMemberProfile();
   const updateProfile = useUpdateMemberProfile();
+  const isNewProfile = profile?.exists === false;
 
   const [formData, setFormData] = useState<ProfileFormData>({
     firstName: "",
@@ -93,20 +98,33 @@ export function MemberProfileForm() {
 
     try {
       await updateProfile.mutateAsync({
-        ...formData,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        university: formData.university || undefined,
+        programme: formData.programme || undefined,
         graduationYear: formData.graduationYear
           ? parseInt(formData.graduationYear, 10)
           : undefined,
+        githubLink: formData.githubLink || undefined,
+        linkedinLink: formData.linkedinLink || undefined,
+        aboutMe: formData.aboutMe || undefined,
       });
 
       toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
+        title: isNewProfile ? "Profile created" : "Profile updated",
+        description: isNewProfile
+          ? "Your profile has been created successfully."
+          : "Your profile has been successfully updated.",
       });
-    } catch {
+    } catch (err) {
+      const description =
+        err instanceof ProfileApiError
+          ? err.message
+          : "Failed to update profile. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description,
         variant: "destructive",
       });
     }
@@ -116,8 +134,27 @@ export function MemberProfileForm() {
     return <div className="text-center py-8">Loading profile...</div>;
   }
 
+  if (isError) {
+    const isUnauthenticated =
+      error instanceof ProfileApiError && error.status === 401;
+    return (
+      <div className="text-center py-8 text-sm text-muted-foreground">
+        {isUnauthenticated
+          ? "You need to be signed in to view your profile."
+          : "Could not load your profile. Please try again later."}
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {isNewProfile ? (
+        <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+          We don&apos;t have a profile for you yet. Fill in the fields below
+          and save to create one.
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
@@ -253,7 +290,11 @@ export function MemberProfileForm() {
 
       <div className="flex justify-end pt-4">
         <Button type="submit" disabled={updateProfile.isPending}>
-          {updateProfile.isPending ? "Saving..." : "Save Changes"}
+          {updateProfile.isPending
+            ? "Saving..."
+            : isNewProfile
+              ? "Create Profile"
+              : "Save Changes"}
         </Button>
       </div>
     </form>
