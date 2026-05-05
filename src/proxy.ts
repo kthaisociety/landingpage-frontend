@@ -3,10 +3,10 @@ import type { NextRequest } from "next/server";
 import { jwtVerify, importSPKI } from "jose";
 
 const getJwtPublicKey = (): string => {
-  const publicKey = process.env.JWT_PUBLIC_KEY;
+  const publicKey = process.env.JWTValidatingKey;
 
   if (!publicKey) {
-    throw new Error("Missing JWT_PUBLIC_KEY environment variable");
+    throw new Error("Missing JWTValidatingKey environment variable");
   }
 
   return publicKey.replace(/\\n/g, "\n");
@@ -44,7 +44,12 @@ export async function proxy(req: NextRequest) {
 
     const { payload } = await jwtVerify(token, publicKey);
 
-    const roles = (payload.roles as string[]) || [];
+    const rolesRaw = payload.roles as string | string[] | undefined;
+    const roles: string[] = Array.isArray(rolesRaw)
+      ? rolesRaw
+      : typeof rolesRaw === "string" && rolesRaw.length > 0
+      ? rolesRaw.split(",")
+      : [];
 
     if (isAdmin && !roles.includes("admin")) {
       url.pathname = "/"; // Send non-admins away
