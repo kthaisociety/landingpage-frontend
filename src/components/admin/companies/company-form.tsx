@@ -8,7 +8,6 @@ import {
   type DragEvent,
   type FormEvent,
 } from "react";
-import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {NIL_UUID} from "@/lib/constants/companies"
@@ -143,10 +142,10 @@ export function CompanyForm({ companyId }: { companyId?: string }) {
     try {
       if (companyId) {
         await updateCompany({ id: companyId, input: form });
-        // toast.success("Company updated successfully!");
+        toast.success("Company updated successfully!");
       } else {
         await createCompany(form);
-        // toast.success("Company created successfully!");
+        toast.success("Company created successfully!");
         // Reset form after creation
         setForm(emptyForm);
         setPreviewUrl("");
@@ -227,14 +226,11 @@ export function CompanyForm({ companyId }: { companyId?: string }) {
                   {previewUrl ? (
                     <div className="flex items-center gap-3 mt-2">
                       <div className="relative">
-                        <Image
+                        <img
                           src={previewUrl}
                           alt={`${form.name || "Company"} logo preview`}
-                          width={48}
-                          height={48}
-                          className="rounded-md object-contain border bg-white"
-                          unoptimized
-                        />
+                          className="h-12 w-12 rounded-md object-contain border bg-white"
+                        ></img>
                         <Button
                           type="button"
                           variant="secondary"

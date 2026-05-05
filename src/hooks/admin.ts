@@ -7,9 +7,6 @@ import type {
 } from "@/types/admin";
 import { API_URL } from "@/config";
 
-
-// Users
-
 async function fetchAllUsers(): Promise<AdminUser[]> {
   const response = await fetch(`${API_URL}/admin/users`, {
     credentials: "include",
@@ -123,8 +120,6 @@ export function useUpdateAdminUserProfile() {
   });
 }
 
-// Projects
-
 export interface CreateProjectDTO {
   title: string;
   oneLineDescription: string;
@@ -184,7 +179,7 @@ export function useProjectPosts() {
   };
 }
 
-
+// Delete a project
 export function useDeleteProject() {
   const queryClient = useQueryClient();
 
@@ -231,9 +226,6 @@ export function useUpdateProject() {
   });
 }
 
-
-// Companies
-
 export type CompanyInput = {
   name: string;
   description: string;
@@ -249,6 +241,7 @@ export type Company = {
   logo: string;
   websiteUrl: string;
 };
+
 
 export function useCompanies() {
   return useQuery<Company[]>({
@@ -270,11 +263,11 @@ export function useCompany(id: string) {
       if (!res.ok) throw new Error("Failed to fetch company");
       return res.json();
     },
-    enabled: !!id, 
+    enabled: !!id, // Only fetch if an ID is provided
   });
 }
 
-
+// --- MUTATIONS ---
 
 export function useCreateCompany() {
   const queryClient = useQueryClient();
@@ -367,194 +360,6 @@ export function useUpdateCompany() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to update company.");
-    },
-  });
-}
-
-/// Jobs
-
-export interface ContactDTO {
-  name: string;
-  lastName: string;
-  email: string;
-  phoneNumber?: string;
-}
-
-export interface JobPostInput {
-  title: string;
-  description: string;
-  salary: string;
-  location: {
-    place: string;
-    tag: string;
-  };
-  jobType: string;
-  companyId: string;
-  startdate: string;
-  enddate: string;
-  appurl: string;
-  contacts: ContactDTO[];
-}
-
-export interface SmallJobListing {
-  id: string;
-  title: string;
-  company: string; 
-  companyId: string; 
-  salary: string;
-  jobType: string; 
-  location: string; 
-}
-
-
-export interface FullJobListing {
-  id: string;
-  title: string;
-  description: string;
-  salary: string;
-  location: string; 
-  jobType: string;
-  company: string; 
-  startdate: string; 
-  enddate: string; 
-  appurl: string;
-  contact: string; 
-}
-
-export function useJobs() {
-  return useQuery<SmallJobListing[]>({
-    queryKey: ["jobs"],
-    queryFn: async () => {
-      const res = await fetch(`${API_URL}/joblistings/all`);
-      if (!res.ok) throw new Error("Failed to fetch jobs");
-      const data = await res.json();
-      return data || [];
-    },
-  });
-}
-
-/**
- * Fetches a single job for the detailed view
- * Endpoint: GET /joblistings/job?id={id}
- */
-export function useJob(id: string) {
-  return useQuery<FullJobListing>({
-    queryKey: ["jobs", id],
-    queryFn: async () => {
-      const res = await fetch(`${API_URL}/joblistings/job?id=${id}`);
-      if (!res.ok) {
-        if (res.status === 404) throw new Error("Job not found");
-        throw new Error("Failed to fetch job details");
-      }
-      return res.json();
-    },
-    enabled: !!id,
-  });
-}
-
-const formatJobPayload = (data: JobPostInput) => {
-  const validContacts = data.contacts.filter(
-    (c) => c.name || c.lastName || c.email,
-  );
-
-  return {
-    title: data.title,
-    description: data.description,
-    salary: data.salary,
-    jobType: data.jobType,
-    appurl: data.appurl,
-    company: data.companyId, 
-    startdate: new Date(data.startdate).toISOString(),
-    enddate: new Date(data.enddate).toISOString(),
-    location: JSON.stringify(data.location),
-    contact: JSON.stringify(validContacts),
-  };
-};
-
-
-export function useCreateJob() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: JobPostInput) => {
-      const payload = formatJobPayload(data);
-
-      const response = await fetch(`${API_URL}/joblistings/admin/new`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error("Failed to create job post");
-      return response.json();
-    },
-    onSuccess: () => {
-      toast.success("Job created successfully!");
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
-    },
-    onError: (error: Error) => {
-      console.error("Error creating job:", error);
-      toast.error(error.message || "Failed to create job");
-    },
-  });
-}
-
-export function useUpdateJob() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: JobPostInput }) => {
-      const payload = formatJobPayload(data);
-
-      const response = await fetch(
-        `${API_URL}/joblistings/admin/update?id=${id}`,
-        {
-          method: "PUT",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to update job post");
-      return response.json();
-    },
-    onSuccess: (_, variables) => {
-      toast.success("Job updated successfully!");
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
-      queryClient.invalidateQueries({ queryKey: ["jobs", variables.id] });
-    },
-    onError: (error: Error) => {
-      console.error("Error updating job:", error);
-      toast.error(error.message || "Failed to update job");
-    },
-  });
-}
-
-export function useDeleteJob() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(
-        `${API_URL}/joblistings/admin/delete?id=${id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to delete job post");
-      return response.json();
-    },
-    onSuccess: () => {
-      toast.success("Job deleted successfully!");
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
-    },
-    onError: (error: Error) => {
-      console.error("Error deleting job:", error);
-      toast.error(error.message || "Failed to delete job");
     },
   });
 }
