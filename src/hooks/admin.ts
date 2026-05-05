@@ -7,7 +7,6 @@ import type {
 } from "@/types/admin";
 import { API_URL } from "@/config";
 
-
 async function fetchAllUsers(): Promise<AdminUser[]> {
   const response = await fetch(`${API_URL}/admin/users`, {
     credentials: "include",
@@ -63,7 +62,6 @@ export function useDemoteAdmin() {
   });
 }
 
-
 async function fetchAdminUserProfile(
   userId: string,
 ): Promise<AdminProfileData> {
@@ -103,7 +101,7 @@ export function useAdminUserProfile(userId: string) {
   return useQuery({
     queryKey: ["admin-profile", userId],
     queryFn: () => fetchAdminUserProfile(userId),
-    enabled: !!userId, 
+    enabled: !!userId,
     retry: 1,
   });
 }
@@ -121,7 +119,6 @@ export function useUpdateAdminUserProfile() {
     },
   });
 }
-
 
 export interface CreateProjectDTO {
   title: string;
@@ -141,14 +138,13 @@ export interface CreateProjectDTO {
   teamName: string;
 }
 
-
 async function postProject(projectData: CreateProjectDTO) {
   const response = await fetch(`${API_URL}/projects`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    credentials: "include", 
+    credentials: "include",
     body: JSON.stringify(projectData),
   });
 
@@ -159,7 +155,6 @@ async function postProject(projectData: CreateProjectDTO) {
 
   return response.json();
 }
-
 
 export function useProjectPosts() {
   const queryClient = useQueryClient();
@@ -208,7 +203,13 @@ export function useUpdateProject() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<CreateProjectDTO> }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<CreateProjectDTO>;
+    }) => {
       const response = await fetch(`${API_URL}/projects/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -220,7 +221,145 @@ export function useUpdateProject() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["projects", variables.id] });
+    },
+  });
+}
+
+export type CompanyInput = {
+  name: string;
+  description: string;
+  websiteUrl: string;
+  logoFile: File | null;
+  removeLogo: boolean;
+};
+
+export type Company = {
+  id: string;
+  name: string;
+  description: string;
+  logo: string;
+  websiteUrl: string;
+};
+
+
+export function useCompanies() {
+  return useQuery<Company[]>({
+    queryKey: ["companies"],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/company/getAllCompanies`);
+      if (!res.ok) throw new Error("Failed to fetch companies");
+      const data = await res.json();
+      return data || [];
+    },
+  });
+}
+
+export function useCompany(id: string) {
+  return useQuery<Company>({
+    queryKey: ["companies", id],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/company/getCompany?id=${id}`);
+      if (!res.ok) throw new Error("Failed to fetch company");
+      return res.json();
+    },
+    enabled: !!id, // Only fetch if an ID is provided
+  });
+}
+
+// --- MUTATIONS ---
+
+export function useCreateCompany() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: CompanyInput) => {
+      const formData = new FormData();
+      formData.append("name", input.name);
+      formData.append("description", input.description);
+      formData.append("websiteUrl", input.websiteUrl);
+      if (input.logoFile) {
+        formData.append("logo", input.logoFile);
+      }
+
+      const res = await fetch(`${API_URL}/company/admin/addCompany`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to create company");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+    },
+  });
+}
+
+export function useDeleteCompany() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/company/admin/delete?id=${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete company");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success("Company deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete company");
+    },
+  });
+}
+
+export function useUpdateCompany() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: CompanyInput }) => {
+      const formData = new FormData();
+      formData.append("id", id);
+      formData.append("name", input.name);
+      formData.append("description", input.description);
+      formData.append("websiteUrl", input.websiteUrl);
+
+      if (input.removeLogo) {
+        formData.append("removeLogo", "true");
+      }
+
+      if (input.logoFile) {
+        formData.append("logo", input.logoFile);
+      }
+
+      const res = await fetch(`${API_URL}/company/admin/update`, {
+        method: "PUT",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to update company");
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["companies"] });
+      queryClient.invalidateQueries({ queryKey: ["companies", variables.id] });
+      toast.success("Company updated successfully!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update company.");
     },
   });
 }
