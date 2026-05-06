@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -46,7 +47,7 @@ export type ExtendedProjectInput = {
   websiteUrl: string;
   repoUrl: string;
   screenshots: { image: string; caption: string; alt?: string }[];
-  contributors: { email: string; role: string; team: string }[];
+  contributors: { email: string }[];
   affiliations: string;
   timeline: {
     startDate: string;
@@ -158,7 +159,6 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
       contributors: initialData.contributors
         ? initialData.contributors.map((c) => ({
             email: c.email,
-            role: c.role || "",
             team: c.team || "",
           }))
         : [],
@@ -193,9 +193,7 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
         return {
           ...prev,
           categories: prev.categories.filter((c) => c !== teamLabel),
-          contributors: prev.contributors.map((c) =>
-            c.team === teamLabel ? { ...c, team: "" } : c,
-          ),
+          contributors: prev.contributors,
         };
       }
       if (prev.categories.length >= 5) {
@@ -300,7 +298,7 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
         ...prev,
         contributors: [
           ...prev.contributors,
-          { email: trimmedEmail, role: "", team: "" },
+          { email: trimmedEmail },
         ],
       };
     });
@@ -315,18 +313,6 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
       ),
     }));
     setMemberWarning(null);
-  };
-
-  const updateContributorField = (
-    index: number,
-    field: "role" | "team",
-    value: string,
-  ) => {
-    setForm((prev) => {
-      const updated = [...prev.contributors];
-      updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, contributors: updated };
-    });
   };
 
   const filteredUsers = userSearch.trim()
@@ -378,7 +364,7 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
        screenshots: JSON.stringify(form.screenshots),
        repoUrl: form.repoUrl,
        contributors: form.contributors.map(
-         (c) => `${c.email}:${c.role}:${c.team}`,
+        (c) => c.email,
        ),
        affiliations: form.affiliations,
        timeline: JSON.stringify(form.timeline),
@@ -752,110 +738,81 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
                     </div>
 
                     <div className="space-y-3 md:col-span-2">
-                      <Label htmlFor="project-contributors">
-                        Contributors (Search by Email)
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="project-contributors"
-                          value={userSearch}
-                          onChange={(e) => setUserSearch(e.target.value)}
-                          placeholder="Search users by email..."
-                          autoComplete="off"
-                          disabled={form.categories.length === 0}
-                        />
-                        {form.categories.length === 0 && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Please select an Associated Team first.
-                          </p>
-                        )}
-
-                        {userSearch.trim() && filteredUsers.length > 0 && (
-                          <div className="absolute z-10 w-full mt-1 border rounded-md shadow-lg bg-background">
-                            {filteredUsers.map((user) => (
-                              <div
-                                key={user.user_id}
-                                className="flex items-center justify-between p-2 cursor-pointer hover:bg-secondary"
-                                onClick={() => addContributor(user.email)}
-                              >
-                                <span className="text-sm font-medium">
-                                  {user.email}
-                                </span>
-                                <span className="text-xs text-primary font-medium">
-                                  Add
-                                </span>
-                              </div>
-                            ))}
+                      <Label>Contributors</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                            disabled={form.categories.length === 0}
+                          >
+                            {form.contributors.length > 0
+                              ? `${form.contributors.length} member(s) selected`
+                              : "Select project members"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[420px] p-3" align="start">
+                          <div className="space-y-2">
+                            <Input
+                              value={userSearch}
+                              onChange={(e) => setUserSearch(e.target.value)}
+                              placeholder="Search members by email..."
+                              autoComplete="off"
+                            />
+                            <div className="max-h-60 overflow-y-auto space-y-1">
+                              {(userSearch.trim() ? filteredUsers : adminUsers).map((user) => {
+                                const isSelected = form.contributors.some(
+                                  (c) => c.email.toLowerCase() === user.email.toLowerCase(),
+                                );
+                                return (
+                                  <label
+                                    key={user.user_id}
+                                    className="flex items-center gap-3 rounded-md border p-2 cursor-pointer"
+                                  >
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onCheckedChange={() => {
+                                        if (isSelected) {
+                                          const indexToRemove = form.contributors.findIndex(
+                                            (c) =>
+                                              c.email.toLowerCase() ===
+                                              user.email.toLowerCase(),
+                                          );
+                                          if (indexToRemove >= 0) {
+                                            removeContributor(indexToRemove);
+                                          }
+                                        } else {
+                                          addContributor(user.email);
+                                        }
+                                      }}
+                                    />
+                                    <span className="text-sm">{user.email}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
                           </div>
-                        )}
-                        {userSearch.trim() && filteredUsers.length === 0 && (
-                          <div className="absolute z-10 w-full mt-1 p-2 border rounded-md shadow-lg bg-background text-sm text-muted-foreground">
-                            No users found.{" "}
-                            <button
-                              type="button"
-                              onClick={() => addContributor(userSearch)}
-                              className="text-primary underline"
-                            >
-                              Add {userSearch} manually
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                        </PopoverContent>
+                      </Popover>
+                      {form.categories.length === 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Please select an Associated Team first.
+                        </p>
+                      )}
 
                       {form.contributors.length > 0 && (
-                        <div className="space-y-2 mt-3">
+                        <div className="flex flex-wrap gap-2 mt-2">
                           {form.contributors.map((contributor, idx) => (
-                            <div
+                            <Button
                               key={contributor.email}
-                              className="flex flex-wrap items-center gap-3 p-2 border rounded-md bg-secondary/10"
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => removeContributor(idx)}
                             >
-                              <div className="flex-1 min-w-[150px] truncate">
-                                <p className="text-sm font-medium">
-                                  {contributor.email}
-                                </p>
-                              </div>
-
-                              <Input
-                                placeholder="Role (e.g. AI Engineer)"
-                                value={contributor.role}
-                                onChange={(e) =>
-                                  updateContributorField(
-                                    idx,
-                                    "role",
-                                    e.target.value,
-                                  )
-                                }
-                                className="w-[180px] h-8 text-sm"
-                              />
-
-                              <Select
-                                value={contributor.team}
-                                onValueChange={(val) =>
-                                  updateContributorField(idx, "team", val)
-                                }
-                              >
-                                <SelectTrigger className="w-[180px] h-8 text-sm bg-background">
-                                  <SelectValue placeholder="Select Team" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {form.categories.map((team) => (
-                                    <SelectItem key={team} value={team}>
-                                      {team}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeContributor(idx)}
-                                className="h-8 w-8 p-0 text-destructive shrink-0"
-                              >
-                                ✕
-                              </Button>
-                            </div>
+                              {contributor.email} ✕
+                            </Button>
                           ))}
                         </div>
                       )}

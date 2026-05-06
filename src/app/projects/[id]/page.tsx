@@ -288,7 +288,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             <p className="font-medium text-sm text-secondary-black truncate group-hover:text-primary transition-colors">
                               {contributor.name}
                             </p>
-                            <p className="text-xs text-muted-foreground truncate">{contributor.role}</p>
+                            {contributor.role && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                {contributor.role}
+                              </p>
+                            )}
                           </div>
                         </Link>
                       ))}

@@ -3,16 +3,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Building2, ChevronDown } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { HistoryTimeline } from "@/components/home/history-timeline";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useTeamMembers, useTeamYears } from "@/hooks/team";
 import { API_URL } from "@/config";
 
@@ -40,10 +33,9 @@ export default function AboutPage() {
   const selectedYear = activeYear || currentYear;
 
   const isAlumni = activeDepartment === "Alumni";
-  const currentCalendarYear = new Date().getFullYear();
 
-  // For Alumni: fetch all members (no year filter), then filter client-side to past years
-  // For everything else: fetch by selected year and department
+  // Alumni: fetch all members (no year filter), exclude the current/most recent year client-side
+  // Everything else: fetch by selected year and department
   const { data: rawMembers = [], isLoading: isLoadingMembers } = useTeamMembers(
     isAlumni ? undefined : selectedYear || undefined,
     !isAlumni && activeDepartment !== "All" ? activeDepartment : undefined
@@ -51,16 +43,10 @@ export default function AboutPage() {
 
   const teamMembers = useMemo(() => {
     if (isAlumni) {
-      // Alumni = members who have already graduated
-      return rawMembers.filter(
-        (m) =>
-          typeof m.graduationYear === "number" &&
-          m.graduationYear > 0 &&
-          m.graduationYear < currentCalendarYear,
-      );
+      return rawMembers.filter((m) => m.academicYear !== currentYear);
     }
     return rawMembers;
-  }, [rawMembers, isAlumni, currentCalendarYear]);
+  }, [rawMembers, isAlumni, currentYear]);
 
   const displayedMembers = useMemo(() => {
     if (activeDepartment !== "All") {
@@ -175,42 +161,35 @@ export default function AboutPage() {
 
           <hr className="border-secondary-light-gray/60 mb-16" />
 
-          {/* THE TEAM — now above history */}
+          {/* THE TEAM */}
           <div className="mb-24">
-            {/* Header & Year Dropdown */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-8">
-              <div>
-                <h2 className="font-arial text-3xl font-bold text-secondary-black tracking-tight-2 mb-2">The Team</h2>
-                <p className="font-serif text-secondary-black/70 text-lg">Discover the minds behind our initiatives.</p>
-              </div>
-
-              {availableYears.length > 0 && (
-                <div className="w-full md:w-auto min-w-[160px]">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="font-mono text-sm h-11">
-                        {selectedYear || "Select year"}
-                        <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="min-w-[220px]">
-                      {availableYears.map((year) => (
-                        <DropdownMenuItem
-                          key={year}
-                          onClick={() => {
-                            setActiveYear(year);
-                            setActiveDepartment("All");
-                          }}
-                          className="font-mono text-sm cursor-pointer"
-                        >
-                          {year}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
+            <div className="mb-8">
+              <h2 className="font-arial text-3xl font-bold text-secondary-black tracking-tight-2 mb-2">The Team</h2>
+              <p className="font-serif text-secondary-black/70 text-lg">Discover the minds behind our initiatives.</p>
             </div>
+
+            {/* Year filter pills */}
+            {availableYears.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {availableYears.map((year) => (
+                  <button
+                    key={year}
+                    type="button"
+                    onClick={() => {
+                      setActiveYear(year);
+                      if (activeDepartment === "Alumni") setActiveDepartment("All");
+                    }}
+                    className={`font-mono text-xs px-4 py-2 rounded-full transition-all duration-200 border ${
+                      !isAlumni && selectedYear === year
+                        ? "bg-secondary-black text-white border-secondary-black shadow-sm"
+                        : "bg-white text-secondary-black border-secondary-light-gray hover:border-secondary-black"
+                    }`}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Department filter pills */}
             <div className="flex flex-wrap gap-2 mb-10">
