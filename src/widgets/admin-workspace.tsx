@@ -1,0 +1,119 @@
+"use client";
+
+import { useMemo, useState, type ReactNode } from "react";
+import { Button } from "@/shared/ui/button";
+// Add this import
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu";
+import { CompanyAdminPanel } from "@/features/company-management/components/company-admin-panel";
+import { JobAdminPanel } from "@/features/job-management/components/job-admin-panel";
+import { ProjectAdminPanel } from "@/features/project-management/components/project-admin-panel";
+import { UserAdminPanel } from "@/features/profile-management/components/user-admin-panel"; // Import the new panel
+
+// Added "users" to the ID union type
+type AdminSection = {
+  id: "users" | "companies" | "jobs" | "projects";
+  label: string;
+  description: string;
+  content: ReactNode;
+};
+
+const adminSections: AdminSection[] = [
+  {
+    id: "users",
+    label: "Users",
+    description: "Manage users and assign admin roles.",
+    content: <UserAdminPanel />,
+  },
+  {
+    id: "companies",
+    label: "Companies",
+    description: "Add companies once and reuse them for jobs.",
+    content: <CompanyAdminPanel />,
+  },
+  {
+    id: "jobs",
+    label: "Jobs",
+    description: "Publish new job posts.",
+    content: <JobAdminPanel />,
+  },
+  {
+    id: "projects",
+    label: "Projects",
+    description: "Create project entries for the website.",
+    content: <ProjectAdminPanel />,
+  },
+];
+
+export function AdminWorkspace() {
+  const [activeSectionId, setActiveSectionId] =
+    useState<AdminSection["id"]>("users"); // Defaulting to the new users tab
+
+  const activeSection = useMemo(() => {
+    return (
+      adminSections.find((section) => section.id === activeSectionId) ??
+      adminSections[0]
+    );
+  }, [activeSectionId]);
+
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{activeSection.label}</p>
+          <p className="text-sm text-muted-foreground">
+            {activeSection.description}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="sm:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  Section: {activeSection.label}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Admin sections</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup
+                  value={activeSectionId}
+                  onValueChange={(value) =>
+                    setActiveSectionId(value as AdminSection["id"])
+                  }
+                >
+                  {adminSections.map((section) => (
+                    <DropdownMenuRadioItem key={section.id} value={section.id}>
+                      {section.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="hidden flex-wrap items-center gap-2 sm:flex">
+            {adminSections.map((section) => (
+              <Button
+                key={section.id}
+                size="sm"
+                variant={section.id === activeSectionId ? "secondary" : "ghost"}
+                onClick={() => setActiveSectionId(section.id)}
+              >
+                {section.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div>{activeSection.content}</div>
+    </section>
+  );
+}

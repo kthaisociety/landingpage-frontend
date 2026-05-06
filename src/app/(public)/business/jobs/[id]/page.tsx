@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AsciiGrid } from "@/components/ui/ascii-grid";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useJob } from "@/hooks/admin";
-import { SharedJobView } from "@/components/jobs/shared-job-view";
+import { Button } from "@/shared/ui/button";
+import { AsciiGrid } from "@/shared/ui/ascii-grid";
+import { Skeleton } from "@/shared/ui/skeleton";
+import { useJob } from "@/features/admin";
+import { SharedJobView } from "@/entities/jobs/shared-job-view";
 
 export default function JobDetailPage() {
   const params = useParams();

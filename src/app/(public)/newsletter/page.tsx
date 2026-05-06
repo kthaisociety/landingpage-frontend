@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { NewsletterForm } from "./newsletter-form"
+import { NewsletterForm } from "@/features/newsletter/newsletter-form"
 
 export const metadata: Metadata = {
   title: "Newsletter",

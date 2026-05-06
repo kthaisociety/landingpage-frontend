@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import { HistoryTimeline } from "@/components/home/history-timeline";
-import { AsciiGrid } from "@/components/ui/ascii-grid";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { HistoryTimeline } from "@/widgets/history-timeline";
+import { AsciiGrid } from "@/shared/ui/ascii-grid";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu";
+import { Button } from "@/shared/ui/button";
 
 const TEAMS_DATA = {
   "2023/2024": [

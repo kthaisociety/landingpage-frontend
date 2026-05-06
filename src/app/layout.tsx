@@ -2,11 +2,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Providers } from "@/lib/providers";
-import { Navigation } from "@/components/navigation";
-import { Footer } from "@/components/footer"
-import { TooltipProvider } from '@/components/ui/tooltip';
-import {  ToastProvider } from '@/components/ui/toast';
+import { Providers } from "@/shared/lib/providers";
+import { Navigation } from "@/widgets/navigation";
+import { Footer } from "@/widgets/footer"
+import { TooltipProvider } from "@/shared/ui/tooltip";
+import { ToastProvider } from "@/shared/ui/toast";
 
 
 const geistSans = Geist({

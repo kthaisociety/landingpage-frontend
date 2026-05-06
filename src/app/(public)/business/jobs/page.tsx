@@ -4,21 +4,21 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { AsciiGrid } from "@/components/ui/ascii-grid";
-import { JobsSkeleton } from "@/components/jobs/job-card-skeleton";
-import { ImageCard } from "@/components/ui/image-card";
-import { useJobs } from "@/hooks/admin"; // Fixed import path
-import { useCompanies } from "@/hooks/admin"; // Fixed import path
-import type { SmallJobListing } from "@/hooks/admin";
-import { API_URL } from "@/config";
-import { NIL_UUID } from "@/lib/constants/companies";
+} from "@/shared/ui/dropdown-menu";
+import { AsciiGrid } from "@/shared/ui/ascii-grid";
+import { JobsSkeleton } from "@/entities/jobs/job-card-skeleton";
+import { ImageCard } from "@/shared/ui/image-card";
+import { useJobs } from "@/features/admin"; // Fixed import path
+import { useCompanies } from "@/features/admin"; // Fixed import path
+import type { SmallJobListing } from "@/features/admin";
+import { API_URL } from "@/shared/lib/config";
+import { NIL_UUID } from "@/shared/lib/constants/companies";
 
 type JobFilter =
   | "all"

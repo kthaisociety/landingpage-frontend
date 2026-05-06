@@ -3,20 +3,20 @@
 // import { useState, useEffect } from "react"
 // import Link from "next/link"
 // import { ChevronDown } from "lucide-react"
-// import { Button } from "@/components/ui/button"
+// import { Button } from "@/shared/ui/button"
 // import {
 //   DropdownMenu,
 //   DropdownMenuContent,
 //   DropdownMenuItem,
 //   DropdownMenuTrigger,
-// } from "@/components/ui/dropdown-menu"
-// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-// import { AsciiGrid } from "@/components/ui/ascii-grid"
-// import { ImageCard } from "@/components/ui/image-card"
+// } from "@/shared/ui/dropdown-menu"
+// import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar"
+// import { AsciiGrid } from "@/shared/ui/ascii-grid"
+// import { ImageCard } from "@/shared/ui/image-card"
 // import {
 //   AvatarGroup,
 //   AvatarGroupTooltip,
-// } from "@/components/ui/avatar-group"
+// } from "@/shared/ui/avatar-group"
 // import { projects, getAllTags } from "@/lib/constants/projects"
 
 // function ProjectCard({ project }: { project: typeof projects[0] }) {
@@ -267,18 +267,18 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ChevronDown, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AsciiGrid } from "@/components/ui/ascii-grid";
-import { ImageCard } from "@/components/ui/image-card";
-import { AvatarGroup, AvatarGroupTooltip } from "@/components/ui/avatar-group";
-import { useProjects, type ExtendedProjectInput } from "@/hooks/projects";
+} from "@/shared/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
+import { AsciiGrid } from "@/shared/ui/ascii-grid";
+import { ImageCard } from "@/shared/ui/image-card";
+import { AvatarGroup, AvatarGroupTooltip } from "@/shared/ui/avatar-group";
+import { useProjects, type ExtendedProjectInput } from "@/entities/projects/projects";
 // import { projectsLocal, getAllTags } from "@/lib/constants/projects";
 
 function ProjectCard({ project }: { project: ExtendedProjectInput }) {

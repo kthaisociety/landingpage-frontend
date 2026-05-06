@@ -4,17 +4,17 @@ import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ChevronDown, Calendar, ExternalLink } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { AsciiGrid } from "@/components/ui/ascii-grid"
-import { ImageCard } from "@/components/ui/image-card"
-import { useEvents } from "@/hooks/events"
-import { EventsSkeleton } from "@/components/events/event-card-skeleton"
+} from "@/shared/ui/dropdown-menu"
+import { AsciiGrid } from "@/shared/ui/ascii-grid"
+import { ImageCard } from "@/shared/ui/image-card"
+import { useEvents } from "@/entities/events/events"
+import { EventsSkeleton } from "@/entities/events/event-card-skeleton"
 import type { LumaEvent } from "@/app/api/events/route"
 
 type EventFilter = "all" | "upcoming" | "past"

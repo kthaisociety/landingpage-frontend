@@ -4,10 +4,10 @@ import { useState, useEffect, useMemo, useTransition } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Calendar, ExternalLink, ArrowLeft, User } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { AsciiGrid } from "@/components/ui/ascii-grid"
-import { useEvent } from "@/hooks/events"
-import { EventDetailSkeleton } from "@/components/events/event-detail-skeleton"
+import { Button } from "@/shared/ui/button"
+import { AsciiGrid } from "@/shared/ui/ascii-grid"
+import { useEvent } from "@/entities/events/events"
+import { EventDetailSkeleton } from "@/entities/events/event-detail-skeleton"
 
 export default function EventDetailPage() {
   const params = useParams()

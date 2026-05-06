@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { FileText, Shield, Scale, Mail, ArrowRight } from 'lucide-react'
-import { AsciiGrid } from '@/components/ui/ascii-grid'
-import { Button } from '@/components/ui/button'
+import { AsciiGrid } from '@/shared/ui/ascii-grid'
+import { Button } from '@/shared/ui/button'
 
 const legalDocuments = [
   {
