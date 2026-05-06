@@ -30,6 +30,7 @@ import {
   type CreateProjectDTO,
 } from "@/hooks/admin";
 import { useProject } from "@/hooks/projects";
+import { API_URL } from "@/config";
 
 export type ExtendedProjectInput = {
   title: string;
@@ -99,8 +100,8 @@ const emptyForm: ExtendedProjectInput = {
 
 // ADDED: Pass projectId as an optional prop
 export function ProjectForm({ projectId, onClose }: { projectId?: string; onClose?: () => void }) {
-  const { createProject, isCreating } = useProjectPosts();
-  const { mutate: updateProject, isPending: isUpdating } = useUpdateProject();
+  const { createProjectAsync, isCreating } = useProjectPosts();
+  const { mutateAsync: updateProjectAsync, isPending: isUpdating } = useUpdateProject();
   const { data: adminUsers = [] } = useAdminUsers();
 
   // ADDED: Fetch project data if projectId is provided
@@ -121,6 +122,8 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
   const [featureInput, setFeatureInput] = useState("");
   const [screenshotUrlInput, setScreenshotUrlInput] = useState("");
   const [screenshotCaptionInput, setScreenshotCaptionInput] = useState("");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [screenshotImageFiles, setScreenshotImageFiles] = useState<File[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [memberWarning, setMemberWarning] = useState<string | null>(null);
   const [milestoneInput, setMilestoneInput] = useState("");
@@ -348,7 +351,30 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
       )
     : [];
 
-   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const uploadProjectMediaFiles = async (targetProjectId: string) => {
+    if (!coverImageFile && screenshotImageFiles.length === 0) {
+      return;
+    }
+
+    const formData = new FormData();
+    if (coverImageFile) {
+      formData.append("coverImage", coverImageFile);
+    }
+    screenshotImageFiles.forEach((file) => formData.append("screenshots", file));
+
+    const response = await fetch(`${API_URL}/projects/${targetProjectId}/media`, {
+      method: "PUT",
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => null);
+      throw new Error(err?.error || "Failed to upload project media files");
+    }
+  };
+
+   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
      event.preventDefault();
      if (form.categories.length === 0) {
        setTeamWarning("Select at least one associated team.");
@@ -377,40 +403,35 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
        teamName: finalTeamName,
      };
 
-     if (projectId) {
-       updateProject(
-         { id: projectId, data: payload },
-         {
-           onSuccess: () => {
-             toast.success("Project updated successfully!");
-             onClose?.();
-           },
-           onError: (error) => {
-             console.error("Failed to update project:", error);
-             toast.error("Something went wrong while updating the project.");
-           },
-         },
-       );
-     } else {
-       createProject(payload, {
-         onSuccess: () => {
-           setForm(emptyForm);
-           setCustomTeams([]);
-           toast.success("Project created successfully!");
-           onClose?.();
-         },
-         onError: (error) => {
-           console.error("Failed to create project:", error);
-           toast.error("Something went wrong while creating the project.");
-         },
-       });
-     }
+     try {
+       if (projectId) {
+         await updateProjectAsync({ id: projectId, data: payload });
+         await uploadProjectMediaFiles(projectId);
+         toast.success("Project updated successfully!");
+         onClose?.();
+       } else {
+         const createdProject = await createProjectAsync(payload);
+         const createdProjectId = createdProject?.id as string | undefined;
+         if (createdProjectId) {
+           await uploadProjectMediaFiles(createdProjectId);
+         }
+         setForm(emptyForm);
+         setCustomTeams([]);
+         setCoverImageFile(null);
+         setScreenshotImageFiles([]);
+         toast.success("Project created successfully!");
+         onClose?.();
+       }
 
-     setTeamWarning(null);
-     setTeamInput("");
-     setTechStackInput("");
-     setUserSearch("");
-     setMemberWarning(null);
+       setTeamWarning(null);
+       setTeamInput("");
+       setTechStackInput("");
+       setUserSearch("");
+       setMemberWarning(null);
+     } catch (error) {
+       console.error("Failed to submit project form:", error);
+       toast.error(error instanceof Error ? error.message : "Failed to save project.");
+     }
    }; 
 
   if (isFetching) {
@@ -607,6 +628,15 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
                         onChange={handleTextChange("coverImage")}
                         placeholder="/cover-twiga.jpg"
                       />
+                      <div className="space-y-1 pt-2">
+                        <Label htmlFor="project-cover-file">Or upload cover image</Label>
+                        <Input
+                          id="project-cover-file"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setCoverImageFile(e.target.files?.[0] ?? null)}
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -665,6 +695,16 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
                         >
                           Add
                         </Button>
+                      </div>
+                      <div className="space-y-1 pt-2">
+                        <Label htmlFor="project-screenshot-files">Upload screenshot files</Label>
+                        <Input
+                          id="project-screenshot-files"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => setScreenshotImageFiles(Array.from(e.target.files ?? []))}
+                        />
                       </div>
                     </div>
 
