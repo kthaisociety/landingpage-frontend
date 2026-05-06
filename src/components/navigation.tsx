@@ -233,14 +233,6 @@ export function Navigation() {
         >
           Newsletter
         </Link>
-        {!isAuthenticated && (
-          <Link
-            href="/member/login"
-            className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
-          >
-            Login
-          </Link>
-        )}
         {renderAuthDropdown()}
       </div>
     );
@@ -298,16 +290,6 @@ export function Navigation() {
               >
                 Newsletter
               </Link>
-              {!isAuthenticated && (
-                <Link
-                  href="/member/login"
-                  className="block py-3 text-base text-foreground/70 hover:text-foreground"
-                  onClick={handleMobileLinkClick}
-                >
-                  Login
-                </Link>
-              )}
-
               {!isAuthenticated && (
                 <Link
                   href="mailto:contact@kthais.com"

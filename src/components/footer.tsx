@@ -20,6 +20,7 @@ const FOOTER_SECTIONS: FooterSection[] = [
       { label: "Projects", href: "/projects" },
       { label: "Job Board", href: "/business/jobs" },
       { label: "Contact", href: "mailto:contact@kthais.com" },
+      { label: "Login", href: "/member/login" },
     ],
   },
   {
