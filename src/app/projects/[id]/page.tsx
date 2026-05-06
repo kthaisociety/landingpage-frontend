@@ -273,7 +273,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     </h3>
                     <div className="space-y-3">
                       {project.contributors.map((contributor) => (
-                        <div key={contributor.email} className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-50 transition-colors">
+                        <Link
+                          key={contributor.email}
+                          href={contributor.profileId ? `/members/${contributor.profileId}` : "#"}
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-50 transition-colors group"
+                        >
                           <Avatar className="h-10 w-10 border-2 border-primary/10">
                             <AvatarImage src={contributor.avatar} alt={contributor.name} />
                             <AvatarFallback className="bg-primary text-white text-xs">
@@ -281,12 +285,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-secondary-black truncate">
+                            <p className="font-medium text-sm text-secondary-black truncate group-hover:text-primary transition-colors">
                               {contributor.name}
                             </p>
                             <p className="text-xs text-muted-foreground truncate">{contributor.role}</p>
                           </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   </div>

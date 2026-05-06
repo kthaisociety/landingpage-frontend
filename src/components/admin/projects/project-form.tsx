@@ -13,13 +13,6 @@ import {
 } from "@/components/ui/popover";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -105,7 +98,7 @@ const emptyForm: ExtendedProjectInput = {
 };
 
 // ADDED: Pass projectId as an optional prop
-export function ProjectForm({ projectId }: { projectId?: string }) {
+export function ProjectForm({ projectId, onClose }: { projectId?: string; onClose?: () => void }) {
   const { createProject, isCreating } = useProjectPosts();
   const { mutate: updateProject, isPending: isUpdating } = useUpdateProject();
   const { data: adminUsers = [] } = useAdminUsers();
@@ -390,6 +383,7 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
          {
            onSuccess: () => {
              toast.success("Project updated successfully!");
+             onClose?.();
            },
            onError: (error) => {
              console.error("Failed to update project:", error);
@@ -403,6 +397,7 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
            setForm(emptyForm);
            setCustomTeams([]);
            toast.success("Project created successfully!");
+           onClose?.();
          },
          onError: (error) => {
            console.error("Failed to create project:", error);
@@ -425,33 +420,8 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
   const isSubmitting = isCreating || isUpdating;
 
   return (
-    <div className="flex justify-center mt-24 px-24">
-      <div className="w-full max-w-7xl">
-        <section className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-semibold">
-              {projectId ? "Edit Project" : "Project entries"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {projectId
-                ? `Editing data for ${form.title}`
-                : "Capture project details for the public showcase."}
-            </p>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {projectId ? "Update project" : "New project"}
-              </CardTitle>
-              <CardDescription>
-                {projectId
-                  ? "Modify existing details."
-                  : "Store project details locally while auth is in dev mode."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-10">
+    <div>
+      <form onSubmit={handleSubmit} className="space-y-10">
                 {/* ================= SECTION 1: BASIC DETAILS ================= */}
                 <div className="space-y-4">
                   <div className="border-b pb-2">
@@ -465,7 +435,7 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="project-title">Project title</Label>
+                      <Label htmlFor="project-title">Project title <span className="text-destructive ml-0.5">*</span></Label>
                       <Input
                         id="project-title"
                         value={form.title}
@@ -477,7 +447,7 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
 
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="project-tagline">
-                        One-line description
+                        One-line description <span className="text-destructive ml-0.5">*</span>
                       </Label>
                       <Input
                         id="project-tagline"
@@ -499,7 +469,7 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="project-problem">Problem & impact</Label>
+                      <Label htmlFor="project-problem">Problem & impact <span className="text-destructive ml-0.5">*</span></Label>
                       <Textarea
                         id="project-problem"
                         value={form.problemImpact}
@@ -511,7 +481,7 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
 
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="project-features">
-                        Key features (Max 5)
+                        Key features (Max 5) <span className="text-destructive ml-0.5">*</span>
                       </Label>
                       <div className="flex flex-col gap-2">
                         {form.keyFeatures.map((feature) => (
@@ -572,7 +542,7 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="project-tech">Tech stack</Label>
+                      <Label htmlFor="project-tech">Tech stack <span className="text-destructive ml-0.5">*</span></Label>
                       <div className="flex flex-wrap gap-2">
                         {form.techStack.map((tag) => (
                           <Button
@@ -751,7 +721,7 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
 
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="project-associated-teams">
-                        Associated Teams
+                        Associated Teams <span className="text-destructive ml-0.5">*</span>
                       </Label>
                       <div className="flex flex-wrap gap-2">
                         {teamOptions.map((team) => {
@@ -1085,6 +1055,11 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
 
                 {/* ================= SUBMIT ================= */}
                 <div className="flex flex-wrap items-center gap-3 pt-6 border-t">
+                  {onClose && (
+                    <Button type="button" variant="ghost" onClick={onClose}>
+                      Cancel
+                    </Button>
+                  )}
                   <Button
                     type="submit"
                     disabled={isSubmitting}
@@ -1100,10 +1075,6 @@ export function ProjectForm({ projectId }: { projectId?: string }) {
                   </Button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
-        </section>
-      </div>
     </div>
   );
 }

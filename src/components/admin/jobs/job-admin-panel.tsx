@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import Fuse from "fuse.js";
-import { Plus, Search, Edit, Trash2, Briefcase } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Briefcase, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,14 +26,17 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useJobs, useDeleteJob } from "@/hooks/admin";
+import { JobForm } from "@/components/admin/jobs/job-form";
+
+type FormMode = { type: "new" } | { type: "edit"; jobId: string } | null;
 
 export function JobAdminPanel() {
   const { mutate: deleteJob, isPending: isDeleting } = useDeleteJob();
   const { data: jobs = [], isLoading: isLoadingJobs, isError } = useJobs();
 
   const [jobSearchQuery, setJobSearchQuery] = useState("");
+  const [formMode, setFormMode] = useState<FormMode>(null);
 
-  // --- Fuzzy Search Setup ---
   const jobFuse = useMemo(
     () =>
       new Fuse(jobs, { keys: ["title", "company", "jobType"], threshold: 0.4 }),
@@ -46,9 +48,11 @@ export function JobAdminPanel() {
     return jobFuse.search(jobSearchQuery).map((result) => result.item);
   }, [jobSearchQuery, jobs, jobFuse]);
 
+  const closeForm = () => setFormMode(null);
+
   return (
     <section className="space-y-6">
-      {/* Header Section */}
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Job Posts</h2>
@@ -56,14 +60,46 @@ export function JobAdminPanel() {
             Manage roles for the KTH AIS community.
           </p>
         </div>
-        <Link href="/member/admin/jobs/new">
-          <Button>
+        {!formMode && (
+          <Button onClick={() => setFormMode({ type: "new" })}>
             <Plus className="mr-2 h-4 w-4" /> New Job
           </Button>
-        </Link>
+        )}
       </div>
 
-      {/* Main Listing Card */}
+      {/* Inline Form — drops in above listings */}
+      {formMode && (
+        <Card className="border-primary/30 shadow-sm">
+          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+            <div>
+              <CardTitle>
+                {formMode.type === "edit" ? "Edit Job Post" : "New Job Post"}
+              </CardTitle>
+              <CardDescription className="mt-1">
+                {formMode.type === "edit"
+                  ? "Update the details for the selected job."
+                  : "Provide role details. You can preview before publishing."}
+              </CardDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0"
+              onClick={closeForm}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <JobForm
+              jobId={formMode.type === "edit" ? formMode.jobId : undefined}
+              onClose={closeForm}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Listings Card */}
       <Card>
         <CardHeader>
           <CardTitle>All Listings</CardTitle>
@@ -72,7 +108,6 @@ export function JobAdminPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -84,7 +119,6 @@ export function JobAdminPanel() {
             />
           </div>
 
-          {/* Status States */}
           {isLoadingJobs && (
             <p className="text-sm text-muted-foreground">Loading jobs...</p>
           )}
@@ -92,12 +126,13 @@ export function JobAdminPanel() {
             <p className="text-sm text-destructive">Failed to load jobs.</p>
           )}
 
-          {/* Job List */}
           {!isLoadingJobs && !isError && (
             <div className="rounded-md border">
               {filteredJobs.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
-                  No jobs found matching `{jobSearchQuery}`.
+                  {jobSearchQuery
+                    ? `No jobs found matching "${jobSearchQuery}".`
+                    : "No jobs yet. Click New Job to add one."}
                 </div>
               ) : (
                 <div className="divide-y max-h-[600px] overflow-y-auto">
@@ -106,7 +141,6 @@ export function JobAdminPanel() {
                       key={job.id}
                       className="flex flex-col justify-between gap-4 p-4 sm:flex-row sm:items-center hover:bg-secondary/10 transition-colors"
                     >
-                      {/* Left Side: Job Info */}
                       <div className="flex items-center gap-4 flex-1 overflow-hidden">
                         <div className="h-10 w-10 shrink-0 rounded-md border bg-white flex items-center justify-center text-muted-foreground">
                           <Briefcase className="h-5 w-5" />
@@ -120,11 +154,16 @@ export function JobAdminPanel() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <Link href={`/member/admin/jobs/${job.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Edit className="mr-2 h-4 w-4" /> Edit
-                          </Button>
-                        </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setFormMode({ type: "edit", jobId: job.id });
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" /> Edit
+                        </Button>
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -140,7 +179,7 @@ export function JobAdminPanel() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will permanently delete the job post{" "}
+                                This will permanently delete{" "}
                                 <strong>{job.title}</strong> at {job.company}.
                                 This action cannot be undone.
                               </AlertDialogDescription>

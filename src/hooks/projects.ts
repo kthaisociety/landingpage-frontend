@@ -48,6 +48,7 @@ export type ExtendedProjectInput = {
   repoUrl: string;
   screenshots: { image: string; caption: string; alt?: string }[];
   contributors: {
+    profileId: string;
     name: string;
     email: string;
     role: string;
@@ -136,6 +137,7 @@ export function transformProjectData(
       const fullName = `${member.first_name || ""} ${member.last_name || ""}`.trim();
 
       return {
+        profileId: member.user_id || "",
         name: fullName || member.email || "Unknown Contributor",
         email: member.email || "",
         role: member.role || "Contributor",

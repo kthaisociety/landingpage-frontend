@@ -14,8 +14,9 @@ export interface MemberProfile {
   programme?: string;
   graduationYear?: number;
   githubLink?: string;
-  linkedInLink?: string; 
+  linkedInLink?: string;
   aboutMe?: string;
+  profilePicture?: string;
 }
 
 export interface UpdateMemberProfileData {

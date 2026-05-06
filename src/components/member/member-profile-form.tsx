@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Camera, User, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -14,6 +16,30 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMemberProfile, useUpdateMemberProfile } from "@/hooks/member";
+import { useAddMyTeamEntry, useRemoveMyTeamEntry } from "@/hooks/team";
+import { useQuery } from "@tanstack/react-query";
+import { API_URL } from "@/config";
+
+const DEPARTMENTS = ["Board", "Research", "IT", "Development", "Business", "Growth"];
+
+interface TeamEntryLocal {
+  id: number;
+  role: string;
+  team: string;
+  academic_year: string;
+}
+
+function useMyTeamEntries() {
+  return useQuery<TeamEntryLocal[]>({
+    queryKey: ["my-team-entries"],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/team/my-entries`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch team entries");
+      return res.json();
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
 
 interface ProfileFormData {
   firstName: string;
@@ -51,8 +77,17 @@ const studyPrograms = [
 
 export function MemberProfileForm() {
   const { toast } = useToast();
-  const { data: profile, isLoading } = useMemberProfile();
+  const { data: profile, isLoading, refetch } = useMemberProfile();
   const updateProfile = useUpdateMemberProfile();
+  const { data: teamEntries = [], refetch: refetchTeam } = useMyTeamEntries();
+  const addEntry = useAddMyTeamEntry();
+  const removeEntry = useRemoveMyTeamEntry();
+
+  const [newEntry, setNewEntry] = useState({ role: "", department: "", academicYear: "" });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const [picturePreview, setPicturePreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<ProfileFormData>({
     firstName: "",
@@ -83,14 +118,52 @@ export function MemberProfileForm() {
           aboutMe: profile.aboutMe || "",
         });
       });
-
       return () => cancelAnimationFrame(frame);
     }
   }, [profile]);
 
+  const handlePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show local preview immediately
+    const reader = new FileReader();
+    reader.onload = (ev) => setPicturePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+
+    // Upload to backend
+    setIsUploadingPicture(true);
+    try {
+      const formData = new FormData();
+      formData.append("picture", file);
+
+      const res = await fetch(`${API_URL}/profile/picture`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Upload failed");
+      }
+
+      await refetch();
+      toast({ title: "Profile picture updated" });
+    } catch (err) {
+      setPicturePreview(null);
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingPicture(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       await updateProfile.mutateAsync({
         ...formData,
@@ -98,7 +171,6 @@ export function MemberProfileForm() {
           ? parseInt(formData.graduationYear, 10)
           : undefined,
       });
-
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
@@ -116,8 +188,64 @@ export function MemberProfileForm() {
     return <div className="text-center py-8">Loading profile...</div>;
   }
 
+  const currentPictureUrl =
+    picturePreview ??
+    (profile?.profilePicture
+      ? `${API_URL}/profile/picture?id=${profile.profilePicture}`
+      : null);
+
+  const initials =
+    formData.firstName && formData.lastName
+      ? `${formData.firstName[0]}${formData.lastName[0]}`.toUpperCase()
+      : null;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Avatar upload */}
+      <div className="flex items-center gap-5">
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploadingPicture}
+          className="relative group shrink-0 h-20 w-20 rounded-full overflow-hidden border-2 border-border bg-secondary/20 flex items-center justify-center transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          aria-label="Upload profile picture"
+        >
+          {currentPictureUrl ? (
+            <img
+              src={currentPictureUrl}
+              alt="Profile picture"
+              className="h-full w-full object-cover"
+            />
+          ) : initials ? (
+            <span className="text-2xl font-semibold text-muted-foreground">
+              {initials}
+            </span>
+          ) : (
+            <User className="h-8 w-8 text-muted-foreground" />
+          )}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+            <Camera className="h-5 w-5 text-white" />
+          </div>
+        </button>
+
+        <div>
+          <p className="text-sm font-medium">Profile picture</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isUploadingPicture
+              ? "Uploading..."
+              : "Click the avatar to upload. JPG, PNG or WebP."}
+          </p>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={handlePictureChange}
+        />
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
@@ -254,6 +382,97 @@ export function MemberProfileForm() {
       <div className="flex justify-end pt-4">
         <Button type="submit" disabled={updateProfile.isPending}>
           {updateProfile.isPending ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+
+      {/* Team membership section — outside the main form submit */}
+      <div className="border-t pt-6 mt-2 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold">Team membership</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Add the years and teams you have been part of. This shows on your public profile and in About Us.
+          </p>
+        </div>
+
+        {/* Existing entries */}
+        {teamEntries.length > 0 && (
+          <div className="space-y-2">
+            {teamEntries.map((entry) => (
+              <div key={entry.id} className="flex items-center gap-3 p-3 rounded-lg border bg-secondary/10">
+                <Badge variant="outline" className="font-mono text-xs shrink-0">{entry.team}</Badge>
+                <span className="text-sm flex-1">{entry.role || <span className="text-muted-foreground italic">No role</span>}</span>
+                <span className="text-xs text-muted-foreground font-mono">{entry.academic_year}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive hover:text-destructive"
+                  onClick={async () => {
+                    await removeEntry.mutateAsync(entry.id);
+                    refetchTeam();
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add new entry */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Year (e.g. 2024/2025)</Label>
+            <Input
+              placeholder="2024/2025"
+              value={newEntry.academicYear}
+              onChange={(e) => setNewEntry({ ...newEntry, academicYear: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Team</Label>
+            <Select value={newEntry.department} onValueChange={(v) => setNewEntry({ ...newEntry, department: v })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select team" />
+              </SelectTrigger>
+              <SelectContent>
+                {DEPARTMENTS.map((d) => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Role (optional)</Label>
+            <Input
+              placeholder="e.g. President"
+              value={newEntry.role}
+              onChange={(e) => setNewEntry({ ...newEntry, role: e.target.value })}
+            />
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={!newEntry.academicYear || !newEntry.department || addEntry.isPending}
+          onClick={async () => {
+            try {
+              await addEntry.mutateAsync({
+                role: newEntry.role,
+                department: newEntry.department,
+                academicYear: newEntry.academicYear,
+              });
+              setNewEntry({ role: "", department: "", academicYear: "" });
+              refetchTeam();
+              toast({ title: "Team entry added" });
+            } catch {
+              toast({ title: "Failed to add entry", variant: "destructive" });
+            }
+          }}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add entry
         </Button>
       </div>
     </form>

@@ -12,13 +12,6 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {NIL_UUID} from "@/lib/constants/companies"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,7 +31,7 @@ const emptyForm: CompanyInput = {
   removeLogo: false, 
 };
 
-export function CompanyForm({ companyId }: { companyId?: string }) {
+export function CompanyForm({ companyId, onClose }: { companyId?: string; onClose?: () => void }) {
 
   // Hooks
   const { data: initialData, isLoading: isFetching } = useCompany(
@@ -143,14 +136,13 @@ export function CompanyForm({ companyId }: { companyId?: string }) {
     try {
       if (companyId) {
         await updateCompany({ id: companyId, input: form });
-        // toast.success("Company updated successfully!");
+        onClose?.();
       } else {
         await createCompany(form);
-        // toast.success("Company created successfully!");
-        // Reset form after creation
         setForm(emptyForm);
         setPreviewUrl("");
         setLogoError(null);
+        onClose?.();
       }
     } catch (error) {
       const message =
@@ -168,24 +160,10 @@ export function CompanyForm({ companyId }: { companyId?: string }) {
   const isSubmitting = isCreating || isUpdating;
 
   return (
-    <div className="flex justify-center mt-24 px-24">
-      <div className="w-full max-w-7xl">
-        <section className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {companyId ? "Update details" : "Add a new company"}
-              </CardTitle>
-              <CardDescription>
-                {companyId
-                  ? "Modify the profile information below."
-                  : "Companies appear in the Jobs tab after they are added."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-5">
+    <div>
+      <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="company-name">Company name</Label>
+                  <Label htmlFor="company-name">Company name <span className="text-destructive ml-0.5">*</span></Label>
                   <Input
                     id="company-name"
                     value={form.name}
@@ -196,7 +174,7 @@ export function CompanyForm({ companyId }: { companyId?: string }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="company-description">Description</Label>
+                  <Label htmlFor="company-description">Description <span className="text-destructive ml-0.5">*</span></Label>
                   <Textarea
                     id="company-description"
                     value={form.description}
@@ -207,7 +185,7 @@ export function CompanyForm({ companyId }: { companyId?: string }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="company-logo">Company logo</Label>
+                  <Label htmlFor="company-logo">Company logo <span className="text-destructive ml-0.5">*</span></Label>
                   <div
                     className="rounded-md border border-dashed border-input p-4 text-sm text-muted-foreground cursor-pointer hover:bg-secondary/40 transition-colors"
                     onClick={() => fileInputRef.current?.click()}
@@ -268,7 +246,7 @@ export function CompanyForm({ companyId }: { companyId?: string }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="company-website">Website URL</Label>
+                  <Label htmlFor="company-website">Website URL <span className="text-destructive ml-0.5">*</span></Label>
                   <Input
                     id="company-website"
                     value={form.websiteUrl}
@@ -278,22 +256,23 @@ export function CompanyForm({ companyId }: { companyId?: string }) {
                   />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 pt-4">
-                  <Button type="submit" disabled={isSubmitting}>
-                    {companyId
-                      ? isUpdating
-                        ? "Saving..."
-                        : "Save changes"
-                      : isCreating
-                        ? "Adding..."
-                        : "Add company"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </section>
-      </div>
+        <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
+          {onClose && (
+            <Button type="button" variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+          )}
+          <Button type="submit" disabled={isSubmitting}>
+            {companyId
+              ? isUpdating
+                ? "Saving..."
+                : "Save changes"
+              : isCreating
+                ? "Adding..."
+                : "Add company"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

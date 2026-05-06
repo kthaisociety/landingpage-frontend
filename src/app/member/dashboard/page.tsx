@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Calendar, Briefcase } from "lucide-react";
+import { User, Briefcase } from "lucide-react";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MemberProfileForm } from "@/components/member/member-profile-form";
-import { MemberEventSelection } from "@/components/member/member-event-selection";
 import { MemberProjectSelection } from "@/components/member/member-project-selection";
 
 export default function MemberDashboardPage() {
@@ -58,19 +57,15 @@ export default function MemberDashboardPage() {
                   Member Dashboard
                 </CardTitle>
                 <CardDescription>
-                  Manage your profile information, event associations, and project associations
+                  Manage your profile information and project associations
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="profile" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="profile" className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       Profile
-                    </TabsTrigger>
-                    <TabsTrigger value="events" className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Events
                     </TabsTrigger>
                     <TabsTrigger value="projects" className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4" />
@@ -80,10 +75,6 @@ export default function MemberDashboardPage() {
 
                   <TabsContent value="profile" className="mt-6">
                     <MemberProfileForm />
-                  </TabsContent>
-
-                  <TabsContent value="events" className="mt-6">
-                    <MemberEventSelection />
                   </TabsContent>
 
                   <TabsContent value="projects" className="mt-6">

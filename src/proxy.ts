@@ -18,6 +18,11 @@ export async function proxy(req: NextRequest) {
   const { pathname } = url;
   const token = req.cookies.get("jwt")?.value;
 
+  // Skip auth entirely in local development
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith("/member/login")) {
     const res = NextResponse.next();
     res.headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
