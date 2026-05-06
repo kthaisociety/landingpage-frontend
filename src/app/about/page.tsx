@@ -40,6 +40,7 @@ export default function AboutPage() {
   const selectedYear = activeYear || currentYear;
 
   const isAlumni = activeDepartment === "Alumni";
+  const currentCalendarYear = new Date().getFullYear();
 
   // For Alumni: fetch all members (no year filter), then filter client-side to past years
   // For everything else: fetch by selected year and department
@@ -50,11 +51,16 @@ export default function AboutPage() {
 
   const teamMembers = useMemo(() => {
     if (isAlumni) {
-      // Show all members from years that are NOT the current (most recent) year
-      return rawMembers.filter((m) => m.academicYear !== currentYear);
+      // Alumni = members who have already graduated
+      return rawMembers.filter(
+        (m) =>
+          typeof m.graduationYear === "number" &&
+          m.graduationYear > 0 &&
+          m.graduationYear < currentCalendarYear,
+      );
     }
     return rawMembers;
-  }, [rawMembers, isAlumni, currentYear]);
+  }, [rawMembers, isAlumni, currentCalendarYear]);
 
   const displayedMembers = useMemo(() => {
     if (activeDepartment !== "All") {

@@ -6,6 +6,7 @@ export interface TeamMember {
   firstName: string;
   lastName: string;
   profilePicture: string;
+  graduationYear?: number;
   role: string;
   department: string;
   academicYear: string;
