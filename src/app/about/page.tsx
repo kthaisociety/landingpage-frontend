@@ -56,6 +56,41 @@ export default function AboutPage() {
     return rawMembers;
   }, [rawMembers, isAlumni, currentYear]);
 
+  const displayedMembers = useMemo(() => {
+    if (activeDepartment !== "All") {
+      return teamMembers.map((member) => ({
+        ...member,
+        departments: [member.department],
+        roles: member.role ? [member.role] : [],
+      }));
+    }
+
+    const grouped = new Map<
+      string,
+      (typeof teamMembers)[number] & { departments: string[]; roles: string[] }
+    >();
+
+    for (const member of teamMembers) {
+      const existing = grouped.get(member.profileId);
+      if (!existing) {
+        grouped.set(member.profileId, {
+          ...member,
+          departments: member.department ? [member.department] : [],
+          roles: member.role ? [member.role] : [],
+        });
+      } else {
+        if (member.department && !existing.departments.includes(member.department)) {
+          existing.departments.push(member.department);
+        }
+        if (member.role && !existing.roles.includes(member.role)) {
+          existing.roles.push(member.role);
+        }
+      }
+    }
+
+    return Array.from(grouped.values());
+  }, [teamMembers, activeDepartment]);
+
   // AsciiGrid text mask
   useEffect(() => {
     const canvas = document.createElement("canvas");
@@ -194,36 +229,46 @@ export default function AboutPage() {
               <div className="py-16 text-center">
                 <p className="font-mono text-secondary-gray text-sm">Loading members...</p>
               </div>
-            ) : teamMembers.length > 0 ? (
+            ) : displayedMembers.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {teamMembers.map((member) => {
+                {displayedMembers.map((member) => {
                   const pictureUrl = member.profilePicture
                     ? `${API_URL}/profile/picture?id=${member.profilePicture}`
                     : null;
 
                   return (
                     <Link
-                      key={`${member.profileId}-${member.academicYear}-${member.department}`}
+                      key={member.profileId}
                       href={`/members/${member.profileId}`}
                       className="group flex flex-col h-full bg-white border border-secondary-light-gray/60 rounded-2xl p-4 hover:shadow-md hover:border-primary/40 transition-all duration-300"
                     >
-                      {/* Image & Department Badge */}
-                      <div className="relative aspect-square bg-secondary-light-gray mb-4 overflow-hidden rounded-xl">
+                      {/* Image & Department Badge(s) */}
+                      <div className="relative h-64 bg-secondary-light-gray mb-4 overflow-hidden rounded-xl">
                         {pictureUrl ? (
-                          <Image
-                            src={pictureUrl}
-                            alt={`${member.firstName} ${member.lastName}`}
-                            fill
-                            className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                            unoptimized
-                          />
+                          <>
+                            <Image
+                              src={pictureUrl}
+                              alt={`${member.firstName} ${member.lastName}`}
+                              fill
+                              className="object-cover grayscale saturate-0 contrast-110 group-hover:grayscale-0 group-hover:saturate-100 group-hover:contrast-100 transition-all duration-500"
+                              unoptimized
+                            />
+                            <div className="absolute inset-0 bg-primary/35 mix-blend-multiply group-hover:opacity-0 transition-opacity duration-500" />
+                          </>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-secondary/20">
                             <Building2 className="h-10 w-10 text-secondary-gray/40" />
                           </div>
                         )}
-                        <div className="absolute top-3 right-3 bg-primary backdrop-blur-sm px-2.5 py-1 rounded-2xl text-[10px] font-mono font-bold text-white/95 tracking-tight shadow-sm">
-                          {member.department}
+                        <div className="absolute top-3 right-3 flex flex-wrap justify-end gap-1.5 max-w-[75%]">
+                          {member.departments.map((department) => (
+                            <span
+                              key={`${member.profileId}-${department}`}
+                              className="bg-primary backdrop-blur-sm px-2.5 py-1 rounded-2xl text-[10px] font-mono font-bold text-white/95 tracking-tight shadow-sm"
+                            >
+                              {department}
+                            </span>
+                          ))}
                         </div>
                       </div>
 
@@ -232,9 +277,9 @@ export default function AboutPage() {
                         <h3 className="font-arial font-bold text-lg text-secondary-black group-hover:text-primary transition-colors tracking-tight-1">
                           {member.firstName} {member.lastName}
                         </h3>
-                        {member.role && (
+                        {member.roles.length > 0 && (
                           <p className="font-mono text-xs mt-1 text-secondary-gray group-hover:text-secondary-black transition-colors">
-                            {member.role}
+                            {member.roles.join(" · ")}
                           </p>
                         )}
                         {member.aboutMe && (
