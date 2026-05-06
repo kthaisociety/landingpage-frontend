@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "@/config";
@@ -49,11 +49,11 @@ export function MemberProjectSelection() {
     },
   );
 
-  useEffect(() => {
+  const initializeSelectedFromServer = () => {
     setSelectedProjectIds(
       associationRows.filter((row) => row.selected).map((row) => row.id),
     );
-  }, [associationRows]);
+  };
 
   const updateAssociations = useMutation({
     mutationFn: async (projectIds: string[]) => {
@@ -118,7 +118,15 @@ export function MemberProjectSelection() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setIsEditorOpen((prev) => !prev)}
+            onClick={() =>
+              setIsEditorOpen((prev) => {
+                const next = !prev;
+                if (next) {
+                  initializeSelectedFromServer();
+                }
+                return next;
+              })
+            }
             disabled={isAssociationsLoading || isAssociationsError}
           >
             {isEditorOpen ? "Close" : "Add project"}
