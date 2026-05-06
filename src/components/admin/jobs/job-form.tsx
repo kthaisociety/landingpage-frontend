@@ -451,7 +451,7 @@ export function JobForm({
 
               {form.contacts.map((contact, index) => (
                 <div
-                  key={index}
+                  key={`${contact.email}-${contact.name}-${contact.lastName}-${contact.phoneNumber}`}
                   className="space-y-4 pt-4 border-t border-border first:border-0 first:pt-0"
                 >
                   <div className="flex justify-between items-center">

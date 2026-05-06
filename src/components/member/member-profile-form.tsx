@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import { Camera, User, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +19,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useMemberProfile, useUpdateMemberProfile } from "@/hooks/member";
 import { useAddMyTeamEntry, useRemoveMyTeamEntry } from "@/hooks/team";
-import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "@/config";
 
 const DEPARTMENTS = ["Board", "Research", "IT", "Development", "Business", "Growth"];
@@ -134,13 +135,13 @@ export function MemberProfileForm() {
     // Upload to backend
     setIsUploadingPicture(true);
     try {
-      const formData = new FormData();
-      formData.append("picture", file);
+      const uploadFormData = new FormData();
+      uploadFormData.append("picture", file);
 
       const res = await fetch(`${API_URL}/profile/picture`, {
         method: "POST",
         credentials: "include",
-        body: formData,
+        body: uploadFormData,
       });
 
       if (!res.ok) {
@@ -211,10 +212,12 @@ export function MemberProfileForm() {
           aria-label="Upload profile picture"
         >
           {currentPictureUrl ? (
-            <img
+            <Image
               src={currentPictureUrl}
               alt="Profile picture"
-              className="h-full w-full object-cover"
+              fill
+              sizes="80px"
+              className="object-cover"
             />
           ) : initials ? (
             <span className="text-2xl font-semibold text-muted-foreground">
