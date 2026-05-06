@@ -115,6 +115,17 @@ export function transformProjectData(
     ...shot,
     image: normalizeMediaUrl(shot.image),
   }));
+  const coverFromMarkedScreenshot =
+    parsedScreenshots.find(
+      (shot) =>
+        (shot.alt && shot.alt.toLowerCase().includes("cover")) ||
+        (shot.caption && shot.caption.toLowerCase().includes("cover image")),
+    )?.image || "";
+  const screenshotsWithoutCover = parsedScreenshots.filter(
+    (shot) => shot.image !== coverFromMarkedScreenshot,
+  );
+  const fallbackCoverFromFirstScreenshot = parsedScreenshots[0]?.image || "";
+  const resolvedCoverImage = coverFromMarkedScreenshot || fallbackCoverFromFirstScreenshot;
 
   return {
     id: backendData.id || "", 
@@ -132,8 +143,8 @@ export function transformProjectData(
     problemImpact: backendData.problemImpact || "",
     status: backendData.status || "planning",
 
-    coverImage: parsedScreenshots.length > 0 ? parsedScreenshots[0].image : "",
-    screenshots: parsedScreenshots,
+    coverImage: resolvedCoverImage,
+    screenshots: screenshotsWithoutCover,
 
     websiteUrl: "", // Missing from DB
     repoUrl: backendData.repoUrl || "",

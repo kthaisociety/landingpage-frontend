@@ -4,11 +4,11 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ImageCard } from "@/components/ui/image-card"
-import { useJobs } from "@/hooks/jobs"
-import type { JobListing } from "@/hooks/jobs"
+import { useJobs } from "@/hooks/admin"
+import type { SmallJobListing } from "@/hooks/admin"
 import { JobsSkeleton } from "@/components/jobs/job-card-skeleton"
 
-function JobCard({ job }: { job: JobListing }) {
+function JobCard({ job }: { job: SmallJobListing }) {
   // Determine gradient colors - using a consistent dark gradient for jobs
   const gradientColors = {
     from: "from-white/60",
@@ -19,12 +19,10 @@ function JobCard({ job }: { job: JobListing }) {
   // Create tags array from job properties
   const tags: string[] = []
   if (job.jobType) tags.push(job.jobType)
-  if (job.tags && job.tags.length) tags.push(...job.tags)
   if (job.location) tags.push(job.location)
 
-  // Prefer explicit company logo if provided, otherwise fall back to generated cover path
-  const companySlug = job.company.toLowerCase().replace(/\s+/g, "-")
-  const coverImage = job.companyLogo || `/cover-${companySlug}.jpg`
+  // Use a stable fallback cover for backend-driven jobs.
+  const coverImage = "/kthais-logo.svg"
 
   return (
     <Link href={`/business/jobs/${job.id}`}>

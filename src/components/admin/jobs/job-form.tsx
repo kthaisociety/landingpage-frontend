@@ -452,13 +452,38 @@ export function JobForm({
               <Label htmlFor="job-end-at">
                 Listing end date <Req />
               </Label>
-              <Input
-                id="job-end-at"
-                type="datetime-local"
-                value={form.enddate}
-                onChange={handleTextChange("enddate")}
-                required
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="job-end-at"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !form.enddate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {form.enddate ? (
+                      format(new Date(form.enddate), "PPP")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.enddate ? new Date(form.enddate) : undefined}
+                    onSelect={(date) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        enddate: date ? date.toISOString() : "",
+                      }))
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               <p className="text-xs text-muted-foreground">When the posting is removed from the site.</p>
             </div>
 
