@@ -308,6 +308,7 @@ function ProjectCard({ project }: { project: ExtendedProjectInput }) {
     <Link href={`/projects/${project.id}`} className="block">
       <ImageCard
         image={project.coverImage || "/project-placeholder.webp"}
+        fallbackImage="/kthais-logo.svg"
         alt={project.title}
         blurHeight="70%"
         gradientColors={gradientColors}

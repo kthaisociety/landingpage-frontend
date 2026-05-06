@@ -170,7 +170,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       {project.screenshots.map((screenshot: { image: string; caption: string; alt?: string }) => (
                         <div key={screenshot.image} className="space-y-2">
                           <div className="relative w-full">
-                            <Image src={screenshot.image} alt={screenshot.alt || screenshot.caption || "Screenshot"} width={1200} height={675} className="w-full h-auto" />
+                            <Image src={screenshot.image} alt={screenshot.alt || screenshot.caption || "Screenshot"} width={1200} height={675} className="w-full h-auto" unoptimized />
                           </div>
                           <p className="text-sm text-muted-foreground font-mono leading-relaxed">{screenshot.caption}</p>
                         </div>

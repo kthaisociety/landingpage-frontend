@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import {API_URL} from "@/config"
+import { API_BASE, API_URL } from "@/config";
 
 
 export type BackendMemberResponse = {
@@ -68,6 +68,17 @@ export type ExtendedProjectInput = {
 export function transformProjectData(
   backendData: BackendProjectResponse,
 ): ExtendedProjectInput {
+  const normalizeMediaUrl = (url: string): string => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    if (url.startsWith("/api/v1/")) {
+      return `${API_BASE}${url}`;
+    }
+    return url;
+  };
+
   const safeJsonParse = <T>(jsonString: string, fallback: T): T => {
     if (!jsonString) return fallback;
     try {
@@ -97,9 +108,13 @@ export function transformProjectData(
       .filter(Boolean);
   };
 
-  const parsedScreenshots = safeJsonParse<
+  const parsedScreenshotsRaw = safeJsonParse<
     { image: string; caption: string; alt?: string }[]
   >(backendData.screenshots, []);
+  const parsedScreenshots = parsedScreenshotsRaw.map((shot) => ({
+    ...shot,
+    image: normalizeMediaUrl(shot.image),
+  }));
 
   return {
     id: backendData.id || "", 

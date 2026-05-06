@@ -7,12 +7,20 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
+import { format } from "date-fns";
 import Fuse from "fuse.js";
-import { X, Plus, Trash2, Search, CheckCircle2 } from "lucide-react";
+import { X, Plus, Trash2, Search, CheckCircle2, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { API_URL } from "@/config";
 import {
   Select,
@@ -191,7 +199,15 @@ export function JobForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (form.startdate && form.enddate && form.enddate < form.startdate) {
+    if (!form.startdate) {
+      setDateWarning("Listing start date is required.");
+      return;
+    }
+    if (
+      form.startdate &&
+      form.enddate &&
+      new Date(form.enddate).getTime() < new Date(form.startdate).getTime()
+    ) {
       setDateWarning("End date must be after start date.");
       return;
     }
@@ -397,13 +413,38 @@ export function JobForm({
               <Label htmlFor="job-start-at">
                 Listing start date <Req />
               </Label>
-              <Input
-                id="job-start-at"
-                type="datetime-local"
-                value={form.startdate}
-                onChange={handleTextChange("startdate")}
-                required
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="job-start-at"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !form.startdate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {form.startdate ? (
+                      format(new Date(form.startdate), "PPP")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.startdate ? new Date(form.startdate) : undefined}
+                    onSelect={(date) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        startdate: date ? date.toISOString() : "",
+                      }))
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               <p className="text-xs text-muted-foreground">When the posting goes live on the site.</p>
             </div>
 

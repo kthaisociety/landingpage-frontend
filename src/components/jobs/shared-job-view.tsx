@@ -48,9 +48,9 @@ export function SharedJobView({
   const { data: company, isLoading: isLoadingCompany } = useCompany(companyId || "");
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 bg-background">
       {/* Header Section */}
-      <section className="relative bg-white text-secondary-black pt-32 md:pt-64 pb-24 overflow-hidden border-b">
+      <section className="relative bg-white text-secondary-black pt-64 pb-24 overflow-hidden">
         {/* Optional AsciiGrid Background (Used on live page) */}
         {asciiMask !== undefined && (
           <div className="absolute inset-0 pointer-events-none">
@@ -68,7 +68,7 @@ export function SharedJobView({
         )}
 
         <div className="container max-w-7xl relative z-10 mx-auto px-4 md:px-6">
-          <h1 className="text-5xl md:text-7xl font-base mb-2 tracking-tighter">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-base mb-2 tracking-tighter break-words">
             {job.title || "Untitled Job"}
           </h1>
 

@@ -120,8 +120,6 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
   // Additional states
   const [techStackInput, setTechStackInput] = useState("");
   const [featureInput, setFeatureInput] = useState("");
-  const [screenshotUrlInput, setScreenshotUrlInput] = useState("");
-  const [screenshotCaptionInput, setScreenshotCaptionInput] = useState("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [screenshotImageFiles, setScreenshotImageFiles] = useState<File[]>([]);
   const [userSearch, setUserSearch] = useState("");
@@ -270,20 +268,6 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
         ),
       },
     }));
-  };
-
-  const addScreenshot = () => {
-    const url = screenshotUrlInput.trim();
-    if (!url) return;
-    setForm((prev) => ({
-      ...prev,
-      screenshots: [
-        ...prev.screenshots,
-        { image: url, caption: screenshotCaptionInput.trim() },
-      ],
-    }));
-    setScreenshotUrlInput("");
-    setScreenshotCaptionInput("");
   };
 
   const removeScreenshot = (indexToRemove: number) => {
@@ -621,22 +605,13 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="project-cover">Cover Image URL</Label>
+                      <Label htmlFor="project-cover-file">Cover image</Label>
                       <Input
-                        id="project-cover"
-                        value={form.coverImage}
-                        onChange={handleTextChange("coverImage")}
-                        placeholder="/cover-twiga.jpg"
+                        id="project-cover-file"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setCoverImageFile(e.target.files?.[0] ?? null)}
                       />
-                      <div className="space-y-1 pt-2">
-                        <Label htmlFor="project-cover-file">Or upload cover image</Label>
-                        <Input
-                          id="project-cover-file"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setCoverImageFile(e.target.files?.[0] ?? null)}
-                        />
-                      </div>
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -666,35 +641,6 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
                             )}
                           </div>
                         ))}
-                      </div>
-                      <div className="flex flex-col gap-2 sm:flex-row mt-2">
-                        <Input
-                          placeholder="Image URL (e.g. /twiga-screenshot.jpg)"
-                          value={screenshotUrlInput}
-                          onChange={(e) =>
-                            setScreenshotUrlInput(e.target.value)
-                          }
-                        />
-                        <Input
-                          placeholder="Caption (optional)"
-                          value={screenshotCaptionInput}
-                          onChange={(e) =>
-                            setScreenshotCaptionInput(e.target.value)
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              addScreenshot();
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={addScreenshot}
-                        >
-                          Add
-                        </Button>
                       </div>
                       <div className="space-y-1 pt-2">
                         <Label htmlFor="project-screenshot-files">Upload screenshot files</Label>
