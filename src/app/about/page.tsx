@@ -3,9 +3,16 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Building2 } from "lucide-react";
+import { Building2, ChevronDown } from "lucide-react";
 import { HistoryTimeline } from "@/components/home/history-timeline";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useTeamMembers, useTeamYears } from "@/hooks/team";
 import { API_URL } from "@/config";
 
@@ -30,20 +37,14 @@ export default function AboutPage() {
 
   // Current year = most recent year in the data
   const currentYear = availableYears[0] ?? "";
-
-  // Set default to most recent year on first load
-  useEffect(() => {
-    if (availableYears.length > 0 && !activeYear) {
-      setActiveYear(availableYears[0]);
-    }
-  }, [availableYears, activeYear]);
+  const selectedYear = activeYear || currentYear;
 
   const isAlumni = activeDepartment === "Alumni";
 
   // For Alumni: fetch all members (no year filter), then filter client-side to past years
   // For everything else: fetch by selected year and department
   const { data: rawMembers = [], isLoading: isLoadingMembers } = useTeamMembers(
-    isAlumni ? undefined : activeYear || undefined,
+    isAlumni ? undefined : selectedYear || undefined,
     !isAlumni && activeDepartment !== "All" ? activeDepartment : undefined
   );
 
@@ -147,7 +148,7 @@ export default function AboutPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="font-mono text-sm h-11">
-                        {activeYear || "Select year"}
+                        {selectedYear || "Select year"}
                         <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -253,8 +254,8 @@ export default function AboutPage() {
                   {activeDepartment !== "All" && (
                     <> in <span className="text-secondary-black font-bold">{activeDepartment}</span></>
                   )}
-                  {activeYear && (
-                    <> for <span className="text-secondary-black font-bold">{activeYear}</span></>
+                  {selectedYear && (
+                    <> for <span className="text-secondary-black font-bold">{selectedYear}</span></>
                   )}.
                 </p>
                 {activeDepartment !== "All" && (
