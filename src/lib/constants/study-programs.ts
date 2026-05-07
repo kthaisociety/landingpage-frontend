@@ -1,3 +1,4 @@
+/** Fallback list when `/api/kth-programmes` is unavailable (legacy labels). */
 export const studyPrograms = [
   "Machine Learning",
   "Applied Mathematics",

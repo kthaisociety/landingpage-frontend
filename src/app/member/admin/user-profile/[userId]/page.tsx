@@ -8,14 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import{studyPrograms} from "@/lib/constants/study-programs"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ProgrammeSelect } from "@/components/member/programme-select";
 // import { useToast } from "@/hooks/use-toast";
 
 import {
@@ -185,26 +178,15 @@ export default function AdminEditUserProfilePage({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="programme">Programme</Label>
-            <Select
-              value={formData.programme}
-              onValueChange={(value) =>
-                setFormData({ ...formData, programme: value })
-              }
-            >
-              <SelectTrigger id="programme">
-                <SelectValue placeholder="Select programme" />
-              </SelectTrigger>
-              <SelectContent>
-                {studyPrograms.map((program) => (
-                  <SelectItem key={program} value={program}>
-                    {program}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <ProgrammeSelect
+            id="programme"
+            label="Programme"
+            value={formData.programme}
+            onValueChange={(programme) =>
+              setFormData({ ...formData, programme })
+            }
+            placeholder="Select programme"
+          />
 
           <div className="space-y-2">
             <Label htmlFor="graduationYear">Graduation Year</Label>

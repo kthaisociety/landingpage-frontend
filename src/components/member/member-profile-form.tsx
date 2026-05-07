@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ProgrammeSelect } from "@/components/member/programme-select";
 import { useToast } from "@/hooks/use-toast";
 import { useMemberProfile, useUpdateMemberProfile } from "@/hooks/member";
 import { useAddMyTeamEntry, useRemoveMyTeamEntry } from "@/hooks/team";
@@ -54,28 +55,6 @@ interface ProfileFormData {
   linkedinLink: string;
   aboutMe: string;
 }
-
-const studyPrograms = [
-  "Machine Learning",
-  "Applied Mathematics",
-  "Bio Technology",
-  "Engineering Physics",
-  "Computer Science",
-  "Electrical Engineering",
-  "Industrial Management",
-  "Information and Communication Technology",
-  "Chemical Science and Engineering",
-  "Mechanical Engineering",
-  "Mathematics",
-  "Material Science and Engineering",
-  "Medical Engineering",
-  "Environmental Engineering",
-  "The Built Environment",
-  "Technology and Economics",
-  "Technology and Health",
-  "Technology and Learning",
-  "Technology and Management",
-];
 
 export function MemberProfileForm() {
   const { toast } = useToast();
@@ -300,26 +279,15 @@ export function MemberProfileForm() {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="programme">Programme</Label>
-          <Select
-            value={formData.programme}
-            onValueChange={(value) =>
-              setFormData({ ...formData, programme: value })
-            }
-          >
-            <SelectTrigger id="programme">
-              <SelectValue placeholder="Select your programme" />
-            </SelectTrigger>
-            <SelectContent>
-              {studyPrograms.map((program) => (
-                <SelectItem key={program} value={program}>
-                  {program}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <ProgrammeSelect
+          id="programme"
+          label="Programme"
+          value={formData.programme}
+          onValueChange={(programme) =>
+            setFormData({ ...formData, programme })
+          }
+          placeholder="Select your programme"
+        />
 
         <div className="space-y-2">
           <Label htmlFor="graduationYear">Graduation Year</Label>
