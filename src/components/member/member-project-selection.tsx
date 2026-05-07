@@ -1,113 +1,82 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "@/config";
-import { useProjects } from "@/hooks/projects";
-import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
+type AssociationRow = {
+  id: string;
+  title: string;
+  status: string;
+  selected: boolean;
+};
+
+function useMyProjectAssociations() {
+  return useQuery<AssociationRow[]>({
+    queryKey: ["my-project-associations"],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/projects/my-associations`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to load project list");
+      return res.json();
+    },
+  });
+}
+
 export function MemberProjectSelection() {
   const queryClient = useQueryClient();
-  const { data: projects = [], isLoading, isError } = useProjects();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
 
-  const { isLoading: userIsLoading, user } = useAuth();
-  let currentUserEmail = null;
-  if (!userIsLoading && user?.email) currentUserEmail = user.email;
-
-  const myProjects = useMemo(
-    () =>
-      projects.filter((project) =>
-        project.contributors?.some(
-          (contributor) =>
-            contributor.email.toLowerCase() === currentUserEmail?.toLowerCase(),
-        ),
-      ),
-    [projects, currentUserEmail],
-  );
-
   const {
     data: associationRows = [],
-    isLoading: isAssociationsLoading,
-    isError: isAssociationsError,
-  } = useQuery<{ id: string; title: string; status: string; selected: boolean }[]>(
-    {
-      queryKey: ["my-project-associations"],
-      queryFn: async () => {
-        const response = await fetch(`${API_URL}/projects/my-associations`, {
-          credentials: "include",
-        });
-        if (!response.ok) {
-          throw new Error("Failed to load project list");
-        }
-        return response.json();
-      },
-    },
-  );
+    isLoading,
+    isError,
+  } = useMyProjectAssociations();
 
-  const initializeSelectedFromServer = () => {
-    setSelectedProjectIds(
-      associationRows.filter((row) => row.selected).map((row) => row.id),
-    );
+  const myProjects = associationRows.filter((r) => r.selected);
+
+  const initializeSelected = () => {
+    setSelectedProjectIds(myProjects.map((r) => r.id));
   };
 
   const updateAssociations = useMutation({
     mutationFn: async (projectIds: string[]) => {
-      const response = await fetch(`${API_URL}/projects/my-associations`, {
+      const res = await fetch(`${API_URL}/projects/my-associations`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectIds }),
       });
-      if (!response.ok) {
-        const err = await response.json().catch(() => null);
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
         throw new Error(err?.error || "Failed to save your projects");
       }
-      return response.json();
+      return res.json();
     },
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["projects"] }),
-        queryClient.invalidateQueries({ queryKey: ["my-project-associations"] }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: ["my-project-associations"] });
+      await queryClient.invalidateQueries({ queryKey: ["projects"] });
       setIsEditorOpen(false);
     },
   });
 
-  const toggleProject = (projectId: string) => {
+  const toggleProject = (id: string) => {
     setSelectedProjectIds((prev) =>
-      prev.includes(projectId)
-        ? prev.filter((id) => id !== projectId)
-        : [...prev, projectId],
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
   if (isLoading) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        Loading your projects...
-      </div>
-    );
+    return <div className="text-center py-8 text-muted-foreground">Loading your projects...</div>;
   }
 
   if (isError) {
-    return (
-      <div className="text-center py-8 text-destructive">
-        Failed to load projects. Please try refreshing the page.
-      </div>
-    );
-  }
-
-  if (!myProjects.length) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        You are not currently listed as a contributor on any projects.
-      </div>
-    );
+    return <div className="text-center py-8 text-destructive">Failed to load projects. Please try refreshing the page.</div>;
   }
 
   return (
@@ -121,28 +90,19 @@ export function MemberProjectSelection() {
             onClick={() =>
               setIsEditorOpen((prev) => {
                 const next = !prev;
-                if (next) {
-                  initializeSelectedFromServer();
-                }
+                if (next) initializeSelected();
                 return next;
               })
             }
-            disabled={isAssociationsLoading || isAssociationsError}
           >
-            {isEditorOpen ? "Close" : "Add project"}
+            {isEditorOpen ? "Close" : "Add / edit projects"}
           </Button>
         </div>
 
-        {isAssociationsError && (
-          <p className="text-sm text-destructive">
-            Could not load project options right now.
-          </p>
-        )}
-
-        {isEditorOpen && !isAssociationsLoading && !isAssociationsError && (
+        {isEditorOpen && (
           <div className="border rounded-lg p-4 space-y-3 bg-secondary/20">
             <p className="text-sm text-muted-foreground">
-              Mark all projects you are currently part of.
+              Select all projects you are or have been part of.
             </p>
             <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
               {associationRows.map((project) => (
@@ -154,7 +114,10 @@ export function MemberProjectSelection() {
                     checked={selectedProjectIds.includes(project.id)}
                     onCheckedChange={() => toggleProject(project.id)}
                   />
-                  <span className="text-sm font-medium">{project.title}</span>
+                  <span className="text-sm font-medium flex-1">{project.title}</span>
+                  <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 bg-primary/10 text-primary rounded-full">
+                    {project.status}
+                  </span>
                 </label>
               ))}
             </div>
@@ -164,7 +127,7 @@ export function MemberProjectSelection() {
                 onClick={() => updateAssociations.mutate(selectedProjectIds)}
                 disabled={updateAssociations.isPending}
               >
-                {updateAssociations.isPending ? "Saving..." : "Save projects"}
+                {updateAssociations.isPending ? "Saving..." : "Save"}
               </Button>
               {updateAssociations.isError && (
                 <p className="text-sm text-destructive">
@@ -175,39 +138,26 @@ export function MemberProjectSelection() {
           </div>
         )}
 
-        <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-          {myProjects.map((project) => (
-            <Link
-              href={`/projects/${project.id}`}
-              key={project.id}
-              className="flex flex-col p-4 border rounded-lg hover:bg-secondary/20 transition-colors block cursor-pointer"
-            >
-              <div className="flex justify-between items-start mb-1">
-                <h3 className="font-semibold text-base">{project.title}</h3>
+        {myProjects.length === 0 && !isEditorOpen ? (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            You have not added any projects yet. Click &ldquo;Add / edit projects&rdquo; to get started.
+          </div>
+        ) : (
+          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+            {myProjects.map((project) => (
+              <Link
+                href={`/projects/${project.id}`}
+                key={project.id}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/20 transition-colors cursor-pointer"
+              >
+                <span className="font-semibold text-base">{project.title}</span>
                 <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 bg-primary/10 text-primary rounded-full">
                   {project.status}
                 </span>
-              </div>
-
-              <p className="text-sm text-muted-foreground mt-1 mb-3">
-                {project.shortDescription || project.oneLineDescription}
-              </p>
-
-              {project.techStack && project.techStack.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-auto">
-                  {project.techStack.map((tech) => (
-                    <span
-                      key={tech}
-                      className="text-xs text-muted-foreground font-mono bg-secondary/50 px-2 py-1 rounded"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
