@@ -27,24 +27,9 @@ function ProjectCard({ project }: { project: ExtendedProjectInput }) {
 
   const tags = project.categories || [];
 
-  const isLightBackground = false;
-
-  const gradientColors = isLightBackground
-    ? {
-        from: "from-white/100",
-        via: "via-white/90",
-        to: "to-transparent",
-      }
-    : {
-        from: "from-black/100",
-        via: "via-black/80",
-        to: "to-transparent",
-      };
-
-  const textColorClass = isLightBackground
-    ? "text-secondary-black"
-    : "text-white";
-  const shadowClass = isLightBackground ? "drop-shadow-sm" : "drop-shadow-lg";
+  const gradientColors = { from: "from-white/100", via: "via-white/90", to: "to-transparent" };
+  const textColorClass = "text-secondary-black";
+  const shadowClass = "drop-shadow-sm";
 
   return (
     <Link href={`/projects/${project.id}`} className="block">

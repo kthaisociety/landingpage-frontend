@@ -292,17 +292,9 @@ function ProjectCard({ project }: { project: ExtendedProjectInput }) {
       .slice(0, 2);
   };
 
-  // Fallback to dark theme logic
-  const isLightBackground = false; // Add this to transformer if you store it in DB
-
-  const gradientColors = isLightBackground
-    ? { from: "from-white/100", via: "via-white/90", to: "to-transparent" }
-    : { from: "from-black/100", via: "via-black/80", to: "to-transparent" };
-
-  const textColorClass = isLightBackground
-    ? "text-secondary-black"
-    : "text-white";
-  const shadowClass = isLightBackground ? "drop-shadow-sm" : "drop-shadow-lg";
+  const gradientColors = { from: "from-white/100", via: "via-white/90", to: "to-transparent" };
+  const textColorClass = "text-secondary-black";
+  const shadowClass = "drop-shadow-sm";
 
   return (
     <Link href={`/projects/${project.id}`} className="block">

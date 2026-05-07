@@ -38,6 +38,7 @@ const FOOTER_SECTIONS: FooterSection[] = [
       { label: "Terms & Conditions", href: "/legal/terms-and-conditions" },
       { label: "Privacy & Cookies", href: "/legal/privacy-and-cookies" },
       { label: "Legal Notice", href: "/legal/legal-notice" },
+      { label: "Documents", href: "/legal/documents" },
     ],
   },
 ];
