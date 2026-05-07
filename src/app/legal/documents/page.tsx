@@ -152,7 +152,7 @@ export default function DocumentsPage() {
               rel="noopener noreferrer"
               className="flex items-center gap-2 font-mono text-sm text-primary hover:underline underline-offset-4 shrink-0"
             >
-              <Download className="w-4 h-4" />
+              <ExternalLink className="w-4 h-4" />
               View all
             </a>
           </div>
