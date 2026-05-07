@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Camera, User, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProgrammeSelect } from "@/components/member/programme-select";
-import { useToast } from "@/hooks/use-toast";
 import { useMemberProfile, useUpdateMemberProfile } from "@/hooks/member";
 import { useAddMyTeamEntry, useRemoveMyTeamEntry } from "@/hooks/team";
 import { API_URL } from "@/config";
@@ -57,7 +57,6 @@ interface ProfileFormData {
 }
 
 export function MemberProfileForm() {
-  const { toast } = useToast();
   const { data: profile, isLoading, refetch } = useMemberProfile();
   const updateProfile = useUpdateMemberProfile();
   const { data: teamEntries = [], refetch: refetchTeam } = useMyTeamEntries();
@@ -130,13 +129,12 @@ export function MemberProfileForm() {
       }
 
       await refetch();
-      toast({ title: "Profile picture updated" });
+      toast.success("Profile picture updated");
     } catch (err) {
       setPicturePreview(null);
-      toast({
-        title: "Upload failed",
-        description: err instanceof Error ? err.message : "Please try again.",
-        variant: "destructive",
+      toast.error("Upload failed", {
+        description:
+          err instanceof Error ? err.message : "Please try again.",
       });
     } finally {
       setIsUploadingPicture(false);
@@ -152,15 +150,10 @@ export function MemberProfileForm() {
           ? parseInt(formData.graduationYear, 10)
           : undefined,
       });
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
-      });
+      toast.success("Changes saved");
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
+      toast.error("Could not save profile", {
+        description: "Please try again in a moment.",
       });
     }
   };
@@ -447,9 +440,9 @@ export function MemberProfileForm() {
               });
               setNewEntry({ role: "", department: "", academicYear: "" });
               refetchTeam();
-              toast({ title: "Team entry added" });
+              toast.success("Team entry added");
             } catch {
-              toast({ title: "Failed to add entry", variant: "destructive" });
+              toast.error("Failed to add team entry");
             }
           }}
         >

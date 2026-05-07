@@ -123,6 +123,88 @@ export function useUpdateAdminUserProfile() {
   });
 }
 
+/** One row from GET /team/admin/user-entries (matches models.TeamMember JSON). */
+export interface AdminTeamMemberRow {
+  id: number;
+  role: string;
+  team: string;
+  academic_year: string;
+}
+
+async function fetchAdminUserTeamEntries(
+  userId: string,
+): Promise<AdminTeamMemberRow[]> {
+  const res = await fetch(
+    `${API_URL}/team/admin/user-entries?userId=${encodeURIComponent(userId)}`,
+    { credentials: "include" },
+  );
+  if (!res.ok) {
+    throw new Error("Failed to fetch team entries");
+  }
+  return res.json();
+}
+
+export function useAdminUserTeamEntries(userId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["admin-user-team-entries", userId],
+    queryFn: () => fetchAdminUserTeamEntries(userId),
+    enabled: Boolean(userId) && enabled,
+  });
+}
+
+async function adminAddTeamEntry(input: {
+  profileId: string;
+  role: string;
+  department: string;
+  academicYear: string;
+}) {
+  const res = await fetch(`${API_URL}/team/admin/member`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      profileId: input.profileId,
+      role: input.role,
+      department: input.department,
+      academicYear: input.academicYear,
+    }),
+  });
+  if (!res.ok) throw new Error("Failed to add team entry");
+  return res.json();
+}
+
+export function useAdminAddTeamEntry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminAddTeamEntry,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-team-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+      queryClient.invalidateQueries({ queryKey: ["team-years"] });
+    },
+  });
+}
+
+async function adminRemoveTeamEntry(entryId: number) {
+  const res = await fetch(`${API_URL}/team/admin/member/${entryId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to remove team entry");
+}
+
+export function useAdminRemoveTeamEntry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminRemoveTeamEntry,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-team-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+      queryClient.invalidateQueries({ queryKey: ["team-years"] });
+    },
+  });
+}
+
 // Projects
 
 export interface CreateProjectDTO {
