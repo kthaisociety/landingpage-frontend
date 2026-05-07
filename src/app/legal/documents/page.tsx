@@ -8,37 +8,35 @@ import { AsciiGrid } from "@/components/ui/ascii-grid";
 const DOCUMENTS = [
   {
     title: "Statutes",
-    slug: "statutes-kth-ai-society-20240915",
+    url: "https://documents.aisociety.se/uploads/2024/statutes-kth-ai-society-20240915.pdf",
     date: "15 Sep 2024",
   },
   {
     title: "Annual Report 2024",
-    slug: "annual-report-2024",
+    url: "https://documents.aisociety.se/uploads/2025/annual-report-2024.pdf",
     date: "2024",
   },
   {
     title: "Annual Meeting – September 2024",
-    slug: "annual-meeting-20240908",
+    url: "https://documents.aisociety.se/uploads/2024/annual-meeting-20240908.pdf",
     date: "8 Sep 2024",
   },
   {
     title: "Extraordinary General Meeting – November 2024",
-    slug: "extraordinary-general-meeting-20241114",
+    url: "https://documents.aisociety.se/uploads/2024/extraordinary-general-meeting-20241114.pdf",
     date: "14 Nov 2024",
   },
   {
     title: "Annual Meeting – May 2025",
-    slug: "annual-meeting-20250517",
+    url: "https://documents.aisociety.se/uploads/2025/annual-meeting-20250517.pdf",
     date: "17 May 2025",
   },
   {
     title: "Yearly Meeting 2022",
-    slug: "yearly-meeting-2022-signed",
+    url: "https://documents.aisociety.se/uploads/2022/yearly-meeting-2022-signed.pdf",
     date: "2022",
   },
 ];
-
-const BASE_URL = "https://documents.aisociety.se/posts";
 
 export default function DocumentsPage() {
   const [textMask, setTextMask] = useState<string | undefined>(undefined);
@@ -114,8 +112,8 @@ export default function DocumentsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {DOCUMENTS.map((doc) => (
               <a
-                key={doc.slug}
-                href={`${BASE_URL}/${doc.slug}`}
+                key={doc.url}
+                href={doc.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-start gap-4 bg-white rounded-xl border border-secondary-light-gray/60 p-6 hover:shadow-md hover:border-primary/40 transition-all duration-300"
@@ -147,7 +145,7 @@ export default function DocumentsPage() {
               </p>
             </div>
             <a
-              href={BASE_URL}
+              href="https://documents.aisociety.se"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 font-mono text-sm text-primary hover:underline underline-offset-4 shrink-0"
