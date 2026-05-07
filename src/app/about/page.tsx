@@ -192,7 +192,7 @@ export default function AboutPage() {
             )}
             {isAlumni && (
               <p className="font-mono text-xs text-secondary-gray mb-4">
-                Alumni: everyone who has graduated, with all roles across years. Order: most roles first.
+                Alumni: everyone who has graduated, with all roles across years.
               </p>
             )}
 
