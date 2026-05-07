@@ -273,11 +273,6 @@ export default function AboutPage() {
                             {member.roles.join(" · ")}
                           </p>
                         )}
-                        {member.aboutMe && (
-                          <p className="font-serif text-sm text-secondary-black/70 mt-3 line-clamp-2 leading-relaxed">
-                            {member.aboutMe}
-                          </p>
-                        )}
                       </div>
                     </Link>
                   );
