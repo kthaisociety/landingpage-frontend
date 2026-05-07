@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isUsableKthProgrammeTitle } from "@/lib/kth-programmes";
 
 const KTH_PROGRAMMES_URL =
   "https://api.kth.se/api/kopps/v2/programmes/all?l=en";
@@ -26,7 +27,7 @@ export async function GET() {
     const titles = new Set<string>();
     for (const p of data) {
       const t = p.title?.trim();
-      if (t) titles.add(t);
+      if (t && isUsableKthProgrammeTitle(t)) titles.add(t);
     }
     const sorted = [...titles].sort((a, b) => a.localeCompare(b, "en"));
     return NextResponse.json(sorted);

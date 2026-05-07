@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export function useKthProgrammes() {
   return useQuery<string[]>({
-    queryKey: ["kth-programmes"],
+    queryKey: ["kth-programmes", "v2"],
     queryFn: async () => {
       const res = await fetch("/api/kth-programmes");
       if (!res.ok) throw new Error("Failed to load programmes");
