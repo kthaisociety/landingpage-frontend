@@ -235,6 +235,7 @@ export default function AboutPage() {
                               src={pictureUrl}
                               alt={`${member.firstName} ${member.lastName}`}
                               fill
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                               className="object-cover grayscale saturate-0 contrast-110 group-hover:grayscale-0 group-hover:saturate-100 group-hover:contrast-100 transition-all duration-500"
                               unoptimized
                             />
