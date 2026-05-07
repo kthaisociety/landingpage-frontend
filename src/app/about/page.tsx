@@ -6,8 +6,16 @@ import Image from "next/image";
 import { Building2 } from "lucide-react";
 import { HistoryTimeline } from "@/components/home/history-timeline";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
-import { useTeamMembers, useTeamYears } from "@/hooks/team";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useTeamMembers, type TeamMember } from "@/hooks/team";
 import { API_URL } from "@/config";
+import { ACADEMIC_YEARS, DEFAULT_ACADEMIC_YEAR } from "@/lib/academic-years";
 
 const DEPARTMENTS = [
   "All",
@@ -20,68 +28,59 @@ const DEPARTMENTS = [
   "Alumni",
 ];
 
+type GroupedMember = TeamMember & { departments: string[]; roles: string[] };
+
+function groupTeamMembersByProfile(rows: TeamMember[]): GroupedMember[] {
+  const grouped = new Map<string, GroupedMember>();
+  for (const member of rows) {
+    const existing = grouped.get(member.profileId);
+    if (!existing) {
+      grouped.set(member.profileId, {
+        ...member,
+        departments: member.department ? [member.department] : [],
+        roles: member.role ? [member.role] : [],
+      });
+    } else {
+      if (member.department && !existing.departments.includes(member.department)) {
+        existing.departments.push(member.department);
+      }
+      if (member.role && !existing.roles.includes(member.role)) {
+        existing.roles.push(member.role);
+      }
+    }
+  }
+  return Array.from(grouped.values());
+}
+
+function alumniTagScore(m: GroupedMember): number {
+  return m.departments.length + m.roles.length;
+}
+
 export default function AboutPage() {
   const [aboutTextMask, setAboutTextMask] = useState<string | undefined>(undefined);
-  const [activeYear, setActiveYear] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>(DEFAULT_ACADEMIC_YEAR);
   const [activeDepartment, setActiveDepartment] = useState("All");
-
-  // Fetch available years from API (returned newest-first)
-  const { data: availableYears = [] } = useTeamYears();
-
-  // Current year = most recent year in the data
-  const currentYear = availableYears[0] ?? "";
-  const selectedYear = activeYear || currentYear;
 
   const isAlumni = activeDepartment === "Alumni";
 
-  // Alumni: fetch all members (no year filter), exclude the current/most recent year client-side
-  // Everything else: fetch by selected year and department
+  const deptForApi =
+    activeDepartment === "All" || activeDepartment === "Alumni"
+      ? undefined
+      : activeDepartment;
+
   const { data: rawMembers = [], isLoading: isLoadingMembers } = useTeamMembers(
-    isAlumni ? undefined : selectedYear || undefined,
-    !isAlumni && activeDepartment !== "All" ? activeDepartment : undefined
+    isAlumni ? undefined : selectedYear,
+    deptForApi,
+    { alumni: isAlumni },
   );
 
-  const teamMembers = useMemo(() => {
-    if (isAlumni) {
-      return rawMembers.filter((m) => m.academicYear !== currentYear);
-    }
-    return rawMembers;
-  }, [rawMembers, isAlumni, currentYear]);
-
   const displayedMembers = useMemo(() => {
-    if (activeDepartment !== "All") {
-      return teamMembers.map((member) => ({
-        ...member,
-        departments: [member.department],
-        roles: member.role ? [member.role] : [],
-      }));
+    const grouped = groupTeamMembersByProfile(rawMembers);
+    if (isAlumni) {
+      return [...grouped].sort((a, b) => alumniTagScore(b) - alumniTagScore(a));
     }
-
-    const grouped = new Map<
-      string,
-      (typeof teamMembers)[number] & { departments: string[]; roles: string[] }
-    >();
-
-    for (const member of teamMembers) {
-      const existing = grouped.get(member.profileId);
-      if (!existing) {
-        grouped.set(member.profileId, {
-          ...member,
-          departments: member.department ? [member.department] : [],
-          roles: member.role ? [member.role] : [],
-        });
-      } else {
-        if (member.department && !existing.departments.includes(member.department)) {
-          existing.departments.push(member.department);
-        }
-        if (member.role && !existing.roles.includes(member.role)) {
-          existing.roles.push(member.role);
-        }
-      }
-    }
-
-    return Array.from(grouped.values());
-  }, [teamMembers, activeDepartment]);
+    return grouped;
+  }, [rawMembers, isAlumni]);
 
   // AsciiGrid text mask
   useEffect(() => {
@@ -168,27 +167,33 @@ export default function AboutPage() {
               <p className="font-serif text-secondary-black/70 text-lg">Discover the minds behind our initiatives.</p>
             </div>
 
-            {/* Year filter pills */}
-            {availableYears.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {availableYears.map((year) => (
-                  <button
-                    key={year}
-                    type="button"
-                    onClick={() => {
-                      setActiveYear(year);
-                      if (activeDepartment === "Alumni") setActiveDepartment("All");
-                    }}
-                    className={`font-mono text-xs px-4 py-2 rounded-full transition-all duration-200 border ${
-                      !isAlumni && selectedYear === year
-                        ? "bg-secondary-black text-white border-secondary-black shadow-sm"
-                        : "bg-white text-secondary-black border-secondary-light-gray hover:border-secondary-black"
-                    }`}
-                  >
-                    {year}
-                  </button>
-                ))}
+            {/* Academic year (not used in Alumni view) */}
+            {!isAlumni && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+                <span className="font-mono text-xs text-secondary-gray uppercase tracking-wider shrink-0">
+                  Academic year
+                </span>
+                <Select
+                  value={selectedYear}
+                  onValueChange={setSelectedYear}
+                >
+                  <SelectTrigger className="w-full sm:w-[220px] font-mono text-xs bg-white">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACADEMIC_YEARS.map((year) => (
+                      <SelectItem key={year} value={year} className="font-mono text-xs">
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            )}
+            {isAlumni && (
+              <p className="font-mono text-xs text-secondary-gray mb-4">
+                Alumni: everyone who has graduated, with all roles across years. Order: most roles first.
+              </p>
             )}
 
             {/* Department filter pills */}
@@ -282,14 +287,14 @@ export default function AboutPage() {
               <div className="py-24 text-center border border-dashed border-secondary-gray/50 rounded-2xl bg-white">
                 <p className="font-mono text-secondary-gray text-sm">
                   No members found
-                  {activeDepartment !== "All" && (
+                  {activeDepartment !== "All" && activeDepartment !== "Alumni" && (
                     <> in <span className="text-secondary-black font-bold">{activeDepartment}</span></>
                   )}
-                  {selectedYear && (
+                  {!isAlumni && selectedYear && (
                     <> for <span className="text-secondary-black font-bold">{selectedYear}</span></>
                   )}.
                 </p>
-                {activeDepartment !== "All" && (
+                {activeDepartment !== "All" && activeDepartment !== "Alumni" && (
                   <button
                     type="button"
                     onClick={() => setActiveDepartment("All")}

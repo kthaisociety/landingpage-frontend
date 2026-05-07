@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMemberProfile, useUpdateMemberProfile } from "@/hooks/member";
 import { useAddMyTeamEntry, useRemoveMyTeamEntry } from "@/hooks/team";
 import { API_URL } from "@/config";
+import { ACADEMIC_YEARS } from "@/lib/academic-years";
 
 const DEPARTMENTS = ["Board", "Research", "IT", "Development", "Business", "Growth"];
 
@@ -425,12 +426,22 @@ export function MemberProfileForm() {
         {/* Add new entry */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="space-y-1">
-            <Label className="text-xs">Year (e.g. 2024/2025)</Label>
-            <Input
-              placeholder="2024/2025"
+            <Label className="text-xs">Academic year</Label>
+            <Select
               value={newEntry.academicYear}
-              onChange={(e) => setNewEntry({ ...newEntry, academicYear: e.target.value })}
-            />
+              onValueChange={(v) => setNewEntry({ ...newEntry, academicYear: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {ACADEMIC_YEARS.map((y) => (
+                  <SelectItem key={y} value={y}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Team</Label>

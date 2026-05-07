@@ -43,10 +43,23 @@ export interface PublicProfile {
   }[];
 }
 
+export type FetchTeamMembersOptions = {
+  /** When true, returns all team rows for graduated members (any year); `year` is ignored. */
+  alumni?: boolean;
+};
+
 // Fetch team members filtered by year and/or department
-async function fetchTeamMembers(year?: string, department?: string): Promise<TeamMember[]> {
+async function fetchTeamMembers(
+  year?: string,
+  department?: string,
+  options?: FetchTeamMembersOptions,
+): Promise<TeamMember[]> {
   const params = new URLSearchParams();
-  if (year) params.set("year", year);
+  if (options?.alumni) {
+    params.set("alumni", "1");
+  } else if (year) {
+    params.set("year", year);
+  }
   if (department && department !== "All") params.set("department", department);
   const res = await fetch(`${API_URL}/team/members?${params.toString()}`);
   if (!res.ok) throw new Error("Failed to fetch team members");
@@ -92,10 +105,14 @@ async function removeMyTeamEntry(id: number): Promise<void> {
   if (!res.ok) throw new Error("Failed to remove team entry");
 }
 
-export function useTeamMembers(year?: string, department?: string) {
+export function useTeamMembers(
+  year?: string,
+  department?: string,
+  options?: FetchTeamMembersOptions,
+) {
   return useQuery<TeamMember[]>({
-    queryKey: ["team-members", year, department],
-    queryFn: () => fetchTeamMembers(year, department),
+    queryKey: ["team-members", year, department, options?.alumni ?? false],
+    queryFn: () => fetchTeamMembers(year, department, options),
     staleTime: 5 * 60 * 1000,
   });
 }
