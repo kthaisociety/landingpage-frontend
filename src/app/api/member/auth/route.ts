@@ -11,13 +11,13 @@ export async function POST(request: NextRequest) {
     if (!code) {
       return NextResponse.json(
         { error: "Authorization code is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const userData = {
       id: `google_${Math.random().toString(36).substr(2, 9)}`,
-      email: "member@kthaisociety.se",
+      email: "member@kthais.com",
       name: "Member-007",
       firstName: "KTH",
       lastName: "Member",
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
           role: userData.role,
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
 
     // Set JWT session token in httpOnly cookie
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     console.error("Google callback error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

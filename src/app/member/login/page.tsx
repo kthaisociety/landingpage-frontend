@@ -120,7 +120,7 @@ export default function MemberLogin() {
             <GoogleLoginButton />
 
             <a
-              href="https://kthaisociety.se/apply"
+              href="https://kthais.com/apply"
               target="_blank"
               rel="noopener noreferrer"
               className="
