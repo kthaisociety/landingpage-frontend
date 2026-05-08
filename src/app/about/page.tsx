@@ -121,7 +121,7 @@ export default function AboutPage() {
 
         <div className="container max-w-7xl relative z-10 mx-auto px-4 md:px-6 pb-8">
           <h4 className="text-3xl mb-2 tracking-tighter">
-            <span className="font-serif font-normal text-primary">(Who we are)</span>{" "}
+            <span className="font-times font-normal text-primary">(Who we are)</span>{" "}
             Organization
           </h4>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter">About Us</h1>

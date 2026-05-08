@@ -106,7 +106,7 @@ export function JobsPreview() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-          <span className="text-primary font-serif font-normal">(Career)</span> Opportunities
+          <span className="text-primary font-times font-normal">(Career)</span> Opportunities
         </h2>
         <Button asChild>
           <Link href="/business/jobs">

@@ -441,7 +441,7 @@ export default function ProjectsPage() {
         </div>
         <div className="container max-w-7xl relative z-10 mx-auto px-4 md:px-6 pb-8">
           <h4 className="text-3xl mb-2 tracking-tighter">
-            <span className="font-serif font-normal text-primary">
+            <span className="font-times font-normal text-primary">
               (Featured)
             </span>{" "}
             Work

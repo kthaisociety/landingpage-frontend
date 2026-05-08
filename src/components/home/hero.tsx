@@ -116,7 +116,10 @@ export function Hero() {
             className="mx-auto max-w-3xl text-4xl leading-none tracking-tight text-black sm:text-6xl md:text-7xl"
             variants={titleVariants}
           >
-            KTH <span className="font-serif text-[#1954A6]">AI Society</span>
+            <span className="font-times font-normal text-[1.1em] leading-none text-[#1954A6]">(KTH)</span>{" "}
+            <span className="font-arial font-bold tracking-tight text-black">
+              AI Society
+            </span>
           </motion.h1>
 
           <motion.p

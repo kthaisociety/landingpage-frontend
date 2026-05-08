@@ -280,7 +280,7 @@ export function NewsletterForm({
 
         <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-8 md:px-6">
           <h4 className="mb-2 text-3xl tracking-tighter">
-            <span className="font-serif font-normal text-primary">
+            <span className="font-times font-normal text-primary">
               (Newsletter)
             </span>{" "}
             Updates

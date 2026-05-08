@@ -129,7 +129,7 @@ export function ProjectsPreview() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-          <span className="text-primary font-serif font-normal">
+          <span className="text-primary font-times font-normal">
             (Featured)
           </span>{" "}
           Projects

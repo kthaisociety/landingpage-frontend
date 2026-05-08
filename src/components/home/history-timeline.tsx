@@ -221,7 +221,7 @@ export function HistoryTimeline({
               <NumberFlow
                 value={selectedEvent.year}
                 format={{ minimumFractionDigits: 0, maximumFractionDigits: 0, useGrouping: false }}
-                className="text-6xl sm:text-8xl font-serif text-foreground leading-none"
+                className="text-6xl sm:text-8xl font-times text-foreground leading-none"
               />
             </div>
 
@@ -259,7 +259,7 @@ export function HistoryTimeline({
                 <NumberFlow
                   value={selectedEvent.year}
                   format={{ minimumFractionDigits: 0, maximumFractionDigits: 0, useGrouping: false }}
-                  className="text-8xl font-serif text-foreground leading-none"
+                  className="text-8xl font-times text-foreground leading-none"
                 />
               </div>
 

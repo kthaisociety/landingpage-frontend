@@ -9,7 +9,7 @@ export function NewsletterSignup() {
         <div className="w-full max-w-4xl space-y-6">
           <h2 className="bg-clip-text text-4xl tracking-tighter text-black">
             Stay Updated
-            <span className="ml-2 font-serif text-[#1954A6]">
+            <span className="ml-2 font-times font-normal text-[#1954A6]">
               (Newsletter)
             </span>
           </h2>

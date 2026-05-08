@@ -12,7 +12,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TextMorph } from "@/components/ui/text-morph";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/providers/auth-provider/authProvider";
@@ -28,9 +27,9 @@ export function Navigation() {
 
   useEffect(function () {
     function handleScroll() {
-      const newLocal = window.scrollY > 50;
-      return setIsScrolled(newLocal);
+      setIsScrolled(window.scrollY > 50);
     }
+    handleScroll();
     window.addEventListener("scroll", handleScroll);
     return function () {
       return window.removeEventListener("scroll", handleScroll);
@@ -103,28 +102,27 @@ export function Navigation() {
 
   function renderLogo() {
     return (
-      <Link href="/">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/kthais-logo.svg"
-            alt="KTH AIS Logo"
-            width={40}
-            height={40}
-            className="h-8 w-8"
-          />
-          <TextMorph
-            as="span"
-            className="text-3xl tracking-tight text-foreground"
-            transition={{
-              type: "spring",
-              stiffness: 150,
-              damping: 10,
-              mass: 0.3,
-            }}
-          >
-            {isScrolled ? "KTH AIS" : "KTH AI Society"}
-          </TextMorph>
-        </div>
+      <Link
+        href="/"
+        aria-label="AI Society — home"
+        className="flex items-center gap-[9px] rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      >
+        <Image
+          src="/kthais-logo.svg"
+          alt=""
+          width={40}
+          height={40}
+          className="h-9 w-9 shrink-0"
+          priority
+        />
+        <span
+          aria-hidden={isScrolled}
+          className={`font-arial text-[2.125rem] font-bold leading-none tracking-[-0.05em] text-[#1751A6] transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+            isScrolled ? "pointer-events-none opacity-0" : "opacity-100"
+          }`}
+        >
+          AI Society
+        </span>
       </Link>
     );
   }
