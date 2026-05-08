@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useMemo } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ChevronDown, Calendar, ExternalLink } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ChevronDown, Calendar, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { AsciiGrid } from "@/components/ui/ascii-grid"
-import { ImageCard } from "@/components/ui/image-card"
-import { useEvents } from "@/hooks/events"
-import { EventsSkeleton } from "@/components/events/event-card-skeleton"
-import type { LumaEvent } from "@/app/api/events/route"
+} from "@/components/ui/dropdown-menu";
+import { AsciiGrid } from "@/components/ui/ascii-grid";
+import { ImageCard } from "@/components/ui/image-card";
+import { useEvents } from "@/hooks/events";
+import { EventsSkeleton } from "@/components/events/event-card-skeleton";
+import type { LumaEvent } from "@/app/api/events/route";
 
-type EventFilter = "all" | "upcoming" | "past"
+type EventFilter = "all" | "upcoming" | "past";
 
 function EventCard({ event }: { event: LumaEvent }) {
-  const router = useRouter()
-  const startDate = event.start_at ? new Date(event.start_at) : null
-  const isPast = startDate ? startDate < new Date() : false
+  const router = useRouter();
+  const startDate = event.start_at ? new Date(event.start_at) : null;
+  const isPast = startDate ? startDate < new Date() : false;
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
@@ -31,12 +31,12 @@ function EventCard({ event }: { event: LumaEvent }) {
       year: "numeric",
       hour: "numeric",
       minute: "2-digit",
-    }).format(date)
-  }
+    }).format(date);
+  };
 
   const handleCardClick = () => {
-    router.push(`/events/${event.api_id}`)
-  }
+    router.push(`/events/${event.api_id}`);
+  };
 
   return (
     <div onClick={handleCardClick} className="cursor-pointer">
@@ -69,96 +69,100 @@ function EventCard({ event }: { event: LumaEvent }) {
 
         {/* Action Buttons */}
         {event.url && (
-        <div className="flex gap-3 mt-4" onClick={(e) => e.stopPropagation()}>
-            <Button
-              variant="default"
-              asChild
-            >
-              <Link href={event.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+          <div className="flex gap-3 mt-4" onClick={(e) => e.stopPropagation()}>
+            <Button variant="default" asChild>
+              <Link
+                href={event.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2"
+              >
                 {isPast ? "View on Luma" : "Sign up"}
                 <ExternalLink className="h-4 w-4" />
               </Link>
             </Button>
           </div>
-          )}
+        )}
       </ImageCard>
     </div>
-  )
+  );
 }
 
 export default function EventsPage() {
-  const [eventsTextMask, setEventsTextMask] = useState<string | undefined>(undefined)
-  const [selectedFilter, setSelectedFilter] = useState<EventFilter>("all")
-  const { data: events = [], isLoading: loading, error: queryError } = useEvents()
+  const [selectedFilter, setSelectedFilter] = useState<EventFilter>("all");
+  const {
+    data: events = [],
+    isLoading: loading,
+    error: queryError,
+  } = useEvents();
 
-  useEffect(() => {
-    // Create a canvas-based text mask for "EVENTS"
-    const canvas = document.createElement("canvas")
-    canvas.width = 1200
-    canvas.height = 400
-    const ctx = canvas.getContext("2d")
-    
-    if (!ctx) return
+  const eventsTextMask = useMemo(() => {
+    if (typeof document === "undefined") return undefined;
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 400;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return undefined;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "white";
+    ctx.font = "bold 200px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText("EVENTS", 50, 50);
+    return canvas.toDataURL("image/png");
+  }, []);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.fillStyle = "white"
-    ctx.font = "bold 200px system-ui, -apple-system, sans-serif"
-    ctx.textAlign = "left"
-    ctx.textBaseline = "top"
-    
-    const text = "EVENTS"
-    ctx.fillText(text, 50, 50)
-    
-    const dataUrl = canvas.toDataURL("image/png")
-    setEventsTextMask(dataUrl)
-  }, [])
-
-  const error = queryError instanceof Error ? queryError.message : queryError ? String(queryError) : null
+  const error =
+    queryError instanceof Error
+      ? queryError.message
+      : queryError
+        ? String(queryError)
+        : null;
 
   const filteredEvents = events.filter((event) => {
-    if (selectedFilter === "all") return true
-    
-    const startDate = event.start_at ? new Date(event.start_at) : null
-    const isPast = startDate ? startDate < new Date() : false
-    
-    if (selectedFilter === "past") return isPast
-    if (selectedFilter === "upcoming") return !isPast
-    
-    return true
-  })
+    if (selectedFilter === "all") return true;
+
+    const startDate = event.start_at ? new Date(event.start_at) : null;
+    const isPast = startDate ? startDate < new Date() : false;
+
+    if (selectedFilter === "past") return isPast;
+    if (selectedFilter === "upcoming") return !isPast;
+
+    return true;
+  });
 
   // Sort events: upcoming first, then past (most recent first)
   // Calculate "now" once per render to avoid impure function during render
   // eslint-disable-next-line react-hooks/purity
-  const now = useMemo(() => Date.now(), [])
+  const now = useMemo(() => Date.now(), []);
   const sortedEvents = [...filteredEvents].sort((a, b) => {
-    const dateA = a.start_at ? new Date(a.start_at).getTime() : 0
-    const dateB = b.start_at ? new Date(b.start_at).getTime() : 0
-    
-    const aIsPast = dateA < now
-    const bIsPast = dateB < now
-    
+    const dateA = a.start_at ? new Date(a.start_at).getTime() : 0;
+    const dateB = b.start_at ? new Date(b.start_at).getTime() : 0;
+
+    const aIsPast = dateA < now;
+    const bIsPast = dateB < now;
+
     // Upcoming events first
-    if (!aIsPast && bIsPast) return -1
-    if (aIsPast && !bIsPast) return 1
-    
+    if (!aIsPast && bIsPast) return -1;
+    if (aIsPast && !bIsPast) return 1;
+
     // For same category, sort by date (upcoming: earliest first, past: most recent first)
-    if (!aIsPast && !bIsPast) return dateA - dateB
-    return dateB - dateA
-  })
+    if (!aIsPast && !bIsPast) return dateA - dateB;
+    return dateB - dateA;
+  });
 
   const getFilterLabel = (filter: EventFilter): string => {
     switch (filter) {
       case "all":
-        return "All events"
+        return "All events";
       case "upcoming":
-        return "Upcoming"
+        return "Upcoming";
       case "past":
-        return "Past"
+        return "Past";
       default:
-        return "All events"
+        return "All events";
     }
-  }
+  };
 
   return (
     <div className="min-h-screen">
@@ -166,9 +170,9 @@ export default function EventsPage() {
       <section className="relative bg-white text-secondary-black pt-64 pb-24 overflow-hidden">
         {/* Ascii Grid Background */}
         <div className="absolute inset-0 pointer-events-none">
-          <AsciiGrid 
-            color="rgba(0, 0, 0, 0.2)" 
-            cellSize={12} 
+          <AsciiGrid
+            color="rgba(0, 0, 0, 0.2)"
+            cellSize={12}
             logoSrc={eventsTextMask}
             logoPosition="center"
             logoScale={0.6}
@@ -180,12 +184,14 @@ export default function EventsPage() {
         <div className="container max-w-7xl relative z-10 mx-auto px-4 md:px-6 pb-8">
           {/* Main Title */}
           <h4 className="text-3xl mb-2 tracking-tighter">
-            <span className="font-serif font-normal text-primary">(Featured)</span> Gatherings
+            <span className="font-serif font-normal text-primary">
+              (Featured)
+            </span>{" "}
+            Gatherings
           </h4>
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter">
             Events
           </h1>
-
         </div>
       </section>
 
@@ -195,14 +201,18 @@ export default function EventsPage() {
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8">
             <div className="flex flex-col gap-2">
               <div>
-                <Link href="/" className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium">
+                <Link
+                  href="/"
+                  className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium"
+                >
                   Home
                 </Link>
                 <span className="text-gray-300 mx-2">/</span>
                 <span className="text-primary font-medium text-sm">Events</span>
               </div>
               <p className="text-lg md:text-xl max-w-2xl opacity-95 leading-relaxed font-serif">
-                Discover upcoming events and browse past gatherings from our community.
+                Discover upcoming events and browse past gatherings from our
+                community.
               </p>
             </div>
 
@@ -214,7 +224,11 @@ export default function EventsPage() {
                   <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="bottom" className="min-w-[220px]">
+              <DropdownMenuContent
+                align="end"
+                side="bottom"
+                className="min-w-[220px]"
+              >
                 <DropdownMenuItem onClick={() => setSelectedFilter("all")}>
                   All events
                 </DropdownMenuItem>
@@ -249,7 +263,5 @@ export default function EventsPage() {
         </section>
       </div>
     </div>
-  )
+  );
 }
-
-

@@ -3,7 +3,6 @@
 import {
   useRef,
   useState,
-  useEffect,
   type ChangeEvent,
   type DragEvent,
   type FormEvent,
@@ -11,7 +10,7 @@ import {
 import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {NIL_UUID} from "@/lib/constants/companies"
+import { NIL_UUID } from "@/lib/constants/companies";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,20 +27,28 @@ const emptyForm: CompanyInput = {
   description: "",
   websiteUrl: "",
   logoFile: null,
-  removeLogo: false, 
+  removeLogo: false,
 };
 
-export function CompanyForm({ companyId, onClose }: { companyId?: string; onClose?: () => void }) {
+type CompanyFormFieldsProps = {
+  companyId?: string;
+  initialData: ReturnType<typeof useCompany>["data"];
+  onClose?: () => void;
+  createCompany: ReturnType<typeof useCreateCompany>["mutateAsync"];
+  updateCompany: ReturnType<typeof useUpdateCompany>["mutateAsync"];
+  isCreating: boolean;
+  isUpdating: boolean;
+};
 
-  // Hooks
-  const { data: initialData, isLoading: isFetching } = useCompany(
-    companyId || "",
-  );
-  const { mutateAsync: createCompany, isPending: isCreating } =
-    useCreateCompany();
-  const { mutateAsync: updateCompany, isPending: isUpdating } =
-    useUpdateCompany();
-
+function CompanyFormFields({
+  companyId,
+  initialData,
+  onClose,
+  createCompany,
+  updateCompany,
+  isCreating,
+  isUpdating,
+}: CompanyFormFieldsProps) {
   const [form, setForm] = useState<CompanyInput>(() => {
     if (companyId && initialData) {
       return {
@@ -49,13 +56,13 @@ export function CompanyForm({ companyId, onClose }: { companyId?: string; onClos
         description: initialData.description || "",
         websiteUrl: initialData.websiteUrl || "",
         logoFile: null,
-        removeLogo: false, // <-- Added flag
+        removeLogo: false,
       };
     }
     return emptyForm;
   });
   const [previewUrl, setPreviewUrl] = useState<string>(() => {
-    if (initialData?.logo) {
+    if (initialData?.logo && initialData.logo !== NIL_UUID) {
       return `${API_URL}/company/logo?id=${initialData.logo}`;
     }
     return "";
@@ -63,27 +70,6 @@ export function CompanyForm({ companyId, onClose }: { companyId?: string; onClos
   const [logoError, setLogoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update form when initialData changes (for edit mode)
-  // eslint-disable react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (initialData && companyId) {
-      setForm({
-        name: initialData.name || "",
-        description: initialData.description || "",
-        websiteUrl: initialData.websiteUrl || "",
-        logoFile: null,
-        removeLogo: false, // <-- Added flag
-      });
-      if (initialData.logo && initialData.logo !== NIL_UUID) {
-        setPreviewUrl(`${API_URL}/company/logo?id=${initialData.logo}`);
-      }
-      else{
-        setPreviewUrl("");
-      }
-    }
-  }, [initialData, companyId]);
-
-  // Handlers
   const handleChange =
     (field: keyof CompanyInput) =>
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -153,108 +139,111 @@ export function CompanyForm({ companyId, onClose }: { companyId?: string; onClos
     }
   };
 
-  if (companyId && isFetching) {
-    return <p className="text-muted-foreground p-6">Loading company data...</p>;
-  }
-
   const isSubmitting = isCreating || isUpdating;
 
   return (
     <div>
       <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="company-name">Company name <span className="text-destructive ml-0.5">*</span></Label>
-                  <Input
-                    id="company-name"
-                    value={form.name}
-                    onChange={handleChange("name")}
-                    placeholder="KTH AI Society"
-                    required
-                  />
-                </div>
+        <div className="space-y-2">
+          <Label htmlFor="company-name">
+            Company name <span className="text-destructive ml-0.5">*</span>
+          </Label>
+          <Input
+            id="company-name"
+            value={form.name}
+            onChange={handleChange("name")}
+            placeholder="KTH AI Society"
+            required
+          />
+        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="company-description">Description <span className="text-destructive ml-0.5">*</span></Label>
-                  <Textarea
-                    id="company-description"
-                    value={form.description}
-                    onChange={handleChange("description")}
-                    placeholder="A brief description of the company"
-                    required
-                  />
-                </div>
+        <div className="space-y-2">
+          <Label htmlFor="company-description">
+            Description <span className="text-destructive ml-0.5">*</span>
+          </Label>
+          <Textarea
+            id="company-description"
+            value={form.description}
+            onChange={handleChange("description")}
+            placeholder="A brief description of the company"
+            required
+          />
+        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="company-logo">Company logo <span className="text-destructive ml-0.5">*</span></Label>
-                  <div
-                    className="rounded-md border border-dashed border-input p-4 text-sm text-muted-foreground cursor-pointer hover:bg-secondary/40 transition-colors"
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={handleDropLogo}
-                  >
-                    Drag and drop a new logo here, or click to upload.
-                  </div>
-                  <Input
-                    ref={fileInputRef}
-                    id="company-logo"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                  {previewUrl ? (
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="relative">
-                        <Image
-                          src={previewUrl}
-                          alt={`${form.name || "Company"} logo preview`}
-                          width={48}
-                          height={48}
-                          className="rounded-md object-contain border bg-white"
-                          unoptimized
-                        />
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="icon"
-                          className="absolute -right-2 -top-2 h-6 w-6 rounded-full text-xs shadow"
-                          onClick={() => {
-                            // <-- Updated to set removeLogo to true and clear input
-                            setForm((prev) => ({
-                              ...prev,
-                              logoFile: null,
-                              removeLogo: true,
-                            }));
-                            setPreviewUrl("");
-                            if (fileInputRef.current) {
-                              fileInputRef.current.value = "";
-                            }
-                          }}
-                        >
-                          ✕
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
-                  {logoError ? (
-                    <p className="text-xs text-destructive">{logoError}</p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Upload a PNG or JPG file.
-                    </p>
-                  )}
-                </div>
+        <div className="space-y-2">
+          <Label htmlFor="company-logo">
+            Company logo <span className="text-destructive ml-0.5">*</span>
+          </Label>
+          <div
+            className="rounded-md border border-dashed border-input p-4 text-sm text-muted-foreground cursor-pointer hover:bg-secondary/40 transition-colors"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={handleDropLogo}
+          >
+            Drag and drop a new logo here, or click to upload.
+          </div>
+          <Input
+            ref={fileInputRef}
+            id="company-logo"
+            type="file"
+            accept="image/*"
+            onChange={handleLogoUpload}
+            className="hidden"
+          />
+          {previewUrl ? (
+            <div className="flex items-center gap-3 mt-2">
+              <div className="relative">
+                <Image
+                  src={previewUrl}
+                  alt={`${form.name || "Company"} logo preview`}
+                  width={48}
+                  height={48}
+                  className="rounded-md object-contain border bg-white"
+                  unoptimized
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="absolute -right-2 -top-2 h-6 w-6 rounded-full text-xs shadow"
+                  onClick={() => {
+                    setForm((prev) => ({
+                      ...prev,
+                      logoFile: null,
+                      removeLogo: true,
+                    }));
+                    setPreviewUrl("");
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          {logoError ? (
+            <p className="text-xs text-destructive">{logoError}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-1">
+              Upload a PNG or JPG file.
+            </p>
+          )}
+        </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="company-website">Website URL <span className="text-destructive ml-0.5">*</span></Label>
-                  <Input
-                    id="company-website"
-                    value={form.websiteUrl}
-                    onChange={handleChange("websiteUrl")}
-                    placeholder="https://company.com"
-                    required
-                  />
-                </div>
+        <div className="space-y-2">
+          <Label htmlFor="company-website">
+            Website URL <span className="text-destructive ml-0.5">*</span>
+          </Label>
+          <Input
+            id="company-website"
+            value={form.websiteUrl}
+            onChange={handleChange("websiteUrl")}
+            placeholder="https://company.com"
+            required
+          />
+        </div>
 
         <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
           {onClose && (
@@ -274,5 +263,38 @@ export function CompanyForm({ companyId, onClose }: { companyId?: string; onClos
         </div>
       </form>
     </div>
+  );
+}
+
+export function CompanyForm({
+  companyId,
+  onClose,
+}: {
+  companyId?: string;
+  onClose?: () => void;
+}) {
+  const { data: initialData, isLoading: isFetching } = useCompany(
+    companyId || "",
+  );
+  const { mutateAsync: createCompany, isPending: isCreating } =
+    useCreateCompany();
+  const { mutateAsync: updateCompany, isPending: isUpdating } =
+    useUpdateCompany();
+
+  if (companyId && isFetching) {
+    return <p className="text-muted-foreground p-6">Loading company data...</p>;
+  }
+
+  return (
+    <CompanyFormFields
+      key={companyId ?? "new"}
+      companyId={companyId}
+      initialData={initialData}
+      onClose={onClose}
+      createCompany={createCompany}
+      updateCompany={updateCompany}
+      isCreating={isCreating}
+      isUpdating={isUpdating}
+    />
   );
 }

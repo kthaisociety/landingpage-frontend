@@ -151,14 +151,14 @@ const getStoredJobs = (): ExtendedJobListing[] => {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const version = window.localStorage.getItem(STORAGE_VERSION_KEY);
-    
+
     if (!raw || version !== CURRENT_VERSION) {
       // Initialize or migrate with seed data
       const seedJobs = getSeedJobs();
       persistJobs(seedJobs);
       return seedJobs;
     }
-    
+
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) {
       // Invalid data structure, reset with seed data
@@ -166,22 +166,24 @@ const getStoredJobs = (): ExtendedJobListing[] => {
       persistJobs(seedJobs);
       return seedJobs;
     }
-    
+
     // Validate and filter out invalid jobs
     const storedJobs = parsed.filter(isValidJob);
-    
+
     // Update existing jobs with seed data (for migrations and new fields)
     const seedJobs = getSeedJobs();
-    const seedJobsMap = new Map(seedJobs.map(job => [job.id, job]));
+    const seedJobsMap = new Map(seedJobs.map((job) => [job.id, job]));
     let updated = false;
-    
-    const updatedJobs = storedJobs.map(job => {
+
+    const updatedJobs = storedJobs.map((job) => {
       const seedJob = seedJobsMap.get(job.id);
       if (seedJob) {
         // Merge seed job data with stored job (seed takes precedence for URLs/emails)
         const merged = {
           ...job,
-          ...(seedJob.applicationUrl && { applicationUrl: seedJob.applicationUrl }),
+          ...(seedJob.applicationUrl && {
+            applicationUrl: seedJob.applicationUrl,
+          }),
           ...(seedJob.contactEmail && { contactEmail: seedJob.contactEmail }),
         };
         if (JSON.stringify(merged) !== JSON.stringify(job)) {
@@ -191,20 +193,20 @@ const getStoredJobs = (): ExtendedJobListing[] => {
       }
       return job;
     });
-    
+
     // Add any new seed jobs that don't exist in stored jobs
-    const existingIds = new Set(storedJobs.map(j => j.id));
-    const newJobs = seedJobs.filter(j => !existingIds.has(j.id));
+    const existingIds = new Set(storedJobs.map((j) => j.id));
+    const newJobs = seedJobs.filter((j) => !existingIds.has(j.id));
     if (newJobs.length > 0) {
       updatedJobs.push(...newJobs);
       updated = true;
     }
-    
+
     if (updated) {
       persistJobs(updatedJobs);
       return updatedJobs;
     }
-    
+
     return storedJobs;
   } catch (error) {
     console.error("Error loading jobs from localStorage:", error);
@@ -271,74 +273,46 @@ export function useJobPosts() {
 // NOTE: This is a temporary solution. Once the backend API is available,
 // this should fall back to the API route for server-side data.
 export function useJobs() {
-  const [jobs, setJobs] = useState<ExtendedJobListing[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
+  return useMemo(() => {
     try {
-      const storedJobs = getStoredJobs();
-      setJobs(storedJobs);
-      setError(null);
+      return { data: getStoredJobs(), isLoading: false, error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to load jobs";
+      const error =
+        err instanceof Error ? err : new Error("Failed to load jobs");
       console.error("Error in useJobs:", err);
-      setError(new Error(errorMessage));
-      // Set empty array on error to prevent UI crashes
-      setJobs([]);
-    } finally {
-      setIsLoading(false);
+      return { data: [] as ExtendedJobListing[], isLoading: false, error };
     }
   }, []);
-
-  return {
-    data: jobs,
-    isLoading,
-    error,
-  };
 }
 
 // Hook for fetching individual job details from localStorage
 // NOTE: This is a temporary solution. Once the backend API is available,
 // this should fall back to the API route for server-side data.
 export function useJob(jobId: string | undefined) {
-  const [job, setJob] = useState<JobDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
+  return useMemo(() => {
     if (!jobId) {
-      setError(new Error("Job ID is required"));
-      setIsLoading(false);
-      return;
+      return {
+        data: null,
+        isLoading: false,
+        error: new Error("Job ID is required"),
+      };
     }
-
     try {
       const storedJobs = getStoredJobs();
       const foundJob = storedJobs.find((j) => j.id === jobId);
-      
       if (!foundJob) {
-        setError(new Error("Job not found"));
-        setJob(null);
-      } else {
-        // Convert ExtendedJobListing to JobDetail (they're compatible)
-        // JobDetail includes optional fields that ExtendedJobListing has
-        setJob(foundJob as JobDetail);
-        setError(null);
+        return {
+          data: null,
+          isLoading: false,
+          error: new Error("Job not found"),
+        };
       }
+      return { data: foundJob as JobDetail, isLoading: false, error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to load job";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load job";
       console.error("Error in useJob:", err);
-      setError(new Error(errorMessage));
-      setJob(null);
-    } finally {
-      setIsLoading(false);
+      return { data: null, isLoading: false, error: new Error(errorMessage) };
     }
   }, [jobId]);
-
-  return {
-    data: job,
-    isLoading,
-    error,
-  };
 }
