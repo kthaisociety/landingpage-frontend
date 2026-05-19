@@ -1,5 +1,6 @@
 /** Allowed academic years for team membership (newest first). */
 export const ACADEMIC_YEARS = [
+  "2026/2027",
   "2025/2026",
   "2024/2025",
   "2023/2024",
