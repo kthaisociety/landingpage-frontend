@@ -7,7 +7,16 @@ import { Markdown } from "@/components/ui/markdown";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { useCompany } from "@/hooks/admin";
 import { API_URL } from "@/config";
+import { normalizeExternalHref } from "@/lib/utils";
 import type { JobPostInput, FullJobListing, ContactDTO } from "@/hooks/admin";
+
+function getJobApplyUrl(job: JobPostInput | FullJobListing): string | null {
+  const raw =
+    (job as Partial<JobPostInput>).appurl ??
+    (job as Partial<FullJobListing>).appurl ??
+    (job as { applicationUrl?: string }).applicationUrl;
+  return normalizeExternalHref(raw);
+}
 
 export function SharedJobView({
   job,
@@ -19,7 +28,7 @@ export function SharedJobView({
   breadcrumbs?: React.ReactNode;
 }) {
   const companyId = (job as Partial<JobPostInput>).companyId || (job as Partial<FullJobListing>).company;
-  const appUrl = (job as Partial<JobPostInput>).appurl || (job as Partial<FullJobListing>).appurl;
+  const appUrl = getJobApplyUrl(job);
 
   let location = { place: "", tag: "" };
   try {
@@ -46,6 +55,9 @@ export function SharedJobView({
   }
 
   const { data: company, isLoading: isLoadingCompany } = useCompany(companyId || "");
+  const companyWebsiteHref = company?.websiteUrl
+    ? normalizeExternalHref(company.websiteUrl)
+    : null;
 
   return (
     <div className="min-h-screen pb-24 bg-background">
@@ -187,9 +199,9 @@ export function SharedJobView({
                       </p>
                     )}
 
-                    {company.websiteUrl && (
+                    {companyWebsiteHref && (
                       <a
-                        href={company.websiteUrl}
+                        href={companyWebsiteHref}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:underline flex items-center gap-1"
