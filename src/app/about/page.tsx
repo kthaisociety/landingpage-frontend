@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { Building2 } from "lucide-react";
@@ -16,6 +17,21 @@ import {
 import { useTeamMembers, type TeamMember } from "@/hooks/team";
 import { API_URL } from "@/config";
 import { ACADEMIC_YEARS, DEFAULT_ACADEMIC_YEAR } from "@/lib/academic-years";
+
+const AnnualReportViewer = dynamic(
+  () =>
+    import("@/components/about/annual-report-viewer").then(
+      (mod) => mod.AnnualReportViewer,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-16">
+        <p className="font-mono text-secondary-gray text-sm">Loading report...</p>
+      </div>
+    ),
+  },
+);
 
 const DEPARTMENTS = [
   "All",
@@ -116,7 +132,7 @@ export default function AboutPage() {
             enableDripping={false}
             className="w-full h-full"
           />
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-neutral-50 via-white/50 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/50 to-transparent pointer-events-none" />
         </div>
 
         <div className="container max-w-7xl relative z-10 mx-auto px-4 md:px-6 pb-8">
@@ -312,8 +328,31 @@ export default function AboutPage() {
                 Key milestones, events, and initiatives from previous years.
               </p>
             </div>
-            <div className="bg-white p-6 md:p-10 border border-secondary-light-gray/60 rounded-2xl shadow-sm">
-              <HistoryTimeline />
+            <HistoryTimeline />
+
+            <hr className="border-secondary-light-gray/60 my-16" />
+
+            {/* Annual report — scrollable embed */}
+            <div>
+              <div className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+                <div>
+                  <h2 className="font-arial text-3xl font-bold text-secondary-black tracking-tight-2 mb-2">
+                    Annual Report
+                  </h2>
+                  <p className="font-serif text-secondary-black/70 max-w-2xl text-lg">
+                    A closer look at our year in review.
+                  </p>
+                </div>
+                <a
+                  href="/kth-ais-annual-report.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-primary hover:underline decoration-2 underline-offset-4 shrink-0"
+                >
+                  Open in new tab ↗
+                </a>
+              </div>
+              <AnnualReportViewer />
             </div>
           </div>
 

@@ -120,9 +120,7 @@ export default function MemberLogin() {
             <GoogleLoginButton />
 
             <a
-              href="https://kthais.com/apply"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="mailto:applications@kthais.com"
               className="
                 inline-flex items-center justify-center
                 rounded-xl px-6 py-3
