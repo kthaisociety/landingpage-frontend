@@ -19,6 +19,7 @@ const FOOTER_SECTIONS: FooterSection[] = [
       { label: "Events", href: "/events" },
       { label: "Projects", href: "/projects" },
       { label: "Job Board", href: "/business/jobs" },
+      { label: "Apply", href: "/apply" },
       { label: "Contact", href: "mailto:contact@kthais.com" },
       { label: "Login", href: "/member/login" },
     ],
@@ -102,4 +103,3 @@ export function Footer() {
     </footer>
   );
 }
-

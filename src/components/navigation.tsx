@@ -226,6 +226,12 @@ export function Navigation() {
           Job Board
         </Link>
         <Link
+          href="/apply"
+          className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
+        >
+          Apply
+        </Link>
+        <Link
           href="/newsletter"
           className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
         >
@@ -280,6 +286,13 @@ export function Navigation() {
                 onClick={handleMobileLinkClick}
               >
                 Job Board
+              </Link>
+              <Link
+                href="/apply"
+                className="block py-3 text-base text-foreground/70 hover:text-foreground"
+                onClick={handleMobileLinkClick}
+              >
+                Apply
               </Link>
               <Link
                 href="/newsletter"

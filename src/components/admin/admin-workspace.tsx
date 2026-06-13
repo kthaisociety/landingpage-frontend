@@ -16,10 +16,11 @@ import { CompanyAdminPanel } from "@/components/admin/companies/company-admin-pa
 import { JobAdminPanel } from "@/components/admin/jobs/job-admin-panel";
 import { ProjectAdminPanel } from "@/components/admin/projects/project-admin-panel";
 import { UserAdminPanel } from "@/components/admin/users/user-admin-panel"; // Import the new panel
+import { ApplicationAdminPanel } from "@/components/admin/applications/application-admin-panel";
 
 // Added "users" to the ID union type
 type AdminSection = {
-  id: "users" | "companies" | "jobs" | "projects";
+  id: "users" | "applications" | "companies" | "jobs" | "projects";
   label: string;
   description: string;
   content: ReactNode;
@@ -31,6 +32,12 @@ const adminSections: AdminSection[] = [
     label: "Users",
     description: "Manage users and assign admin roles.",
     content: <UserAdminPanel />,
+  },
+  {
+    id: "applications",
+    label: "Applications",
+    description: "Review 2026 general applications.",
+    content: <ApplicationAdminPanel />,
   },
   {
     id: "companies",
