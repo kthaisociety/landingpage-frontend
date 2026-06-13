@@ -1,4 +1,0 @@
-interface:
-  display_name: "Create Forms"
-  short_description: "Build validated, accessible app forms"
-  default_prompt: "Use $create-forms to add or refactor a production-ready form in this codebase."
