@@ -40,13 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import {
   Sheet,
   SheetContent,
@@ -104,6 +98,64 @@ function applicationName(application: GeneralApplication) {
 
 function openResume(application: GeneralApplication) {
   window.open(getApplicationResumeUrl(application.id), "_blank", "noopener");
+}
+
+function csvCell(value: string | number | string[] | null | undefined) {
+  const text = Array.isArray(value) ? value.join("; ") : String(value ?? "");
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function exportApplicationsCsv(
+  applications: GeneralApplication[],
+  filters: AdminApplicationsFilters,
+) {
+  const headers = [
+    "Submitted",
+    "Status",
+    "First name",
+    "Last name",
+    "Email",
+    "Programme",
+    "Graduation year",
+    "Teams",
+    "Availability",
+    "LinkedIn",
+    "Additional links",
+    "Resume file",
+    "Team interest reason",
+    "Contribution",
+  ];
+  const rows = applications.map((application) => [
+    application.created_at,
+    application.status,
+    application.first_name,
+    application.last_name,
+    application.email,
+    application.programme,
+    application.graduation_year,
+    application.teams,
+    application.availability,
+    application.linkedin_url,
+    application.additional_links ?? [],
+    application.resume_file_name,
+    application.team_interest_reason,
+    application.contribution,
+  ]);
+  const csv = [headers, ...rows]
+    .map((row) => row.map(csvCell).join(","))
+    .join("\r\n");
+  const blob = new Blob([`\uFEFF${csv}`], {
+    type: "text/csv;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const status = filters.status && filters.status !== "all" ? filters.status : "all";
+  const team = filters.team && filters.team !== "all" ? filters.team : "all";
+
+  link.href = url;
+  link.download = `applications-${filters.year ?? 2026}-${status}-${team}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 export function ApplicationAdminPanel() {
@@ -345,6 +397,10 @@ export function ApplicationAdminPanel() {
     setFilters({ year: 2026, status: "all", team: "all", q: "" });
   }
 
+  function exportFilteredApplications() {
+    exportApplicationsCsv(filteredApplications, filters);
+  }
+
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -382,7 +438,7 @@ export function ApplicationAdminPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_auto]">
+          <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_auto_auto]">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -397,51 +453,55 @@ export function ApplicationAdminPanel() {
                 className="pl-9"
               />
             </div>
-            <Select
+            <NativeSelect
+              aria-label="Filter applications by status"
+              className="w-full"
               value={filters.status ?? "all"}
-              onValueChange={(status) =>
+              onChange={(event) =>
                 setFilters((current) => ({
                   ...current,
-                  status: status as AdminApplicationsFilters["status"],
+                  status: event.target
+                    .value as AdminApplicationsFilters["status"],
                 }))
               }
             >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
+              <NativeSelectOption value="all">All statuses</NativeSelectOption>
                 {APPLICATION_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
+                  <NativeSelectOption key={status} value={status}>
                     {status}
-                  </SelectItem>
+                  </NativeSelectOption>
                 ))}
-              </SelectContent>
-            </Select>
-            <Select
+            </NativeSelect>
+            <NativeSelect
+              aria-label="Filter applications by team"
+              className="w-full"
               value={filters.team ?? "all"}
-              onValueChange={(team) =>
+              onChange={(event) =>
                 setFilters((current) => ({
                   ...current,
-                  team: team as AdminApplicationsFilters["team"],
+                  team: event.target.value as AdminApplicationsFilters["team"],
                 }))
               }
             >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Team" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All teams</SelectItem>
+              <NativeSelectOption value="all">All teams</NativeSelectOption>
                 {APPLICATION_TEAMS.map((team) => (
-                  <SelectItem key={team} value={team}>
+                  <NativeSelectOption key={team} value={team}>
                     {team}
-                  </SelectItem>
+                  </NativeSelectOption>
                 ))}
-              </SelectContent>
-            </Select>
+            </NativeSelect>
             <Button type="button" variant="outline" onClick={resetFilters}>
               <RotateCcw className="mr-2 h-4 w-4" />
               Reset
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={exportFilteredApplications}
+              disabled={isLoading || filteredApplications.length === 0}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
             </Button>
           </div>
 
