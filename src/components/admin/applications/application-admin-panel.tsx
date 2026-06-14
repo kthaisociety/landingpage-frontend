@@ -4,12 +4,10 @@ import { useMemo, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type ColumnFiltersState,
   type SortingState,
 } from "@tanstack/react-table";
 import {
@@ -122,7 +120,7 @@ export function ApplicationAdminPanel() {
     useState<GeneralApplication | null>(null);
 
   const { data: applications = [], isLoading, isError } =
-    useAdminApplications(filters);
+    useAdminApplications({ year: filters.year });
   const updateStatus = useUpdateApplicationStatus();
 
   const summary = useMemo(() => {
@@ -139,19 +137,32 @@ export function ApplicationAdminPanel() {
     return counts;
   }, [applications]);
 
-  const tableColumnFilters = useMemo<ColumnFiltersState>(() => {
-    const activeFilters: ColumnFiltersState = [];
+  const filteredApplications = useMemo(() => {
+    const search = (filters.q ?? "").trim().toLowerCase();
 
-    if (filters.status && filters.status !== "all") {
-      activeFilters.push({ id: "status", value: filters.status });
-    }
+    return applications.filter((application) => {
+      const matchesStatus =
+        !filters.status ||
+        filters.status === "all" ||
+        application.status === filters.status;
+      const matchesTeam =
+        !filters.team ||
+        filters.team === "all" ||
+        application.teams.includes(filters.team);
+      const matchesSearch =
+        !search ||
+        [
+          applicationName(application),
+          application.email,
+          application.programme,
+          application.linkedin_url,
+        ]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(search));
 
-    if (filters.team && filters.team !== "all") {
-      activeFilters.push({ id: "teams", value: filters.team });
-    }
-
-    return activeFilters;
-  }, [filters.status, filters.team]);
+      return matchesStatus && matchesTeam && matchesSearch;
+    });
+  }, [applications, filters.q, filters.status, filters.team]);
 
   const columns = useMemo<ColumnDef<GeneralApplication>[]>(
     () => [
@@ -237,10 +248,6 @@ export function ApplicationAdminPanel() {
       {
         accessorKey: "teams",
         header: "Teams",
-        filterFn: (row, columnId, value) => {
-          const teams = row.getValue<string[]>(columnId);
-          return teams.includes(value as string);
-        },
         cell: ({ row }) => (
           <div className="flex max-w-48 flex-wrap gap-1">
             {row.original.teams.map((team) => (
@@ -257,8 +264,6 @@ export function ApplicationAdminPanel() {
       },
       {
         accessorKey: "status",
-        filterFn: (row, columnId, value) =>
-          row.getValue(columnId) === value,
         header: ({ column }) => (
           <Button
             variant="ghost"
@@ -324,32 +329,13 @@ export function ApplicationAdminPanel() {
   );
 
   const table = useReactTable({
-    data: applications,
+    data: filteredApplications,
     columns,
-    state: {
-      sorting,
-      columnFilters: tableColumnFilters,
-      globalFilter: filters.q ?? "",
-    },
+    state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const search = String(filterValue).trim().toLowerCase();
-      if (!search) return true;
-
-      const application = row.original;
-      return [
-        applicationName(application),
-        application.email,
-        application.programme,
-        application.linkedin_url,
-      ]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(search));
-    },
     initialState: {
       pagination: { pageSize: 10 },
     },
