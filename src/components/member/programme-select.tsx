@@ -20,6 +20,7 @@ interface ProgrammeSelectProps {
   onValueChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  customOptions?: string[];
 }
 
 export function ProgrammeSelect({
@@ -29,6 +30,7 @@ export function ProgrammeSelect({
   onValueChange,
   placeholder = "Select your programme",
   disabled = false,
+  customOptions = [],
 }: ProgrammeSelectProps) {
   const { data, isError } = useKthProgrammes();
   const baseList = useMemo(() => {
@@ -39,9 +41,10 @@ export function ProgrammeSelect({
 
   const options = useMemo(() => {
     const trimmed = value?.trim();
-    if (!trimmed || baseList.includes(trimmed)) return baseList;
-    return [trimmed, ...baseList];
-  }, [baseList, value]);
+    const list = [...baseList, ...customOptions];
+    if (!trimmed || list.includes(trimmed)) return list;
+    return [trimmed, ...list];
+  }, [baseList, customOptions, value]);
 
   return (
     <div className="space-y-2 min-w-0 w-full max-w-md">

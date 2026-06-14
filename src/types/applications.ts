@@ -12,6 +12,14 @@ export const APPLICATION_AVAILABILITY = [
   "8 hours or more",
 ] as const;
 
+export const APPLICATION_GENDERS = [
+  "Woman",
+  "Man",
+  "Non-binary",
+  "Prefer not to say",
+  "Other",
+] as const;
+
 export const APPLICATION_STATUSES = [
   "pending",
   "reviewed",
@@ -21,18 +29,19 @@ export const APPLICATION_STATUSES = [
 
 export type ApplicationTeam = (typeof APPLICATION_TEAMS)[number];
 export type ApplicationAvailability = (typeof APPLICATION_AVAILABILITY)[number];
+export type ApplicationGender = (typeof APPLICATION_GENDERS)[number];
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
 export const APPLICATION_TEAM_DESCRIPTIONS: Record<ApplicationTeam, string> = {
   Business:
-    "Build partnerships, secure funding, and organise events that support long-term growth.",
+    "Work with outreach, data analysis, and negotiations to build and maintain partnerships",
   Development:
-    "Build real AI projects with ML, LLMs, and product-focused engineering.",
+    "Build real-world AI applications from prototype to deployment in small teams using LLMs, agents, and modern engineering.",
   Research:
-    "Explore AI trends, write insights, and lead discussions that deepen shared knowledge.",
+    "Explore frontier and applied AI through student-led research, experiments, prototypes, and technical communication.",
   Growth:
-    "Shape social media, branding, internal events, and member engagement.",
-  IT: "Maintain the website, internal tools, automation, and digital infrastructure.",
+    "Drive member growth through social media, branding, growth initiatives, and internal events.",
+  IT: "Maintain the AI Society website, internal tools, developer platform, and digital infrastructure.",
 };
 
 export type GeneralApplication = {
@@ -41,6 +50,7 @@ export type GeneralApplication = {
   first_name: string;
   last_name: string;
   email: string;
+  gender: ApplicationGender;
   programme: string;
   graduation_year: number;
   linkedin_url: string;
@@ -51,6 +61,7 @@ export type GeneralApplication = {
   team_interest_reason: string;
   availability: ApplicationAvailability;
   contribution: string;
+  data_retention_consent: boolean;
   status: ApplicationStatus;
   created_at: string;
   updated_at: string;
@@ -60,6 +71,7 @@ export type CreateGeneralApplicationInput = {
   firstName: string;
   lastName: string;
   email: string;
+  gender: ApplicationGender;
   programme: string;
   graduationYear: number;
   linkedinUrl: string;
@@ -69,6 +81,7 @@ export type CreateGeneralApplicationInput = {
   teamInterestReason: string;
   availability: ApplicationAvailability;
   contribution: string;
+  dataRetentionConsent: boolean;
 };
 
 export type CreateGeneralApplicationResponse = {

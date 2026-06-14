@@ -25,6 +25,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useSubmitGeneralApplication } from "@/hooks/applications";
@@ -33,8 +34,12 @@ import {
   APPLICATION_TEAM_DESCRIPTIONS,
   APPLICATION_TEAMS,
   type ApplicationAvailability,
+  APPLICATION_GENDERS,
+  type ApplicationGender,
   type ApplicationTeam,
 } from "@/types/applications";
+
+const OTHER_PROGRAMME_VALUE = "Other / not listed";
 
 const MAX_RESUME_BYTES = 10 * 1024 * 1024;
 const RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"] as const;
@@ -52,7 +57,9 @@ const APPLICATION_STEPS = [
       "firstName",
       "lastName",
       "email",
+      "gender",
       "programme",
+      "programmeOther",
       "graduationYear",
     ] as const,
   },
@@ -74,7 +81,7 @@ const APPLICATION_STEPS = [
   {
     title: "Review",
     description: "Confirm and submit.",
-    fields: [] as const,
+    fields: ["dataRetentionConsent"] as const,
   },
 ] as const;
 
@@ -92,7 +99,9 @@ type ApplicationFormValues = {
   firstName: string;
   lastName: string;
   email: string;
+  gender: ApplicationGender | "";
   programme: string;
+  programmeOther: string;
   graduationYear: string;
   linkedinUrl: string;
   additionalLinksText: string;
@@ -101,7 +110,14 @@ type ApplicationFormValues = {
   teamInterestReason: string;
   availability: ApplicationAvailability | "";
   contribution: string;
+  dataRetentionConsent: boolean;
 };
+
+function resolveProgramme(values: Pick<ApplicationFormValues, "programme" | "programmeOther">) {
+  return values.programme === OTHER_PROGRAMME_VALUE
+    ? values.programmeOther.trim()
+    : values.programme.trim();
+}
 
 function normalizeWebsiteLink(value: string) {
   const trimmed = value.trim();
@@ -158,7 +174,7 @@ function isAllowedResume(file: File | null) {
   return hasAllowedExtension && hasAllowedType;
 }
 
-const applicationSchema = z.object({
+const applicationBaseSchema = z.object({
   firstName: z
     .string()
     .trim()
@@ -174,7 +190,14 @@ const applicationSchema = z.object({
     .trim()
     .min(1, "Please enter your email address.")
     .email("Please enter a valid email address."),
+  gender: z
+    .union([z.enum(APPLICATION_GENDERS), z.literal("")])
+    .refine((value) => value !== "", "Please select your gender."),
   programme: z.string().trim().min(1, "Please select your programme."),
+  programmeOther: z
+    .string()
+    .trim()
+    .max(120, "Please keep your programme under 120 characters."),
   graduationYear: z
     .string()
     .trim()
@@ -223,44 +246,80 @@ const applicationSchema = z.object({
     .trim()
     .min(20, "Please write at least 20 characters.")
     .max(2000, "Please keep this answer under 2000 characters."),
+  dataRetentionConsent: z
+    .boolean()
+    .refine(
+      (value) => value,
+      "You need to consent to data collection and storage before submitting.",
+    ),
 });
 
+function validateProgrammeOther(
+  value: Pick<ApplicationFormValues, "programme" | "programmeOther">,
+  ctx: z.RefinementCtx,
+) {
+  if (
+    value.programme === OTHER_PROGRAMME_VALUE &&
+    value.programmeOther.trim().length === 0
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["programmeOther"],
+      message: "Please enter your programme or degree.",
+    });
+  }
+}
+
+const applicationSchema = applicationBaseSchema.superRefine(
+  validateProgrammeOther,
+);
+
 const stepSchemas = [
-  applicationSchema.pick({
+  applicationBaseSchema.pick({
     firstName: true,
     lastName: true,
     email: true,
+    gender: true,
     programme: true,
+    programmeOther: true,
     graduationYear: true,
-  }),
-  applicationSchema.pick({
+  }).superRefine(validateProgrammeOther),
+  applicationBaseSchema.pick({
     linkedinUrl: true,
     additionalLinksText: true,
     resume: true,
   }),
-  applicationSchema.pick({
+  applicationBaseSchema.pick({
     teams: true,
     teamInterestReason: true,
   }),
-  applicationSchema.pick({
+  applicationBaseSchema.pick({
     availability: true,
     contribution: true,
+  }),
+  applicationBaseSchema.pick({
+    dataRetentionConsent: true,
   }),
 ] as const;
 
 const applicationFieldValidators = {
-  firstName: { onBlur: applicationSchema.shape.firstName },
-  lastName: { onBlur: applicationSchema.shape.lastName },
-  email: { onBlur: applicationSchema.shape.email },
-  programme: { onBlur: applicationSchema.shape.programme },
-  graduationYear: { onBlur: applicationSchema.shape.graduationYear },
-  linkedinUrl: { onBlur: applicationSchema.shape.linkedinUrl },
-  additionalLinksText: { onBlur: applicationSchema.shape.additionalLinksText },
-  resume: { onBlur: applicationSchema.shape.resume },
-  teams: { onChange: applicationSchema.shape.teams },
-  teamInterestReason: { onBlur: applicationSchema.shape.teamInterestReason },
-  availability: { onChange: applicationSchema.shape.availability },
-  contribution: { onBlur: applicationSchema.shape.contribution },
+  firstName: { onBlur: applicationBaseSchema.shape.firstName },
+  lastName: { onBlur: applicationBaseSchema.shape.lastName },
+  email: { onBlur: applicationBaseSchema.shape.email },
+  gender: { onChange: applicationBaseSchema.shape.gender },
+  programme: { onBlur: applicationBaseSchema.shape.programme },
+  programmeOther: { onBlur: applicationBaseSchema.shape.programmeOther },
+  graduationYear: { onBlur: applicationBaseSchema.shape.graduationYear },
+  linkedinUrl: { onBlur: applicationBaseSchema.shape.linkedinUrl },
+  additionalLinksText: { onBlur: applicationBaseSchema.shape.additionalLinksText },
+  resume: { onBlur: applicationBaseSchema.shape.resume },
+  teams: { onChange: applicationBaseSchema.shape.teams },
+  teamInterestReason: { onBlur: applicationBaseSchema.shape.teamInterestReason },
+  availability: { onChange: applicationBaseSchema.shape.availability },
+  contribution: { onBlur: applicationBaseSchema.shape.contribution },
+  dataRetentionConsent: {
+    onChange: applicationBaseSchema.shape.dataRetentionConsent,
+  },
 };
 
 function fieldIsInvalid(
@@ -274,7 +333,9 @@ const defaultApplicationValues: ApplicationFormValues = {
   firstName: "",
   lastName: "",
   email: "",
+  gender: "",
   programme: "",
+  programmeOther: "",
   graduationYear: "",
   linkedinUrl: "",
   additionalLinksText: "",
@@ -283,6 +344,7 @@ const defaultApplicationValues: ApplicationFormValues = {
   teamInterestReason: "",
   availability: "",
   contribution: "",
+  dataRetentionConsent: false,
 };
 
 function ApplicationWizardProgress({
@@ -469,7 +531,7 @@ function ApplicationSubmissionConfirmation({
           <dl className="space-y-2 text-sm">
             <ReviewItem label="Name" value={applicantName} />
             <ReviewItem label="Email" value={values.email} />
-            <ReviewItem label="Programme" value={values.programme} />
+            <ReviewItem label="Programme" value={resolveProgramme(values)} />
             <ReviewItem label="Teams" value={values.teams.join(", ")} />
             <ReviewItem label="Availability" value={values.availability} />
           </dl>
@@ -526,6 +588,7 @@ export function ApplicationForm() {
       setSubmitState(null);
       const parsed = applicationSchema.safeParse(value);
       if (!parsed.success) {
+        setShowStepErrors(true);
         setSubmitState({
           type: "error",
           message: "Please fix the highlighted fields before submitting.",
@@ -542,11 +605,13 @@ export function ApplicationForm() {
           return;
         }
 
+        const programme = resolveProgramme(parsed.data);
         await submitApplication.mutateAsync({
           firstName: parsed.data.firstName,
           lastName: parsed.data.lastName,
           email: parsed.data.email,
-          programme: parsed.data.programme,
+          gender: parsed.data.gender,
+          programme,
           graduationYear: Number(parsed.data.graduationYear),
           linkedinUrl: normalizeWebsiteLink(parsed.data.linkedinUrl),
           additionalLinks: splitAdditionalLinks(parsed.data.additionalLinksText),
@@ -555,6 +620,7 @@ export function ApplicationForm() {
           teamInterestReason: parsed.data.teamInterestReason,
           availability: parsed.data.availability,
           contribution: parsed.data.contribution,
+          dataRetentionConsent: parsed.data.dataRetentionConsent,
         });
         setSubmitState({
           type: "success",
@@ -584,7 +650,7 @@ export function ApplicationForm() {
 
   async function validateCurrentStep() {
     const step = APPLICATION_STEPS[currentStep];
-    if (step.fields.length === 0) {
+    if (currentStep === APPLICATION_STEPS.length - 1) {
       return applicationSchema.safeParse(form.state.values).success;
     }
 
@@ -668,7 +734,11 @@ export function ApplicationForm() {
                       value={`${values.firstName} ${values.lastName}`.trim()}
                     />
                     <ReviewItem label="Email" value={values.email} />
-                    <ReviewItem label="Programme" value={values.programme} />
+                    <ReviewItem label="Gender" value={values.gender} />
+                    <ReviewItem
+                      label="Programme"
+                      value={resolveProgramme(values)}
+                    />
                     <ReviewItem
                       label="Graduation"
                       value={values.graduationYear}
@@ -727,6 +797,48 @@ export function ApplicationForm() {
                       value={values.contribution}
                     />
                   </ReviewSection>
+
+                  <form.Field
+                    name="dataRetentionConsent"
+                    validators={applicationFieldValidators.dataRetentionConsent}
+                  >
+                    {(field) => {
+                      const isInvalid = fieldIsInvalid(
+                        field.state.meta,
+                        showStepErrors,
+                      );
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <label className="flex items-start gap-3 rounded-lg border p-4 text-sm">
+                            <Checkbox
+                              className="mt-0.5"
+                              checked={field.state.value}
+                              onCheckedChange={(value) => {
+                                setSubmitState(null);
+                                field.handleChange(Boolean(value));
+                                field.handleBlur();
+                              }}
+                              aria-invalid={isInvalid}
+                            />
+                            <span className="space-y-1">
+                              <span className="block font-medium">
+                                I consent to KTH AI Society collecting and
+                                storing my application data for up to 2 years.
+                              </span>
+                              <span className="block text-muted-foreground">
+                                This includes the information in this form and
+                                my uploaded resume for application review and
+                                follow-up.
+                              </span>
+                            </span>
+                          </label>
+                          {isInvalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      );
+                    }}
+                  </form.Field>
                 </div>
               );
             }}
@@ -827,6 +939,44 @@ export function ApplicationForm() {
               }}
             </form.Field>
 
+            <form.Field
+              name="gender"
+              validators={applicationFieldValidators.gender}
+            >
+              {(field) => {
+                const isInvalid = fieldIsInvalid(field.state.meta, showStepErrors);
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Gender</FieldLabel>
+                    <NativeSelect
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(event) => {
+                        setSubmitState(null);
+                        field.handleChange(event.target.value as ApplicationGender | "");
+                        field.handleBlur();
+                      }}
+                      aria-invalid={isInvalid}
+                    >
+                      <NativeSelectOption value="">
+                        Select your gender
+                      </NativeSelectOption>
+                      {APPLICATION_GENDERS.map((gender) => (
+                        <NativeSelectOption key={gender} value={gender}>
+                          {gender}
+                        </NativeSelectOption>
+                      ))}
+                    </NativeSelect>
+                    {isInvalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : null}
+                  </Field>
+                );
+              }}
+            </form.Field>
+
             <div className="grid gap-5 sm:grid-cols-2">
               <form.Field
                 name="programme"
@@ -845,6 +995,7 @@ export function ApplicationForm() {
                           field.handleBlur();
                         }}
                         placeholder="Engineering Physics"
+                        customOptions={[OTHER_PROGRAMME_VALUE]}
                       />
                       {isInvalid ? (
                         <FieldError errors={field.state.meta.errors} />
@@ -853,6 +1004,50 @@ export function ApplicationForm() {
                   );
                 }}
               </form.Field>
+
+              <form.Subscribe selector={(state) => state.values.programme}>
+                {(programme) =>
+                  programme === OTHER_PROGRAMME_VALUE ? (
+                    <form.Field
+                      name="programmeOther"
+                      validators={applicationFieldValidators.programmeOther}
+                    >
+                      {(field) => {
+                        const isInvalid = fieldIsInvalid(
+                          field.state.meta,
+                          showStepErrors,
+                        );
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>
+                              Programme or degree
+                            </FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(event) => {
+                                setSubmitState(null);
+                                field.handleChange(event.target.value);
+                              }}
+                              placeholder="Your university and degree"
+                              aria-invalid={isInvalid}
+                            />
+                            <FieldDescription>
+                              Non-KTH applicants can apply, but KTH students may
+                              be prioritised.
+                            </FieldDescription>
+                            {isInvalid ? (
+                              <FieldError errors={field.state.meta.errors} />
+                            ) : null}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                  ) : null
+                }
+              </form.Subscribe>
 
               <form.Field
                 name="graduationYear"

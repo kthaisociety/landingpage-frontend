@@ -20,6 +20,7 @@ async function submitGeneralApplication(
   appendTrimmed(formData, "firstName", input.firstName);
   appendTrimmed(formData, "lastName", input.lastName);
   appendTrimmed(formData, "email", input.email);
+  appendTrimmed(formData, "gender", input.gender);
   appendTrimmed(formData, "programme", input.programme);
   formData.append("graduationYear", String(input.graduationYear));
   appendTrimmed(formData, "linkedinUrl", input.linkedinUrl);
@@ -30,6 +31,10 @@ async function submitGeneralApplication(
   appendTrimmed(formData, "teamInterestReason", input.teamInterestReason);
   appendTrimmed(formData, "availability", input.availability);
   appendTrimmed(formData, "contribution", input.contribution);
+  formData.append(
+    "dataRetentionConsent",
+    input.dataRetentionConsent ? "true" : "false",
+  );
   formData.append("resume", input.resume);
 
   const response = await fetch(`${API_URL}/applications/general`, {

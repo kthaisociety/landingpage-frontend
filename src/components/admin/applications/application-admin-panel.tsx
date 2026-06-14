@@ -115,6 +115,7 @@ function exportApplicationsCsv(
     "First name",
     "Last name",
     "Email",
+    "Gender",
     "Programme",
     "Graduation year",
     "Teams",
@@ -131,6 +132,7 @@ function exportApplicationsCsv(
     application.first_name,
     application.last_name,
     application.email,
+    application.gender,
     application.programme,
     application.graduation_year,
     application.teams,
@@ -206,6 +208,7 @@ export function ApplicationAdminPanel() {
         [
           applicationName(application),
           application.email,
+          application.gender,
           application.programme,
           application.linkedin_url,
         ]
@@ -643,6 +646,7 @@ function ApplicationDetail({
       </div>
 
       <div className="grid gap-4 text-sm sm:grid-cols-2">
+        <DetailItem label="Gender" value={application.gender} />
         <DetailItem label="Programme" value={application.programme} />
         <DetailItem
           label="Graduation year"
