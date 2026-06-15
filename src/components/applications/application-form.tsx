@@ -1168,9 +1168,7 @@ export function ApplicationForm() {
                         aria-invalid={isInvalid}
                       />
                     </InputGroup>
-                    <FieldDescription>
-                      Just your handle — we add the rest.
-                    </FieldDescription>
+                    
                     {isInvalid ? (
                       <FieldError errors={field.state.meta.errors} />
                     ) : null}
