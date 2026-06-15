@@ -41,7 +41,8 @@ export const APPLICATION_TEAM_DESCRIPTIONS: Record<ApplicationTeam, string> = {
     "Explore frontier and applied AI through student-led research, experiments, prototypes, and technical communication.",
   Growth:
     "Drive member growth through social media, branding, growth initiatives, and internal events.",
-  IT: "Maintain the AI Society website, internal tools, developer platform, and digital infrastructure.",
+  IT:
+    "Empower the AI society through high-quality digital infrastructure, custom internal tools, and a robust developer platform.",
 };
 
 export type GeneralApplication = {
