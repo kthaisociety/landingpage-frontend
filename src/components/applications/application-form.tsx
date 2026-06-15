@@ -25,9 +25,15 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { TeamBentoGrid, TEAM_ART } from "@/components/ui/team-bento-grid";
 import { useSubmitGeneralApplication } from "@/hooks/applications";
 import {
   APPLICATION_AVAILABILITY,
@@ -40,6 +46,22 @@ import {
 } from "@/types/applications";
 
 const OTHER_PROGRAMME_VALUE = "Other / not listed";
+
+const LINKEDIN_HANDLE_PREFIX = "linkedin.com/in/";
+const LINKEDIN_HANDLE_PATTERN = /^[A-Za-z0-9_-]{3,100}$/;
+
+function normalizeLinkedInHandle(value: string) {
+  return value
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/^(www\.)?linkedin\.com\/in\//i, "")
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
+}
+
+function buildLinkedInUrl(handle: string) {
+  return `https://${LINKEDIN_HANDLE_PREFIX}${normalizeLinkedInHandle(handle)}`;
+}
 
 const MAX_RESUME_BYTES = 10 * 1024 * 1024;
 const RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"] as const;
@@ -152,18 +174,6 @@ function isWebsiteLink(value: string) {
   }
 }
 
-function isLinkedInUrl(value: string) {
-  try {
-    const url = new URL(normalizeWebsiteLink(value));
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") &&
-      url.hostname.toLowerCase().includes("linkedin.com")
-    );
-  } catch {
-    return false;
-  }
-}
-
 function isAllowedResume(file: File | null) {
   if (!file) return false;
   const name = file.name.toLowerCase();
@@ -215,10 +225,10 @@ const applicationBaseSchema = z.object({
   linkedinUrl: z
     .string()
     .trim()
-    .min(1, "Please share your LinkedIn profile.")
+    .min(1, "Please enter your LinkedIn handle.")
     .refine(
-      isLinkedInUrl,
-      "Please enter a valid LinkedIn link (e.g. linkedin.com/in/example).",
+      (value) => LINKEDIN_HANDLE_PATTERN.test(normalizeLinkedInHandle(value)),
+      "Enter just your LinkedIn handle (e.g. dario-amodei).",
     ),
   additionalLinksText: z.string().refine((value) => {
     const links = value
@@ -592,16 +602,13 @@ function ApplicationIntro({ onBegin }: { onBegin: () => void }) {
 
       <div className="space-y-3">
         <h3 className="text-sm font-semibold">Our teams</h3>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {APPLICATION_TEAMS.map((team) => (
-            <li key={team} className="rounded-lg border p-3 text-sm">
-              <span className="font-medium">{team}</span>
-              <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
-                {APPLICATION_TEAM_DESCRIPTIONS[team]}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <TeamBentoGrid
+          items={APPLICATION_TEAMS.map((team) => ({
+            title: team,
+            description: APPLICATION_TEAM_DESCRIPTIONS[team],
+            ...TEAM_ART[team],
+          }))}
+        />
       </div>
 
       <Button type="button" className="w-full sm:w-auto" onClick={onBegin}>
@@ -654,7 +661,7 @@ export function ApplicationForm() {
           gender: parsed.data.gender,
           programme,
           graduationYear: Number(parsed.data.graduationYear),
-          linkedinUrl: normalizeWebsiteLink(parsed.data.linkedinUrl),
+          linkedinUrl: buildLinkedInUrl(parsed.data.linkedinUrl),
           additionalLinks: splitAdditionalLinks(parsed.data.additionalLinksText),
           resume: parsed.data.resume,
           teams: parsed.data.teams,
@@ -793,7 +800,7 @@ export function ApplicationForm() {
                   >
                     <ReviewItem
                       label="LinkedIn"
-                      value={normalizeWebsiteLink(values.linkedinUrl)}
+                      value={buildLinkedInUrl(values.linkedinUrl)}
                     />
                     <ReviewItem
                       label="Other links"
@@ -1143,19 +1150,27 @@ export function ApplicationForm() {
                     <FieldLabel htmlFor={field.name}>
                       LinkedIn profile
                     </FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type="text"
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => {
-                        setSubmitState(null);
-                        field.handleChange(event.target.value);
-                      }}
-                      placeholder="linkedin.com/in/dario-amodei"
-                      aria-invalid={isInvalid}
-                    />
+                    <InputGroup data-invalid={isInvalid}>
+                      <InputGroupAddon className="text-muted-foreground">
+                        {LINKEDIN_HANDLE_PREFIX}
+                      </InputGroupAddon>
+                      <InputGroupInput
+                        id={field.name}
+                        name={field.name}
+                        type="text"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => {
+                          setSubmitState(null);
+                          field.handleChange(event.target.value);
+                        }}
+                        placeholder="dario-amodei"
+                        aria-invalid={isInvalid}
+                      />
+                    </InputGroup>
+                    <FieldDescription>
+                      Just your handle — we add the rest.
+                    </FieldDescription>
                     {isInvalid ? (
                       <FieldError errors={field.state.meta.errors} />
                     ) : null}

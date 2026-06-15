@@ -129,9 +129,7 @@ export function Hero() {
             className="mx-auto max-w-2xl text-base leading-7 text-black/72 sm:text-xl sm:leading-8"
             variants={descriptionVariants}
           >
-            Build real-world AI, do student-led research, and grow the community
-            alongside the next generation of AI leaders. Find your team and
-            apply today.
+            Applications are open, join now!
           </motion.p>
 
           <motion.div
@@ -152,6 +150,7 @@ export function Hero() {
               <Button
                 size="lg"
                 asChild
+                className='px-12 py-8 text-xl max-sm:px-6 max-sm:py-4 max-sm:text-base'
               >
                 <Link href="/apply" className="flex items-center gap-1">
                   Apply now
@@ -168,6 +167,7 @@ export function Hero() {
                 variant="outline"
                 size="lg"
                 asChild
+                className='px-12 py-8 text-xl max-sm:px-6 max-sm:py-4 max-sm:text-base'
               >
                 <Link href="/events" className="flex items-center gap-1">
                   Upcoming Events
