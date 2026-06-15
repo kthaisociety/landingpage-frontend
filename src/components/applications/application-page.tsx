@@ -82,16 +82,12 @@ const carouselImages = [
     alt: "KTH AI Society event with Antler",
   },
   {
-    src: "/images/application_carousel/legora.jpg",
-    alt: "KTH AI Society event with Legora",
-  },
-  {
     src: "/images/application_carousel/nvidiagtc 2.png",
     alt: "KTH AI Society at NVIDIA GTC",
   },
 ];
 
-export function ApplicationPage() {
+function ApplicationCarousel() {
   const [carouselApi, setCarouselApi] = React.useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = React.useState(0);
 
@@ -127,6 +123,54 @@ export function ApplicationPage() {
   }, [carouselApi]);
 
   return (
+    <aside className="relative min-h-[28rem] overflow-hidden bg-secondary-black lg:sticky lg:top-0 lg:h-screen">
+      <Carousel
+        setApi={setCarouselApi}
+        opts={{ align: "start", loop: true }}
+        className="absolute inset-0"
+        aria-label="KTH AI Society application highlights"
+      >
+        <CarouselContent className="h-[28rem] -ml-0 lg:h-screen">
+          {carouselImages.map((image, index) => (
+            <CarouselItem key={image.src} className="h-full pl-0">
+              <div className="relative h-full">
+                <Image
+                  src={image.src}
+                  alt={image.alt}
+                  fill
+                  priority={index === 0}
+                  sizes="(min-width: 1024px) 52vw, 100vw"
+                  className="object-cover object-center"
+                />
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.15),rgba(0,0,0,0.68)),linear-gradient(90deg,rgba(0,0,0,0.32),rgba(0,0,0,0.04)_45%,rgba(0,0,0,0.42))]" />
+        <CarouselPrevious className="left-5 z-20 hidden border-white/30 bg-black/25 text-white backdrop-blur-md hover:bg-white/20 hover:text-white disabled:opacity-30 sm:inline-flex" />
+        <CarouselNext className="right-5 z-20 hidden border-white/30 bg-black/25 text-white backdrop-blur-md hover:bg-white/20 hover:text-white disabled:opacity-30 sm:inline-flex" />
+      </Carousel>
+
+      <div className="pointer-events-none relative z-10 flex min-h-[28rem] flex-col justify-end px-6 py-8 text-center sm:px-10 lg:h-full lg:px-14 lg:py-16">
+        <div className="pointer-events-auto mx-auto flex max-w-full items-center justify-center gap-2 rounded-full bg-black/25 px-3 py-2 backdrop-blur-md">
+          {carouselImages.map((image, index) => (
+            <button
+              key={image.src}
+              type="button"
+              aria-label={`Go to slide ${index + 1}`}
+              aria-current={currentSlide === index}
+              onClick={() => carouselApi?.scrollTo(index)}
+              className="h-2.5 w-2.5 rounded-full bg-white/45 transition-all hover:bg-white aria-current:w-7 aria-current:bg-white"
+            />
+          ))}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+export function ApplicationPage() {
+  return (
     <main className="min-h-screen bg-white pt-24 text-secondary-black lg:pt-0">
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         <section className="flex justify-center px-4 py-10 sm:px-6 lg:px-10 lg:pt-32 lg:pb-20">
@@ -141,60 +185,7 @@ export function ApplicationPage() {
           </div>
         </section>
 
-        <aside className="relative min-h-[28rem] overflow-hidden bg-secondary-black lg:sticky lg:top-0 lg:h-screen">
-          <Carousel
-            setApi={setCarouselApi}
-            opts={{ align: "start", loop: true }}
-            className="absolute inset-0"
-            aria-label="KTH AI Society application highlights"
-          >
-            <CarouselContent className="h-[28rem] -ml-0 lg:h-screen">
-              {carouselImages.map((image, index) => (
-                <CarouselItem key={image.src} className="h-full pl-0">
-                  <div className="relative h-full">
-                    <Image
-                      src={image.src}
-                      alt={image.alt}
-                      fill
-                      priority={index === 0}
-                      sizes="(min-width: 1024px) 52vw, 100vw"
-                      className="object-cover object-center"
-                    />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.15),rgba(0,0,0,0.68)),linear-gradient(90deg,rgba(0,0,0,0.32),rgba(0,0,0,0.04)_45%,rgba(0,0,0,0.42))]" />
-            <CarouselPrevious className="left-5 z-20 hidden border-white/30 bg-black/25 text-white backdrop-blur-md hover:bg-white/20 hover:text-white disabled:opacity-30 sm:inline-flex" />
-            <CarouselNext className="right-5 z-20 hidden border-white/30 bg-black/25 text-white backdrop-blur-md hover:bg-white/20 hover:text-white disabled:opacity-30 sm:inline-flex" />
-          </Carousel>
-
-          <div className="pointer-events-none relative z-10 flex min-h-[28rem] flex-col justify-between px-6 py-8 text-center sm:px-10 lg:h-full lg:px-14 lg:py-16">
-            <div />
-            <p className="mx-auto max-w-2xl text-lg font-medium leading-8 text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)] md:text-2xl md:leading-10">
-              KTH AI Society is a student organisation cultivating the next
-              generation of AI leaders.
-              <br className="my-4 block" />
-              We grow AI literacy, bridge academia and industry, and share new
-              insights through projects, research, and events.
-              <br className="my-4 block" />
-              Find your team and help build the community.
-            </p>
-
-            <div className="pointer-events-auto mx-auto flex max-w-full items-center justify-center gap-2 rounded-full bg-black/25 px-3 py-2 backdrop-blur-md">
-              {carouselImages.map((image, index) => (
-                <button
-                  key={image.src}
-                  type="button"
-                  aria-label={`Go to slide ${index + 1}`}
-                  aria-current={currentSlide === index}
-                  onClick={() => carouselApi?.scrollTo(index)}
-                  className="h-2.5 w-2.5 rounded-full bg-white/45 transition-all hover:bg-white aria-current:w-7 aria-current:bg-white"
-                />
-              ))}
-            </div>
-          </div>
-        </aside>
+        <ApplicationCarousel />
       </div>
     </main>
   );

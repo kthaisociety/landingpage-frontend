@@ -116,6 +116,9 @@ export function Hero() {
             className="mx-auto max-w-3xl text-4xl leading-none tracking-tight text-black sm:text-6xl md:text-7xl"
             variants={titleVariants}
           >
+            <span className="font-arial font-bold tracking-tight text-black">
+              Join
+            </span>{" "}
             <span className="font-times font-normal text-[1.1em] leading-none text-[#1954A6]">(KTH)</span>{" "}
             <span className="font-arial font-bold tracking-tight text-black">
               AI Society
@@ -126,7 +129,9 @@ export function Hero() {
             className="mx-auto max-w-2xl text-base leading-7 text-black/72 sm:text-xl sm:leading-8"
             variants={descriptionVariants}
           >
-            Cultivating the next generation of AI leaders.
+            Build real-world AI, do student-led research, and grow the community
+            alongside the next generation of AI leaders. Find your team and
+            apply today.
           </motion.p>
 
           <motion.div
@@ -148,8 +153,8 @@ export function Hero() {
                 size="lg"
                 asChild
               >
-                <Link href="/events" className="flex items-center gap-1">
-                 Upcoming Events
+                <Link href="/apply" className="flex items-center gap-1">
+                  Apply now
                 </Link>
               </Button>
             </motion.div>
@@ -164,8 +169,8 @@ export function Hero() {
                 size="lg"
                 asChild
               >
-                <Link href="mailto:business@kthais.com">
-                  For Sponsors
+                <Link href="/events" className="flex items-center gap-1">
+                  Upcoming Events
                 </Link>
               </Button>
             </motion.div>

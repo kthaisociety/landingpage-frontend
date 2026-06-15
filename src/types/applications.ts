@@ -13,8 +13,8 @@ export const APPLICATION_AVAILABILITY = [
 ] as const;
 
 export const APPLICATION_GENDERS = [
-  "Woman",
-  "Man",
+  "Female",
+  "Male",
   "Non-binary",
   "Prefer not to say",
   "Other",

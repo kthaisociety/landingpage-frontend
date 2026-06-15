@@ -51,6 +51,11 @@ const RESUME_MIME_TYPES = [
 
 const APPLICATION_STEPS = [
   {
+    title: "Welcome",
+    description: "About KTH AI Society and the teams.",
+    fields: [] as const,
+  },
+  {
     title: "Details",
     description: "Your contact and study information.",
     fields: [
@@ -275,6 +280,7 @@ const applicationSchema = applicationBaseSchema.superRefine(
 );
 
 const stepSchemas = [
+  z.object({}),
   applicationBaseSchema.pick({
     firstName: true,
     lastName: true,
@@ -370,7 +376,7 @@ function ApplicationWizardProgress({
         </div>
       </div>
 
-      <ol className="grid grid-cols-5 gap-2">
+      <ol className="grid grid-cols-6 gap-2">
         {APPLICATION_STEPS.map((applicationStep, index) => {
           const isComplete = index < currentStep;
           const isCurrent = index === currentStep;
@@ -485,7 +491,7 @@ function ApplicationWizardComplete() {
         </div>
       </div>
 
-      <ol className="grid grid-cols-5 gap-2" aria-hidden="true">
+      <ol className="grid grid-cols-6 gap-2" aria-hidden="true">
         {APPLICATION_STEPS.map((applicationStep) => (
           <li key={applicationStep.title}>
             <span className="flex h-8 w-full items-center">
@@ -567,6 +573,41 @@ function ApplicationSubmissionConfirmation({
           <Link href="/">Back to home</Link>
         </Button>
       </div>
+    </div>
+  );
+}
+
+function ApplicationIntro({ onBegin }: { onBegin: () => void }) {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4 text-sm leading-6 text-muted-foreground">
+        <p>
+          KTH AI Society is a student organisation cultivating the next
+          generation of AI leaders. We grow AI literacy, bridge academia and
+          industry, and share new insights through projects, research, and
+          events.
+        </p>
+        <p>Find your team and help build the community.</p>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold">Our teams</h3>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {APPLICATION_TEAMS.map((team) => (
+            <li key={team} className="rounded-lg border p-3 text-sm">
+              <span className="font-medium">{team}</span>
+              <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+                {APPLICATION_TEAM_DESCRIPTIONS[team]}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <Button type="button" className="w-full sm:w-auto" onClick={onBegin}>
+        Begin application
+        <ChevronRight data-icon="inline-end" />
+      </Button>
     </div>
   );
 }
@@ -683,6 +724,7 @@ export function ApplicationForm() {
 
   const isReviewStep = currentStep === APPLICATION_STEPS.length - 1;
   const isFirstStep = currentStep === 0;
+  const isIntroStep = currentStep === 0;
   const isSubmitted = submitState?.type === "success";
 
   useEffect(() => {
@@ -846,6 +888,10 @@ export function ApplicationForm() {
         ) : (
           <div className="grid *:col-start-1 *:row-start-1 *:w-full">
             <ApplicationStepPanel step={0} currentStep={currentStep}>
+              <ApplicationIntro onBegin={goToNextStep} />
+            </ApplicationStepPanel>
+
+            <ApplicationStepPanel step={1} currentStep={currentStep}>
             <div className="grid gap-5 sm:grid-cols-2">
               <form.Field
                 name="firstName"
@@ -1085,7 +1131,7 @@ export function ApplicationForm() {
             </div>
             </ApplicationStepPanel>
 
-            <ApplicationStepPanel step={1} currentStep={currentStep}>
+            <ApplicationStepPanel step={2} currentStep={currentStep}>
             <form.Field
               name="linkedinUrl"
               validators={applicationFieldValidators.linkedinUrl}
@@ -1181,7 +1227,7 @@ export function ApplicationForm() {
             </form.Field>
             </ApplicationStepPanel>
 
-            <ApplicationStepPanel step={2} currentStep={currentStep}>
+            <ApplicationStepPanel step={3} currentStep={currentStep}>
             <form.Field
               name="teams"
               validators={applicationFieldValidators.teams}
@@ -1274,7 +1320,7 @@ export function ApplicationForm() {
             </form.Field>
             </ApplicationStepPanel>
 
-            <ApplicationStepPanel step={3} currentStep={currentStep}>
+            <ApplicationStepPanel step={4} currentStep={currentStep}>
             <form.Field
               name="availability"
               validators={applicationFieldValidators.availability}
@@ -1371,6 +1417,7 @@ export function ApplicationForm() {
           </Alert>
         ) : null}
 
+        {isIntroStep ? null : (
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"
@@ -1410,6 +1457,7 @@ export function ApplicationForm() {
             </Button>
           )}
         </div>
+        )}
       </FieldGroup>
     </form>
     </div>
