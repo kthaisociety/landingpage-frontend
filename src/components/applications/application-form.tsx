@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type DragEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useForm } from "@tanstack/react-form";
 import {
   AlertCircle,
+  ArrowDown,
+  ArrowUp,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  GripVertical,
   Loader2,
 } from "lucide-react";
 import { z } from "zod";
@@ -115,7 +118,7 @@ const APPLICATION_STEPS = [
   },
   {
     title: "Your fit",
-    description: "Teams, availability, and motivation.",
+    description: "Team preferences, availability, and motivation.",
     fields: ["teams", "availability", "contribution"] as const,
   },
   {
@@ -209,6 +212,15 @@ function isAllowedResume(file: File | null) {
   return hasAllowedExtension && hasAllowedType;
 }
 
+function shuffledApplicationTeams() {
+  const teams = [...APPLICATION_TEAMS];
+  for (let index = teams.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [teams[index], teams[swapIndex]] = [teams[swapIndex], teams[index]];
+  }
+  return teams;
+}
+
 const applicationBaseSchema = z.object({
   firstName: z
     .string()
@@ -272,7 +284,11 @@ const applicationBaseSchema = z.object({
     .refine(isAllowedResume, "Resume must be a PDF, DOC, or DOCX file."),
   teams: z
     .array(z.enum(APPLICATION_TEAMS))
-    .min(1, "Select at least one team."),
+    .length(APPLICATION_TEAMS.length, "Rank all five teams.")
+    .refine(
+      (teams) => new Set(teams).size === APPLICATION_TEAMS.length,
+      "Each team can appear only once.",
+    ),
   availability: z
     .union([z.enum(APPLICATION_AVAILABILITY), z.literal("")])
     .refine((value) => value !== "", "Please select your weekly availability."),
@@ -397,7 +413,7 @@ const defaultApplicationValues: ApplicationFormValues = {
   linkedinUrl: "",
   additionalLinksText: "",
   resume: null,
-  teams: [],
+  teams: [...APPLICATION_TEAMS],
   availability: "",
   contribution: "",
   dataRetentionConsent: false,
@@ -512,6 +528,149 @@ function ApplicationStepPanel({
   );
 }
 
+function reorderTeams(
+  teams: ApplicationTeam[],
+  fromIndex: number,
+  toIndex: number,
+) {
+  const next = [...teams];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+
+function TeamPreferenceList({ teams }: { teams: ApplicationTeam[] }) {
+  return (
+    <ol className="space-y-1">
+      {teams.map((team, index) => (
+        <li key={team}>
+          {index + 1}. {APPLICATION_TEAM_LABELS[team]}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function TeamRankingInput({
+  value,
+  invalid,
+  onChange,
+  onBlur,
+}: {
+  value: ApplicationTeam[];
+  invalid: boolean;
+  onChange: (teams: ApplicationTeam[]) => void;
+  onBlur: () => void;
+}) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  function commit(nextTeams: ApplicationTeam[]) {
+    onChange(nextTeams);
+    onBlur();
+  }
+
+  function moveTeam(fromIndex: number, toIndex: number) {
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= value.length ||
+      toIndex >= value.length
+    ) {
+      return;
+    }
+    commit(reorderTeams(value, fromIndex, toIndex));
+  }
+
+  function handleDragStart(
+    event: DragEvent<HTMLDivElement>,
+    index: number,
+  ) {
+    setDraggedIndex(index);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>, toIndex: number) {
+    event.preventDefault();
+    const transferredIndex = Number(event.dataTransfer.getData("text/plain"));
+    const fromIndex = draggedIndex ?? transferredIndex;
+    if (Number.isInteger(fromIndex)) {
+      moveTeam(fromIndex, toIndex);
+    }
+    setDraggedIndex(null);
+  }
+
+  return (
+    <div className="space-y-2" aria-invalid={invalid}>
+      {value.map((team, index) => {
+        const isDragging = draggedIndex === index;
+        return (
+          <div
+            key={team}
+            draggable
+            onDragStart={(event) => handleDragStart(event, index)}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+            }}
+            onDrop={(event) => handleDrop(event, index)}
+            onDragEnd={() => setDraggedIndex(null)}
+            className={cn(
+              "flex items-start gap-3 rounded-lg border bg-background p-3 text-sm transition-colors",
+              "hover:bg-secondary/20",
+              invalid && "border-destructive/50",
+              isDragging && "opacity-60",
+            )}
+          >
+            <div className="flex items-center gap-2 pt-0.5">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full border bg-muted font-mono text-xs font-semibold">
+                {index + 1}
+              </span>
+              <GripVertical
+                className="size-4 cursor-grab text-muted-foreground active:cursor-grabbing"
+                aria-hidden="true"
+              />
+            </div>
+
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="font-medium">{APPLICATION_TEAM_LABELS[team]}</div>
+              <div className="text-xs leading-5 text-muted-foreground">
+                {APPLICATION_TEAM_DESCRIPTIONS[team]}
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={index === 0}
+                aria-label={`Move ${APPLICATION_TEAM_LABELS[team]} up`}
+                title="Move up"
+                onClick={() => moveTeam(index, index - 1)}
+              >
+                <ArrowUp className="size-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={index === value.length - 1}
+                aria-label={`Move ${APPLICATION_TEAM_LABELS[team]} down`}
+                title="Move down"
+                onClick={() => moveTeam(index, index + 1)}
+              >
+                <ArrowDown className="size-4" />
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ApplicationWizardComplete() {
   return (
     <nav aria-label="Application progress" className="space-y-3">
@@ -567,7 +726,10 @@ function ApplicationSubmissionConfirmation({
             <ReviewItem label="Email" value={values.email} />
             <ReviewItem label="University" value={resolveUniversity(values)} />
             <ReviewItem label="Programme" value={resolveProgramme(values)} />
-            <ReviewItem label="Teams" value={values.teams.join(", ")} />
+            <ReviewItem
+              label="Team preferences"
+              value={<TeamPreferenceList teams={values.teams} />}
+            />
             <ReviewItem label="Availability" value={values.availability} />
           </dl>
         </div>
@@ -647,13 +809,7 @@ function ApplicationIntro() {
             </AccordionItem>
           ))}
         </Accordion>
-        <div className="space-y-1 text-muted-foreground">
-          <p>
-            <span className="font-medium text-foreground">Deadline:</span>{" "}
-            September 6th
-          </p>
-          <p>Note: We are reviewing applications on a rolling basis, so apply early!</p>
-        </div>
+       
       </div>
     </div>
   );
@@ -661,6 +817,10 @@ function ApplicationIntro() {
 
 export function ApplicationForm() {
   const submitApplication = useSubmitGeneralApplication();
+  const [initialValues] = useState<ApplicationFormValues>(() => ({
+    ...defaultApplicationValues,
+    teams: shuffledApplicationTeams(),
+  }));
   const [submitState, setSubmitState] = useState<SubmitState>(null);
   const [fileInputKey] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
@@ -712,7 +872,7 @@ export function ApplicationForm() {
   }
 
   const form = useForm({
-    defaultValues: defaultApplicationValues,
+    defaultValues: initialValues,
     validators: {
       onSubmit: applicationSchema,
     },
@@ -846,7 +1006,7 @@ export function ApplicationForm() {
     <div ref={formRef} className="mt-4 flex min-h-0 flex-col lg:mt-0 lg:h-full">
     <form
       noValidate
-      className="flex min-h-0 flex-col gap-5 lg:h-full lg:rounded-lg lg:border lg:bg-white lg:p-5 lg:shadow-sm xl:p-6"
+      className="flex min-h-0 flex-col gap-5 lg:h-full"
       onSubmit={(event) => {
         event.preventDefault();
         if (isReviewStep) {
@@ -864,7 +1024,7 @@ export function ApplicationForm() {
       <FieldGroup className="flex min-h-0 flex-1 flex-col gap-5">
         <div
           ref={stepScrollRef}
-          className="min-h-0 flex-1 overflow-visible pr-0 lg:overflow-y-auto lg:pr-2 lg:pb-1 lg:[scrollbar-gutter:stable]"
+          className="min-h-0 flex-1 overflow-visible pr-0 lg:overflow-y-auto lg:pl-1 lg:pr-2 lg:pb-1 lg:[scrollbar-gutter:stable]"
         >
         {isReviewStep ? (
           <form.Subscribe selector={(state) => state.values}>
@@ -923,8 +1083,8 @@ export function ApplicationForm() {
 
                   <ReviewSection title="Your fit" onEdit={() => goToStep(3)}>
                     <ReviewItem
-                      label="Teams"
-                      value={values.teams.join(", ")}
+                      label="Team preferences"
+                      value={<TeamPreferenceList teams={values.teams} />}
                     />
                     <ReviewItem
                       label="Availability"
@@ -1416,47 +1576,20 @@ export function ApplicationForm() {
                 const isInvalid = fieldIsInvalid(field.state.meta, showStepErrors);
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel>Preferred teams</FieldLabel>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {APPLICATION_TEAMS.map((team) => {
-                        const checked = field.state.value.includes(team);
-                        return (
-                          <label
-                            key={team}
-                            className={cn(
-                              "flex items-start gap-2.5 rounded-lg border p-3 text-sm transition-colors hover:bg-secondary/20",
-                              checked && "border-primary/40 bg-primary/5",
-                            )}
-                          >
-                            <Checkbox
-                              className="mt-0.5"
-                              checked={checked}
-                              onCheckedChange={(value) => {
-                                setSubmitState(null);
-                                field.handleChange(
-                                  value
-                                    ? [...field.state.value, team]
-                                    : field.state.value.filter(
-                                        (selected: ApplicationTeam) =>
-                                          selected !== team,
-                                      ),
-                                );
-                                field.handleBlur();
-                              }}
-                              aria-invalid={isInvalid}
-                            />
-                            <div className="flex flex-col gap-0.5">
-                              <span className="font-medium">
-                                {APPLICATION_TEAM_LABELS[team]}
-                              </span>
-                              <span className="text-xs leading-5 text-muted-foreground">
-                                {APPLICATION_TEAM_DESCRIPTIONS[team]}
-                              </span>
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
+                    <FieldLabel>Rank your team preferences</FieldLabel>
+                    <FieldDescription>
+                      Drag teams into your preferred order. Rank 1 is your first
+                      choice.
+                    </FieldDescription>
+                    <TeamRankingInput
+                      value={field.state.value}
+                      invalid={isInvalid}
+                      onChange={(teams) => {
+                        setSubmitState(null);
+                        field.handleChange(teams);
+                      }}
+                      onBlur={field.handleBlur}
+                    />
                     {isInvalid ? (
                       <FieldError errors={field.state.meta.errors} />
                     ) : null}

@@ -1,63 +1,182 @@
-"use client";
+"use client"
 
-import Image from "next/image";
-import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { useSyncExternalStore } from "react"
+import Link from "next/link"
+import { motion, useReducedMotion } from "framer-motion"
+import { AsciiGrid } from "@/components/ui/ascii-grid"
+import { Button } from "@/components/ui/button"
 
-const easeOutQuart = [0.25, 1, 0.5, 1] as const;
+const easeOutQuart = [0.25, 1, 0.5, 1] as const
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.16,
+    },
+  },
+}
+
+const titleVariants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.985,
+    filter: "blur(12px)",
+    y: 24,
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    filter: "blur(0px)",
+    y: 0,
+    transition: { duration: 0.85, ease: easeOutQuart },
+  },
+}
+
+const descriptionVariants = {
+  hidden: {
+    opacity: 0,
+    filter: "blur(10px)",
+    y: 20,
+  },
+  visible: {
+    opacity: 1,
+    filter: "blur(0px)",
+    y: 0,
+    transition: { duration: 0.7, ease: easeOutQuart },
+  },
+}
+
+const accentVariants = {
+  hidden: {
+    opacity: 0,
+    scaleX: 0.7,
+  },
+  visible: {
+    opacity: 1,
+    scaleX: 1,
+    transition: { duration: 0.7, ease: easeOutQuart, delay: 0.08 },
+  },
+}
+
+const buttonGroupVariants = {
+  hidden: {
+    opacity: 0,
+    filter: "blur(10px)",
+    y: 24,
+  },
+  visible: {
+    opacity: 1,
+    filter: "blur(0px)",
+    y: 0,
+    transition: { duration: 0.7, ease: easeOutQuart, delay: 0.18 },
+  },
+}
+
+function subscribeToHydration() {
+  return () => {}
+}
 
 export function Hero() {
-  const prefersReducedMotion = useReducedMotion();
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false
+  )
+  const prefersReducedMotion = useReducedMotion()
+  const enableInteractionMotion = isHydrated && !prefersReducedMotion
 
   return (
-    <section className="relative flex min-h-svh w-full items-end justify-center overflow-hidden bg-secondary-black">
-      <motion.div
-        className="absolute inset-0"
-        initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 1.015 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, ease: easeOutQuart }}
-      >
-        <Image
-          src="/images/recruitment-post.png"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-top"
+    <section className="relative min-h-screen pb-12 w-full flex items-end justify-center">
+      {/* Background Grid */}
+      <div className="absolute inset-0 z-0 h-[70vh]">
+        <AsciiGrid
+          className="w-full h-full opacity-100"
+          color="#1954A6"
+          cellSize={10}
+          logoSrc="/kthais-logo.svg"
         />
-      </motion.div>
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-black/65 via-black/20 to-transparent"
-      />
+        {/* White gradient overlay at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white via-white/50 to-transparent pointer-events-none" />
+        {/* Radial gradient overlay around edges */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_40%,white_100%)] pointer-events-none" />
+      </div>
 
-      <h1 className="sr-only">KTH AI Society recruitment is open</h1>
-
-      <div className="relative z-10 w-full px-4 pb-10 sm:px-6 sm:pb-12">
+      {/* Content */}
+      <div className="container relative z-20 px-4 md:px-6 text-center flex flex-col items-center justify-end h-full pt-20">
         <motion.div
-          className="mx-auto flex w-full max-w-lg flex-col items-stretch gap-3 sm:flex-row sm:justify-center"
-          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: easeOutQuart, delay: 0.15 }}
+          className="space-y-6"
+          variants={containerVariants}
+          initial="hidden"
+          animate={isHydrated ? "visible" : "hidden"}
         >
-          <Button
-            size="lg"
-            asChild
-            className="h-12 flex-1 px-8 text-base sm:flex-none"
+          <motion.h1
+            className="mx-auto max-w-3xl text-4xl leading-none tracking-tight text-black sm:text-6xl md:text-7xl"
+            variants={titleVariants}
           >
-            <Link href="/apply">Apply now</Link>
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            asChild
-            className="h-12 flex-1 border-white/35 bg-white/10 px-8 text-base text-white backdrop-blur-sm hover:bg-white/20 hover:text-white sm:flex-none"
+            <span className="font-arial font-bold tracking-tight text-black">
+              Join
+            </span>{" "}
+            <span className="font-times font-normal text-[1.1em] leading-none text-[#1954A6]">(KTH)</span>{" "}
+            <span className="font-arial font-bold tracking-tight text-black">
+              AI Society
+            </span>
+          </motion.h1>
+
+          <motion.p
+            className="mx-auto max-w-2xl text-base leading-7 text-black/72 sm:text-xl sm:leading-8"
+            variants={descriptionVariants}
           >
-            <Link href="/events">Upcoming events</Link>
-          </Button>
+            Applications are open, join now!
+          </motion.p>
+
+          <motion.div
+            aria-hidden="true"
+            className="mx-auto h-px w-24 origin-center bg-[linear-gradient(90deg,transparent,rgba(25,84,166,0.75),transparent)]"
+            variants={accentVariants}
+          />
+
+          <motion.div
+            className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4"
+            variants={buttonGroupVariants}
+          >
+            <motion.div
+              whileHover={enableInteractionMotion ? { y: -2, scale: 1.015 } : undefined}
+              whileTap={enableInteractionMotion ? { y: 0, scale: 0.985 } : undefined}
+              transition={{ duration: 0.18, ease: easeOutQuart }}
+            >
+              <Button
+                size="lg"
+                asChild
+                className='px-12 py-8 text-xl max-sm:px-6 max-sm:py-4 max-sm:text-base'
+              >
+                <Link href="/apply" className="flex items-center gap-1">
+                  Apply now
+                </Link>
+              </Button>
+            </motion.div>
+
+            <motion.div
+              whileHover={enableInteractionMotion ? { y: -2, scale: 1.015 } : undefined}
+              whileTap={enableInteractionMotion ? { y: 0, scale: 0.985 } : undefined}
+              transition={{ duration: 0.18, ease: easeOutQuart }}
+            >
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className='px-12 py-8 text-xl max-sm:px-6 max-sm:py-4 max-sm:text-base'
+              >
+                <Link href="/events" className="flex items-center gap-1">
+                  Upcoming Events
+                </Link>
+              </Button>
+            </motion.div>
+          </motion.div>
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

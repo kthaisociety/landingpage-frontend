@@ -63,6 +63,7 @@ import {
   useUpdateApplicationStatus,
 } from "@/hooks/applications";
 import {
+  APPLICATION_TEAM_LABELS,
   APPLICATION_STATUSES,
   APPLICATION_TEAMS,
   type AdminApplicationsFilters,
@@ -100,9 +101,50 @@ function openResume(application: GeneralApplication) {
   window.open(getApplicationResumeUrl(application.id), "_blank", "noopener");
 }
 
-function csvCell(value: string | number | string[] | null | undefined) {
+function csvCell(value: string | number | boolean | string[] | null | undefined) {
   const text = Array.isArray(value) ? value.join("; ") : String(value ?? "");
   return `"${text.replaceAll('"', '""')}"`;
+}
+
+function formatTeamPreferences(application: GeneralApplication) {
+  const preferences = application.teams.map(
+    (team, index) => `${index + 1}. ${APPLICATION_TEAM_LABELS[team]}`,
+  );
+
+  if (application.team_preferences_ranked === true) {
+    return preferences.join("; ");
+  }
+
+  return `Legacy unranked: ${application.teams
+    .map((team) => APPLICATION_TEAM_LABELS[team])
+    .join("; ")}`;
+}
+
+function TeamPreferenceBadges({
+  application,
+}: {
+  application: GeneralApplication;
+}) {
+  return (
+    <div className="flex max-w-56 flex-wrap gap-1">
+      {application.team_preferences_ranked === true ? (
+        application.teams.map((team, index) => (
+          <Badge key={team} variant="outline">
+            {index + 1}. {APPLICATION_TEAM_LABELS[team]}
+          </Badge>
+        ))
+      ) : (
+        <>
+          <Badge variant="secondary">Legacy unranked</Badge>
+          {application.teams.map((team) => (
+            <Badge key={team} variant="outline">
+              {APPLICATION_TEAM_LABELS[team]}
+            </Badge>
+          ))}
+        </>
+      )}
+    </div>
+  );
 }
 
 function exportApplicationsCsv(
@@ -118,7 +160,8 @@ function exportApplicationsCsv(
     "Gender",
     "Programme",
     "Graduation year",
-    "Teams",
+    "Team preferences",
+    "Team preferences ranked",
     "Availability",
     "LinkedIn",
     "Additional links",
@@ -135,7 +178,8 @@ function exportApplicationsCsv(
     application.gender,
     application.programme,
     application.graduation_year,
-    application.teams,
+    formatTeamPreferences(application),
+    application.team_preferences_ranked === true,
     application.availability,
     application.linkedin_url,
     application.additional_links ?? [],
@@ -302,16 +346,8 @@ export function ApplicationAdminPanel() {
       },
       {
         accessorKey: "teams",
-        header: "Teams",
-        cell: ({ row }) => (
-          <div className="flex max-w-48 flex-wrap gap-1">
-            {row.original.teams.map((team) => (
-              <Badge key={team} variant="outline">
-                {team}
-              </Badge>
-            ))}
-          </div>
-        ),
+        header: "Team preferences",
+        cell: ({ row }) => <TeamPreferenceBadges application={row.original} />,
       },
       {
         accessorKey: "availability",
@@ -638,11 +674,9 @@ function ApplicationDetail({
         <Badge variant={statusVariant(application.status)}>
           {application.status}
         </Badge>
-        {application.teams.map((team) => (
-          <Badge key={team} variant="outline">
-            {team}
-          </Badge>
-        ))}
+        {application.team_preferences_ranked === true ? null : (
+          <Badge variant="secondary">Legacy unranked preferences</Badge>
+        )}
       </div>
 
       <div className="grid gap-4 text-sm sm:grid-cols-2">
@@ -655,6 +689,8 @@ function ApplicationDetail({
         <DetailLink label="LinkedIn" href={application.linkedin_url} />
         <DetailItem label="Availability" value={application.availability} />
       </div>
+
+      <TeamPreferencesDetail application={application} />
 
       {application.additional_links?.length ? (
         <div className="space-y-2">
@@ -681,6 +717,41 @@ function ApplicationDetail({
         <Download className="mr-2 h-4 w-4" />
         Download resume
       </Button>
+    </div>
+  );
+}
+
+function TeamPreferencesDetail({
+  application,
+}: {
+  application: GeneralApplication;
+}) {
+  if (application.team_preferences_ranked === true) {
+    return (
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold">Team preferences</h3>
+        <ol className="space-y-1 text-sm text-muted-foreground">
+          {application.teams.map((team, index) => (
+            <li key={team}>
+              <span className="font-medium text-foreground">{index + 1}.</span>{" "}
+              {APPLICATION_TEAM_LABELS[team]}
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold">Legacy unranked preferences</h3>
+      <div className="flex flex-wrap gap-1">
+        {application.teams.map((team) => (
+          <Badge key={team} variant="outline">
+            {APPLICATION_TEAM_LABELS[team]}
+          </Badge>
+        ))}
+      </div>
     </div>
   );
 }

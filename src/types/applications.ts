@@ -98,6 +98,7 @@ export type GeneralApplication = {
   resume_file_name: string;
   resume_content_type: string;
   teams: ApplicationTeam[];
+  team_preferences_ranked: boolean;
   team_interest_reason: string;
   availability: ApplicationAvailability;
   contribution: string;

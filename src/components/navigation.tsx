@@ -226,18 +226,15 @@ export function Navigation() {
           Job Board
         </Link>
         <Link
-          href="/apply"
-          className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
-        >
-          Apply
-        </Link>
-        <Link
           href="/newsletter"
           className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
         >
           Newsletter
         </Link>
         {renderAuthDropdown()}
+        <Button asChild>
+          <Link href="/apply">Apply</Link>
+        </Button>
       </div>
     );
   }
@@ -259,6 +256,11 @@ export function Navigation() {
             className="md:hidden fixed top-0 left-0 right-0 bg-white shadow-md z-40 overflow-hidden"
           >
             <div className="max-w-7xl mx-auto px-6 pt-18 pb-6 flex flex-col gap-1">
+              <Button asChild className="mb-3 w-full" size="lg">
+                <Link href="/apply" onClick={handleMobileLinkClick}>
+                  Apply
+                </Link>
+              </Button>
               <Link
                 href="/"
                 className="block py-3 text-base text-foreground/70 hover:text-foreground"
@@ -286,13 +288,6 @@ export function Navigation() {
                 onClick={handleMobileLinkClick}
               >
                 Job Board
-              </Link>
-              <Link
-                href="/apply"
-                className="block py-3 text-base text-foreground/70 hover:text-foreground"
-                onClick={handleMobileLinkClick}
-              >
-                Apply
               </Link>
               <Link
                 href="/newsletter"
