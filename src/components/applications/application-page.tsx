@@ -5,7 +5,7 @@ function ApplicationRecruitmentPoster() {
   return (
     <aside className="relative h-[52svh] min-h-[24rem] overflow-hidden bg-secondary-black sm:h-[56svh] lg:h-screen lg:min-h-screen">
       <Image
-        src="/images/recruitment-post.png"
+        src="/recruitment-post.png"
         alt="KTH AI Society recruitment is open"
         fill
         priority
