@@ -820,6 +820,28 @@ export function ApplicationForm() {
   const formRef = useRef<HTMLDivElement>(null);
   const stepScrollRef = useRef<HTMLDivElement>(null);
   const hasShuffledTeams = useRef(false);
+  const pendingStepFocusRef = useRef(false);
+
+  function focusFirstStepInput(stepIndex: number) {
+    window.requestAnimationFrame(() => {
+      const root = stepScrollRef.current;
+      if (!root) return;
+
+      const firstFieldName = APPLICATION_STEPS[stepIndex]?.fields[0];
+      if (!firstFieldName) return;
+
+      const fieldTarget = root.querySelector<HTMLElement>(`#${firstFieldName}`);
+      if (fieldTarget) {
+        fieldTarget.focus({ preventScroll: true });
+        return;
+      }
+
+      const focusTarget = root.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), button[role="checkbox"]:not([disabled]), button[role="radio"]:not([disabled])',
+      );
+      focusTarget?.focus({ preventScroll: true });
+    });
+  }
 
   function scrollToFirstStepError() {
     window.requestAnimationFrame(() => {
@@ -960,6 +982,7 @@ export function ApplicationForm() {
     setShowStepErrors(false);
     const nextStep = Math.min(currentStep + 1, APPLICATION_STEPS.length - 1);
     if (nextStep === 3) shuffleTeamsIfNeeded();
+    pendingStepFocusRef.current = true;
     setCurrentStep(nextStep);
   }
 
@@ -994,6 +1017,10 @@ export function ApplicationForm() {
 
   useEffect(() => {
     stepScrollRef.current?.scrollTo({ top: 0 });
+
+    if (!pendingStepFocusRef.current) return;
+    pendingStepFocusRef.current = false;
+    focusFirstStepInput(currentStep);
   }, [currentStep]);
 
   if (isSubmitted) {
