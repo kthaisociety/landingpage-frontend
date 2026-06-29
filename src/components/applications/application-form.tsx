@@ -33,11 +33,18 @@ import {
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { TeamBentoGrid, TEAM_ART } from "@/components/ui/team-bento-grid";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useSubmitGeneralApplication } from "@/hooks/applications";
 import {
   APPLICATION_AVAILABILITY,
   APPLICATION_TEAM_DESCRIPTIONS,
+  APPLICATION_TEAM_FULL_DESCRIPTIONS,
+  APPLICATION_TEAM_LABELS,
   APPLICATION_TEAMS,
   type ApplicationAvailability,
   APPLICATION_GENDERS,
@@ -65,6 +72,15 @@ function buildLinkedInUrl(handle: string) {
 
 const MAX_RESUME_BYTES = 10 * 1024 * 1024;
 const RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"] as const;
+const OTHER_UNIVERSITY_VALUE = "Other";
+const STOCKHOLM_UNIVERSITIES = [
+  "KTH Royal Institute of Technology",
+  "Stockholm University",
+  "Stockholm School of Economics",
+  "Karolinska Institutet",
+  "Södertörn University",
+  OTHER_UNIVERSITY_VALUE,
+] as const;
 const RESUME_MIME_TYPES = [
   "application/pdf",
   "application/msword",
@@ -78,13 +94,15 @@ const APPLICATION_STEPS = [
     fields: [] as const,
   },
   {
-    title: "Details",
-    description: "Your contact and study information.",
+    title: "About you",
+    description: "Contact and study information. We prioritize KTH students.",
     fields: [
       "firstName",
       "lastName",
       "email",
       "gender",
+      "university",
+      "universityOther",
       "programme",
       "programmeOther",
       "graduationYear",
@@ -96,14 +114,9 @@ const APPLICATION_STEPS = [
     fields: ["linkedinUrl", "additionalLinksText", "resume"] as const,
   },
   {
-    title: "Teams",
-    description: "Where you want to contribute.",
-    fields: ["teams", "teamInterestReason"] as const,
-  },
-  {
-    title: "Commitment",
-    description: "Availability and motivation.",
-    fields: ["availability", "contribution"] as const,
+    title: "Your fit",
+    description: "Teams, availability, and motivation.",
+    fields: ["teams", "availability", "contribution"] as const,
   },
   {
     title: "Review",
@@ -127,6 +140,8 @@ type ApplicationFormValues = {
   lastName: string;
   email: string;
   gender: ApplicationGender | "";
+  university: string;
+  universityOther: string;
   programme: string;
   programmeOther: string;
   graduationYear: string;
@@ -134,11 +149,16 @@ type ApplicationFormValues = {
   additionalLinksText: string;
   resume: File | null;
   teams: ApplicationTeam[];
-  teamInterestReason: string;
   availability: ApplicationAvailability | "";
   contribution: string;
   dataRetentionConsent: boolean;
 };
+
+function resolveUniversity(values: Pick<ApplicationFormValues, "university" | "universityOther">) {
+  return values.university === OTHER_UNIVERSITY_VALUE
+    ? values.universityOther.trim()
+    : values.university.trim();
+}
 
 function resolveProgramme(values: Pick<ApplicationFormValues, "programme" | "programmeOther">) {
   return values.programme === OTHER_PROGRAMME_VALUE
@@ -208,6 +228,11 @@ const applicationBaseSchema = z.object({
   gender: z
     .union([z.enum(APPLICATION_GENDERS), z.literal("")])
     .refine((value) => value !== "", "Please select your gender."),
+  university: z.string().trim().min(1, "Please select your university."),
+  universityOther: z
+    .string()
+    .trim()
+    .max(120, "Please keep your university under 120 characters."),
   programme: z.string().trim().min(1, "Please select your programme."),
   programmeOther: z
     .string()
@@ -248,11 +273,6 @@ const applicationBaseSchema = z.object({
   teams: z
     .array(z.enum(APPLICATION_TEAMS))
     .min(1, "Select at least one team."),
-  teamInterestReason: z
-    .string()
-    .trim()
-    .min(20, "Please write at least 20 characters.")
-    .max(2000, "Please keep this answer under 2000 characters."),
   availability: z
     .union([z.enum(APPLICATION_AVAILABILITY), z.literal("")])
     .refine((value) => value !== "", "Please select your weekly availability."),
@@ -268,6 +288,22 @@ const applicationBaseSchema = z.object({
       "You need to consent to data collection and storage before submitting.",
     ),
 });
+
+function validateUniversityOther(
+  value: Pick<ApplicationFormValues, "university" | "universityOther">,
+  ctx: z.RefinementCtx,
+) {
+  if (
+    value.university === OTHER_UNIVERSITY_VALUE &&
+    value.universityOther.trim().length === 0
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["universityOther"],
+      message: "Please enter your university.",
+    });
+  }
+}
 
 function validateProgrammeOther(
   value: Pick<ApplicationFormValues, "programme" | "programmeOther">,
@@ -285,21 +321,26 @@ function validateProgrammeOther(
   }
 }
 
-const applicationSchema = applicationBaseSchema.superRefine(
-  validateProgrammeOther,
-);
+const applicationSchema = applicationBaseSchema
+  .superRefine(validateUniversityOther)
+  .superRefine(validateProgrammeOther);
 
 const stepSchemas = [
   z.object({}),
-  applicationBaseSchema.pick({
-    firstName: true,
-    lastName: true,
-    email: true,
-    gender: true,
-    programme: true,
-    programmeOther: true,
-    graduationYear: true,
-  }).superRefine(validateProgrammeOther),
+  applicationBaseSchema
+    .pick({
+      firstName: true,
+      lastName: true,
+      email: true,
+      gender: true,
+      university: true,
+      universityOther: true,
+      programme: true,
+      programmeOther: true,
+      graduationYear: true,
+    })
+    .superRefine(validateUniversityOther)
+    .superRefine(validateProgrammeOther),
   applicationBaseSchema.pick({
     linkedinUrl: true,
     additionalLinksText: true,
@@ -307,9 +348,6 @@ const stepSchemas = [
   }),
   applicationBaseSchema.pick({
     teams: true,
-    teamInterestReason: true,
-  }),
-  applicationBaseSchema.pick({
     availability: true,
     contribution: true,
   }),
@@ -323,6 +361,8 @@ const applicationFieldValidators = {
   lastName: { onBlur: applicationBaseSchema.shape.lastName },
   email: { onBlur: applicationBaseSchema.shape.email },
   gender: { onChange: applicationBaseSchema.shape.gender },
+  university: { onChange: applicationBaseSchema.shape.university },
+  universityOther: { onBlur: applicationBaseSchema.shape.universityOther },
   programme: { onBlur: applicationBaseSchema.shape.programme },
   programmeOther: { onBlur: applicationBaseSchema.shape.programmeOther },
   graduationYear: { onBlur: applicationBaseSchema.shape.graduationYear },
@@ -330,7 +370,6 @@ const applicationFieldValidators = {
   additionalLinksText: { onBlur: applicationBaseSchema.shape.additionalLinksText },
   resume: { onBlur: applicationBaseSchema.shape.resume },
   teams: { onChange: applicationBaseSchema.shape.teams },
-  teamInterestReason: { onBlur: applicationBaseSchema.shape.teamInterestReason },
   availability: { onChange: applicationBaseSchema.shape.availability },
   contribution: { onBlur: applicationBaseSchema.shape.contribution },
   dataRetentionConsent: {
@@ -350,6 +389,8 @@ const defaultApplicationValues: ApplicationFormValues = {
   lastName: "",
   email: "",
   gender: "",
+  university: "",
+  universityOther: "",
   programme: "",
   programmeOther: "",
   graduationYear: "",
@@ -357,7 +398,6 @@ const defaultApplicationValues: ApplicationFormValues = {
   additionalLinksText: "",
   resume: null,
   teams: [],
-  teamInterestReason: "",
   availability: "",
   contribution: "",
   dataRetentionConsent: false,
@@ -373,20 +413,12 @@ function ApplicationWizardProgress({
   const step = APPLICATION_STEPS[currentStep];
 
   return (
-    <nav aria-label="Application progress" className="space-y-5">
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-muted-foreground">
-          Step {currentStep + 1} of {APPLICATION_STEPS.length}
-        </p>
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">
-            {step.title}
-          </h2>
-          <p className="text-sm text-muted-foreground">{step.description}</p>
-        </div>
-      </div>
+    <nav aria-label="Application progress" className="shrink-0 space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Step {currentStep + 1} of {APPLICATION_STEPS.length} · {step.title}
+      </p>
 
-      <ol className="grid grid-cols-6 gap-2">
+      <ol className="grid grid-cols-5 gap-2">
         {APPLICATION_STEPS.map((applicationStep, index) => {
           const isComplete = index < currentStep;
           const isCurrent = index === currentStep;
@@ -474,11 +506,7 @@ function ApplicationStepPanel({
   const isActive = currentStep === step;
 
   return (
-    <div
-      className={cn("space-y-6", !isActive && "invisible")}
-      inert={!isActive ? true : undefined}
-      aria-hidden={!isActive}
-    >
+    <div className={cn("space-y-5 lg:space-y-4", !isActive && "hidden")}>
       {children}
     </div>
   );
@@ -486,22 +514,12 @@ function ApplicationStepPanel({
 
 function ApplicationWizardComplete() {
   return (
-    <nav aria-label="Application progress" className="space-y-5">
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-muted-foreground">
-          Step {APPLICATION_STEPS.length} of {APPLICATION_STEPS.length}
-        </p>
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Application submitted
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Thanks. We have received your application.
-          </p>
-        </div>
-      </div>
+    <nav aria-label="Application progress" className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Application submitted
+      </p>
 
-      <ol className="grid grid-cols-6 gap-2" aria-hidden="true">
+      <ol className="grid grid-cols-5 gap-2" aria-hidden="true">
         {APPLICATION_STEPS.map((applicationStep) => (
           <li key={applicationStep.title}>
             <span className="flex h-8 w-full items-center">
@@ -547,6 +565,7 @@ function ApplicationSubmissionConfirmation({
           <dl className="space-y-2 text-sm">
             <ReviewItem label="Name" value={applicantName} />
             <ReviewItem label="Email" value={values.email} />
+            <ReviewItem label="University" value={resolveUniversity(values)} />
             <ReviewItem label="Programme" value={resolveProgramme(values)} />
             <ReviewItem label="Teams" value={values.teams.join(", ")} />
             <ReviewItem label="Availability" value={values.availability} />
@@ -587,34 +606,53 @@ function ApplicationSubmissionConfirmation({
   );
 }
 
-function ApplicationIntro({ onBegin }: { onBegin: () => void }) {
+function ApplicationIntro() {
   return (
     <div className="space-y-6">
-      <div className="space-y-4 text-sm leading-6 text-muted-foreground">
+      <div className="space-y-3 text-sm leading-6 text-muted-foreground">
         <p>
-          KTH AI Society is a student organisation cultivating the next
-          generation of AI leaders. We grow AI literacy, bridge academia and
-          industry, and share new insights through projects, research, and
-          events.
+          Applications for the upcoming year&apos;s project groups are now open
+          across teams at KTH AI Society!
         </p>
-        <p>Find your team and help build the community.</p>
+        <p>
+          We are a student-led organisation cultivating the next generation of AI
+          leaders. We grow AI literacy, bridge academia and industry, and share
+          new insights through projects, research, and events. Whether you are
+          curious to explore AI for the first time, looking to collaborate with a
+          brilliant community, or eager to bring your unique perspective to the
+          table, there is a place for you here.
+        </p>
       </div>
 
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Our teams</h3>
-        <TeamBentoGrid
-          items={APPLICATION_TEAMS.map((team) => ({
-            title: team,
-            description: APPLICATION_TEAM_DESCRIPTIONS[team],
-            ...TEAM_ART[team],
-          }))}
-        />
+      <div className="space-y-3 text-sm leading-6">
+        <h3 className="text-sm font-semibold text-foreground">Our teams</h3>
+        <Accordion type="single" collapsible className="rounded-lg border px-4">
+          {APPLICATION_TEAMS.map((team) => (
+            <AccordionItem key={team} value={team}>
+              <AccordionTrigger className="py-3 hover:no-underline">
+                <div className="pr-2 text-left">
+                  <span className="text-sm font-normal leading-6 text-muted-foreground">
+                    <span className="font-medium text-foreground">{team}:</span>{" "}
+                    {APPLICATION_TEAM_DESCRIPTIONS[team]}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                {APPLICATION_TEAM_FULL_DESCRIPTIONS[team].map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+        <div className="space-y-1 text-muted-foreground">
+          <p>
+            <span className="font-medium text-foreground">Deadline:</span>{" "}
+            September 6th
+          </p>
+          <p>Note: We are reviewing applications on a rolling basis, so apply early!</p>
+        </div>
       </div>
-
-      <Button type="button" className="w-full sm:w-auto" onClick={onBegin}>
-        Begin application
-        <ChevronRight data-icon="inline-end" />
-      </Button>
     </div>
   );
 }
@@ -626,6 +664,50 @@ export function ApplicationForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [showStepErrors, setShowStepErrors] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
+  const stepScrollRef = useRef<HTMLDivElement>(null);
+
+  function scrollToFirstStepError() {
+    window.requestAnimationFrame(() => {
+      const root = stepScrollRef.current;
+      const target = Array.from(
+        root?.querySelectorAll<HTMLElement>(
+          '[data-invalid="true"], [aria-invalid="true"]',
+        ) ?? [],
+      ).find((element) => element.getClientRects().length > 0);
+      if (!target) return;
+
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+
+      const focusTarget = target.matches(
+        "input, textarea, select, button, [tabindex]",
+      )
+        ? target
+        : target.querySelector<HTMLElement>(
+            'input, textarea, select, button, [tabindex]:not([tabindex="-1"])',
+          );
+      focusTarget?.focus({ preventScroll: true });
+    });
+  }
+
+  function goToFirstSchemaError(error: z.ZodError<ApplicationFormValues>) {
+    const firstField = error.issues
+      .map((issue) => issue.path[0])
+      .find((field): field is ApplicationStepField => typeof field === "string");
+    const firstErrorStep = firstField
+      ? APPLICATION_STEPS.findIndex((step) =>
+          (step.fields as readonly string[]).includes(firstField),
+        )
+      : -1;
+
+    if (firstErrorStep > -1) {
+      setCurrentStep(firstErrorStep);
+    }
+    scrollToFirstStepError();
+  }
 
   const form = useForm({
     defaultValues: defaultApplicationValues,
@@ -637,6 +719,7 @@ export function ApplicationForm() {
       const parsed = applicationSchema.safeParse(value);
       if (!parsed.success) {
         setShowStepErrors(true);
+        goToFirstSchemaError(parsed.error);
         setSubmitState({
           type: "error",
           message: "Please fix the highlighted fields before submitting.",
@@ -659,13 +742,13 @@ export function ApplicationForm() {
           lastName: parsed.data.lastName,
           email: parsed.data.email,
           gender: parsed.data.gender,
+          university: resolveUniversity(parsed.data),
           programme,
           graduationYear: Number(parsed.data.graduationYear),
           linkedinUrl: buildLinkedInUrl(parsed.data.linkedinUrl),
           additionalLinks: splitAdditionalLinks(parsed.data.additionalLinksText),
           resume: parsed.data.resume,
           teams: parsed.data.teams,
-          teamInterestReason: parsed.data.teamInterestReason,
           availability: parsed.data.availability,
           contribution: parsed.data.contribution,
           dataRetentionConsent: parsed.data.dataRetentionConsent,
@@ -699,13 +782,19 @@ export function ApplicationForm() {
   async function validateCurrentStep() {
     const step = APPLICATION_STEPS[currentStep];
     if (currentStep === APPLICATION_STEPS.length - 1) {
-      return applicationSchema.safeParse(form.state.values).success;
+      const parsed = applicationSchema.safeParse(form.state.values);
+      if (!parsed.success) {
+        setShowStepErrors(true);
+        goToFirstSchemaError(parsed.error);
+      }
+      return parsed.success;
     }
 
     await touchAndValidateStepFields(step.fields);
     const isValid = stepSchemas[currentStep].safeParse(form.state.values).success;
     if (!isValid) {
       setShowStepErrors(true);
+      scrollToFirstStepError();
     }
     return isValid;
   }
@@ -731,7 +820,6 @@ export function ApplicationForm() {
 
   const isReviewStep = currentStep === APPLICATION_STEPS.length - 1;
   const isFirstStep = currentStep === 0;
-  const isIntroStep = currentStep === 0;
   const isSubmitted = submitState?.type === "success";
 
   useEffect(() => {
@@ -740,19 +828,23 @@ export function ApplicationForm() {
     }
   }, [isSubmitted]);
 
+  useEffect(() => {
+    stepScrollRef.current?.scrollTo({ top: 0 });
+  }, [currentStep]);
+
   if (isSubmitted) {
     return (
-      <div ref={formRef}>
+      <div ref={formRef} className="min-h-0 lg:h-full lg:overflow-y-auto lg:pr-2">
         <ApplicationSubmissionConfirmation values={form.state.values} />
       </div>
     );
   }
 
   return (
-    <div ref={formRef}>
+    <div ref={formRef} className="mt-4 flex min-h-0 flex-col lg:mt-0 lg:h-full">
     <form
       noValidate
-      className="space-y-8"
+      className="flex min-h-0 flex-col gap-5 lg:h-full lg:rounded-lg lg:border lg:bg-white lg:p-5 lg:shadow-sm xl:p-6"
       onSubmit={(event) => {
         event.preventDefault();
         if (isReviewStep) {
@@ -767,7 +859,11 @@ export function ApplicationForm() {
         onStepClick={goToStep}
       />
 
-      <FieldGroup className="space-y-6">
+      <FieldGroup className="flex min-h-0 flex-1 flex-col gap-5">
+        <div
+          ref={stepScrollRef}
+          className="min-h-0 flex-1 overflow-visible pr-0 lg:overflow-y-auto lg:pr-2 lg:pb-1 lg:[scrollbar-gutter:stable]"
+        >
         {isReviewStep ? (
           <form.Subscribe selector={(state) => state.values}>
             {(values) => {
@@ -777,13 +873,17 @@ export function ApplicationForm() {
 
               return (
                 <div className="space-y-4">
-                  <ReviewSection title="Details" onEdit={() => goToStep(0)}>
+                  <ReviewSection title="About you" onEdit={() => goToStep(1)}>
                     <ReviewItem
                       label="Name"
                       value={`${values.firstName} ${values.lastName}`.trim()}
                     />
                     <ReviewItem label="Email" value={values.email} />
                     <ReviewItem label="Gender" value={values.gender} />
+                    <ReviewItem
+                      label="University"
+                      value={resolveUniversity(values)}
+                    />
                     <ReviewItem
                       label="Programme"
                       value={resolveProgramme(values)}
@@ -794,10 +894,7 @@ export function ApplicationForm() {
                     />
                   </ReviewSection>
 
-                  <ReviewSection
-                    title="Profile"
-                    onEdit={() => goToStep(1)}
-                  >
+                  <ReviewSection title="Profile" onEdit={() => goToStep(2)}>
                     <ReviewItem
                       label="LinkedIn"
                       value={buildLinkedInUrl(values.linkedinUrl)}
@@ -822,21 +919,11 @@ export function ApplicationForm() {
                     />
                   </ReviewSection>
 
-                  <ReviewSection title="Teams" onEdit={() => goToStep(2)}>
+                  <ReviewSection title="Your fit" onEdit={() => goToStep(3)}>
                     <ReviewItem
                       label="Teams"
                       value={values.teams.join(", ")}
                     />
-                    <ReviewItem
-                      label="Why these teams"
-                      value={values.teamInterestReason}
-                    />
-                  </ReviewSection>
-
-                  <ReviewSection
-                    title="Commitment"
-                    onEdit={() => goToStep(3)}
-                  >
                     <ReviewItem
                       label="Availability"
                       value={values.availability}
@@ -895,7 +982,7 @@ export function ApplicationForm() {
         ) : (
           <div className="grid *:col-start-1 *:row-start-1 *:w-full">
             <ApplicationStepPanel step={0} currentStep={currentStep}>
-              <ApplicationIntro onBegin={goToNextStep} />
+              <ApplicationIntro />
             </ApplicationStepPanel>
 
             <ApplicationStepPanel step={1} currentStep={currentStep}>
@@ -1032,6 +1119,88 @@ export function ApplicationForm() {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <form.Field
+                name="university"
+                validators={applicationFieldValidators.university}
+              >
+                {(field) => {
+                  const isInvalid = fieldIsInvalid(field.state.meta, showStepErrors);
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>University</FieldLabel>
+                      <NativeSelect
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => {
+                          setSubmitState(null);
+                          field.handleChange(event.target.value);
+                          field.handleBlur();
+                        }}
+                        aria-invalid={isInvalid}
+                      >
+                        <NativeSelectOption value="">
+                          Select your university
+                        </NativeSelectOption>
+                        {STOCKHOLM_UNIVERSITIES.map((university) => (
+                          <NativeSelectOption key={university} value={university}>
+                            {university}
+                          </NativeSelectOption>
+                        ))}
+                      </NativeSelect>
+                      <FieldDescription>
+                        We prioritize KTH students, but applicants from other
+                        Stockholm universities are also welcome.
+                      </FieldDescription>
+                      {isInvalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  );
+                }}
+              </form.Field>
+
+              <form.Subscribe selector={(state) => state.values.university}>
+                {(university) =>
+                  university === OTHER_UNIVERSITY_VALUE ? (
+                    <form.Field
+                      name="universityOther"
+                      validators={applicationFieldValidators.universityOther}
+                    >
+                      {(field) => {
+                        const isInvalid = fieldIsInvalid(
+                          field.state.meta,
+                          showStepErrors,
+                        );
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor={field.name}>
+                              Other university
+                            </FieldLabel>
+                            <Input
+                              id={field.name}
+                              name={field.name}
+                              value={field.state.value}
+                              onBlur={field.handleBlur}
+                              onChange={(event) => {
+                                setSubmitState(null);
+                                field.handleChange(event.target.value);
+                              }}
+                              placeholder="Enter your university"
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid ? (
+                              <FieldError errors={field.state.meta.errors} />
+                            ) : null}
+                          </Field>
+                        );
+                      }}
+                    </form.Field>
+                  ) : null
+                }
+              </form.Subscribe>
+
+              <form.Field
                 name="programme"
                 validators={applicationFieldValidators.programme}
               >
@@ -1087,10 +1256,6 @@ export function ApplicationForm() {
                               placeholder="Your university and degree"
                               aria-invalid={isInvalid}
                             />
-                            <FieldDescription>
-                              Non-KTH applicants can apply, but KTH students may
-                              be prioritised.
-                            </FieldDescription>
                             {isInvalid ? (
                               <FieldError errors={field.state.meta.errors} />
                             ) : null}
@@ -1279,7 +1444,9 @@ export function ApplicationForm() {
                               aria-invalid={isInvalid}
                             />
                             <div className="flex flex-col gap-0.5">
-                              <span className="font-medium">{team}</span>
+                              <span className="font-medium">
+                                {APPLICATION_TEAM_LABELS[team]}
+                              </span>
                               <span className="text-xs leading-5 text-muted-foreground">
                                 {APPLICATION_TEAM_DESCRIPTIONS[team]}
                               </span>
@@ -1296,44 +1463,7 @@ export function ApplicationForm() {
               }}
             </form.Field>
 
-            <form.Field
-              name="teamInterestReason"
-              validators={applicationFieldValidators.teamInterestReason}
-            >
-              {(field) => {
-                const isInvalid = fieldIsInvalid(field.state.meta, showStepErrors);
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>
-                      Why these teams?
-                    </FieldLabel>
-                    <Textarea
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => {
-                        setSubmitState(null);
-                        field.handleChange(event.target.value.slice(0, 2000));
-                      }}
-                      className="min-h-24 resize-y"
-                      maxLength={2000}
-                      placeholder="Briefly explain what interests you and what you would like to work on."
-                      aria-invalid={isInvalid}
-                    />
-                    <FieldDescription>
-                      {field.state.value.length} / 2000 characters
-                    </FieldDescription>
-                    {isInvalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
-                );
-              }}
-            </form.Field>
-            </ApplicationStepPanel>
-
-            <ApplicationStepPanel step={4} currentStep={currentStep}>
+            <div className="space-y-6 border-t pt-6">
             <form.Field
               name="availability"
               validators={applicationFieldValidators.availability}
@@ -1412,9 +1542,11 @@ export function ApplicationForm() {
                 );
               }}
             </form.Field>
+            </div>
             </ApplicationStepPanel>
           </div>
         )}
+        </div>
 
         {submitState ? (
           <Alert
@@ -1430,8 +1562,7 @@ export function ApplicationForm() {
           </Alert>
         ) : null}
 
-        {isIntroStep ? null : (
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex shrink-0 flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"
             variant="outline"
@@ -1470,7 +1601,6 @@ export function ApplicationForm() {
             </Button>
           )}
         </div>
-        )}
       </FieldGroup>
     </form>
     </div>

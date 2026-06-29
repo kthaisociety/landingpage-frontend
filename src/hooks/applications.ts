@@ -21,6 +21,7 @@ async function submitGeneralApplication(
   appendTrimmed(formData, "lastName", input.lastName);
   appendTrimmed(formData, "email", input.email);
   appendTrimmed(formData, "gender", input.gender);
+  appendTrimmed(formData, "university", input.university);
   appendTrimmed(formData, "programme", input.programme);
   formData.append("graduationYear", String(input.graduationYear));
   appendTrimmed(formData, "linkedinUrl", input.linkedinUrl);
@@ -28,7 +29,11 @@ async function submitGeneralApplication(
     appendTrimmed(formData, "additionalLinks", link),
   );
   input.teams.forEach((team) => formData.append("teams", team));
-  appendTrimmed(formData, "teamInterestReason", input.teamInterestReason);
+  appendTrimmed(
+    formData,
+    "teamInterestReason",
+    `Interested in contributing through: ${input.teams.join(", ")}`,
+  );
   appendTrimmed(formData, "availability", input.availability);
   appendTrimmed(formData, "contribution", input.contribution);
   formData.append(

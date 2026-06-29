@@ -675,11 +675,7 @@ function ApplicationDetail({
         </div>
       ) : null}
 
-      <DetailText
-        label="Team interest"
-        value={application.team_interest_reason}
-      />
-      <DetailText label="Contribution" value={application.contribution} />
+      <DetailText label="Motivation" value={application.contribution} />
 
       <Button type="button" onClick={() => openResume(application)}>
         <Download className="mr-2 h-4 w-4" />
