@@ -33,9 +33,9 @@ export type ApplicationGender = (typeof APPLICATION_GENDERS)[number];
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
 export const APPLICATION_TEAM_LABELS: Record<ApplicationTeam, string> = {
-  Business: "Business Development Team",
-  Development: "AI Development Team",
-  Research: "AI Research Team",
+  Business: "Business Development",
+  Development: "AI Development",
+  Research: "AI Research",
   Growth: "Growth Team",
   IT: "IT Team",
 };

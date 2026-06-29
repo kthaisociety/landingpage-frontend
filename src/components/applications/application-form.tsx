@@ -632,7 +632,9 @@ function ApplicationIntro() {
               <AccordionTrigger className="py-3 hover:no-underline">
                 <div className="pr-2 text-left">
                   <span className="text-sm font-normal leading-6 text-muted-foreground">
-                    <span className="font-medium text-foreground">{team}:</span>{" "}
+                    <span className="font-medium text-foreground">
+                      {APPLICATION_TEAM_LABELS[team]}:
+                    </span>{" "}
                     {APPLICATION_TEAM_DESCRIPTIONS[team]}
                   </span>
                 </div>
