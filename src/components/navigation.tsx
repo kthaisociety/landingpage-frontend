@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 
 export function Navigation() {
   // const { user, isLoggedIn, logoutUser: logout } = useAuth();
-  const { isAuthenticated, isLoading, user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -344,10 +344,6 @@ export function Navigation() {
         )}
       </AnimatePresence>
     );
-  }
-
-  if(isLoading){
-    return(<div>Loading...</div>)
   }
 
   return (

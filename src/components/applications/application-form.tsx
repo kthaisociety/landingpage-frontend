@@ -519,13 +519,9 @@ function ApplicationStepPanel({
   currentStep: number;
   children: React.ReactNode;
 }) {
-  const isActive = currentStep === step;
+  if (currentStep !== step) return null;
 
-  return (
-    <div className={cn("space-y-5 lg:space-y-4", !isActive && "hidden")}>
-      {children}
-    </div>
-  );
+  return <div className="space-y-5 lg:space-y-4">{children}</div>;
 }
 
 function reorderTeams(
@@ -817,16 +813,13 @@ function ApplicationIntro() {
 
 export function ApplicationForm() {
   const submitApplication = useSubmitGeneralApplication();
-  const [initialValues] = useState<ApplicationFormValues>(() => ({
-    ...defaultApplicationValues,
-    teams: shuffledApplicationTeams(),
-  }));
   const [submitState, setSubmitState] = useState<SubmitState>(null);
   const [fileInputKey] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
   const [showStepErrors, setShowStepErrors] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
   const stepScrollRef = useRef<HTMLDivElement>(null);
+  const hasShuffledTeams = useRef(false);
 
   function scrollToFirstStepError() {
     window.requestAnimationFrame(() => {
@@ -872,7 +865,7 @@ export function ApplicationForm() {
   }
 
   const form = useForm({
-    defaultValues: initialValues,
+    defaultValues: defaultApplicationValues,
     validators: {
       onSubmit: applicationSchema,
     },
@@ -965,7 +958,9 @@ export function ApplicationForm() {
     const isValid = await validateCurrentStep();
     if (!isValid) return;
     setShowStepErrors(false);
-    setCurrentStep((step) => Math.min(step + 1, APPLICATION_STEPS.length - 1));
+    const nextStep = Math.min(currentStep + 1, APPLICATION_STEPS.length - 1);
+    if (nextStep === 3) shuffleTeamsIfNeeded();
+    setCurrentStep(nextStep);
   }
 
   function goToPreviousStep() {
@@ -974,9 +969,16 @@ export function ApplicationForm() {
     setCurrentStep((step) => Math.max(step - 1, 0));
   }
 
+  function shuffleTeamsIfNeeded() {
+    if (hasShuffledTeams.current) return;
+    hasShuffledTeams.current = true;
+    form.setFieldValue("teams", shuffledApplicationTeams());
+  }
+
   function goToStep(step: number) {
     setSubmitState(null);
     setShowStepErrors(false);
+    if (step === 3) shuffleTeamsIfNeeded();
     setCurrentStep(step);
   }
 

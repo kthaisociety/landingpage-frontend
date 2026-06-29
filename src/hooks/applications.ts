@@ -116,6 +116,20 @@ async function updateApplicationStatus({
   return response.json();
 }
 
+async function deleteApplication(id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as
+      | { error?: string }
+      | null;
+    throw new Error(data?.error || "Failed to delete application");
+  }
+}
+
 export function useSubmitGeneralApplication() {
   return useMutation({
     mutationFn: submitGeneralApplication,
@@ -140,6 +154,21 @@ export function useUpdateApplicationStatus() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to update application status.");
+    },
+  });
+}
+
+export function useDeleteApplication() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteApplication,
+    onSuccess: () => {
+      toast.success("Application deleted.");
+      queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete application.");
     },
   });
 }
