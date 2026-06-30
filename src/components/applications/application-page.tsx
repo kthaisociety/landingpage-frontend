@@ -3,7 +3,7 @@ import { ApplicationForm } from "@/components/applications/application-form";
 
 function ApplicationRecruitmentPoster() {
   return (
-    <aside className="relative h-[52svh] min-h-[24rem] overflow-hidden bg-secondary-black sm:h-[56svh] lg:h-screen lg:min-h-screen">
+    <aside className="relative h-[52svh] min-h-[24rem] overflow-hidden bg-secondary-black sm:h-[56svh] lg:mt-24 lg:h-[calc(100svh-6rem)] lg:min-h-0">
       <Image
         src="/recruitment-post.png"
         alt="KTH AI Society recruitment is open"
@@ -26,7 +26,7 @@ export function ApplicationPage() {
           </div>
         </section>
 
-        <div className="order-1 lg:order-2 lg:h-screen">
+        <div className="order-1 lg:order-2">
           <ApplicationRecruitmentPoster />
         </div>
       </div>

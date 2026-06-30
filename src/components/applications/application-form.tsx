@@ -12,6 +12,8 @@ import {
   ChevronRight,
   GripVertical,
   Loader2,
+  Plus,
+  X,
 } from "lucide-react";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -98,7 +100,7 @@ const APPLICATION_STEPS = [
   },
   {
     title: "About you",
-    description: "Contact and study information. We prioritize KTH students.",
+    description: "Contact and study information.",
     fields: [
       "firstName",
       "lastName",
@@ -212,15 +214,6 @@ function isAllowedResume(file: File | null) {
   return hasAllowedExtension && hasAllowedType;
 }
 
-function shuffledApplicationTeams() {
-  const teams = [...APPLICATION_TEAMS];
-  for (let index = teams.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [teams[index], teams[swapIndex]] = [teams[swapIndex], teams[index]];
-  }
-  return teams;
-}
-
 const applicationBaseSchema = z.object({
   firstName: z
     .string()
@@ -284,9 +277,10 @@ const applicationBaseSchema = z.object({
     .refine(isAllowedResume, "Resume must be a PDF, DOC, or DOCX file."),
   teams: z
     .array(z.enum(APPLICATION_TEAMS))
-    .length(APPLICATION_TEAMS.length, "Rank all five teams.")
+    .min(1, "Choose at least one team you would genuinely join.")
+    .max(APPLICATION_TEAMS.length, "Choose at most five teams.")
     .refine(
-      (teams) => new Set(teams).size === APPLICATION_TEAMS.length,
+      (teams) => new Set(teams).size === teams.length,
       "Each team can appear only once.",
     ),
   availability: z
@@ -405,7 +399,7 @@ const defaultApplicationValues: ApplicationFormValues = {
   lastName: "",
   email: "",
   gender: "",
-  university: "",
+  university: STOCKHOLM_UNIVERSITIES[0],
   universityOther: "",
   programme: "",
   programmeOther: "",
@@ -413,7 +407,7 @@ const defaultApplicationValues: ApplicationFormValues = {
   linkedinUrl: "",
   additionalLinksText: "",
   resume: null,
-  teams: [...APPLICATION_TEAMS],
+  teams: [],
   availability: "",
   contribution: "",
   dataRetentionConsent: false,
@@ -536,6 +530,10 @@ function reorderTeams(
 }
 
 function TeamPreferenceList({ teams }: { teams: ApplicationTeam[] }) {
+  if (teams.length === 0) {
+    return <span className="text-muted-foreground">No teams selected</span>;
+  }
+
   return (
     <ol className="space-y-1">
       {teams.map((team, index) => (
@@ -559,6 +557,9 @@ function TeamRankingInput({
   onBlur: () => void;
 }) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const availableTeams = APPLICATION_TEAMS.filter(
+    (team) => !value.includes(team),
+  );
 
   function commit(nextTeams: ApplicationTeam[]) {
     onChange(nextTeams);
@@ -576,6 +577,15 @@ function TeamRankingInput({
       return;
     }
     commit(reorderTeams(value, fromIndex, toIndex));
+  }
+
+  function addTeam(team: ApplicationTeam) {
+    if (value.includes(team)) return;
+    commit([...value, team]);
+  }
+
+  function removeTeam(team: ApplicationTeam) {
+    commit(value.filter((selectedTeam) => selectedTeam !== team));
   }
 
   function handleDragStart(
@@ -599,70 +609,130 @@ function TeamRankingInput({
 
   return (
     <div className="space-y-2" aria-invalid={invalid}>
-      {value.map((team, index) => {
-        const isDragging = draggedIndex === index;
-        return (
+      <div className="space-y-2">
+        {value.length > 0 ? (
+          value.map((team, index) => {
+            const isDragging = draggedIndex === index;
+            return (
+              <div
+                key={team}
+                draggable
+                onDragStart={(event) => handleDragStart(event, index)}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(event) => handleDrop(event, index)}
+                onDragEnd={() => setDraggedIndex(null)}
+                className={cn(
+                  "flex items-start gap-3 rounded-lg border bg-background p-3 text-sm transition-colors",
+                  "hover:bg-secondary/20",
+                  invalid && "border-destructive/50",
+                  isDragging && "opacity-60",
+                )}
+              >
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border bg-muted font-mono text-xs font-semibold">
+                    {index + 1}
+                  </span>
+                  <GripVertical
+                    className="size-4 cursor-grab text-muted-foreground active:cursor-grabbing"
+                    aria-hidden="true"
+                  />
+                </div>
+
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="font-medium">
+                    {APPLICATION_TEAM_LABELS[team]}
+                  </div>
+                  <div className="text-xs leading-5 text-muted-foreground">
+                    {APPLICATION_TEAM_DESCRIPTIONS[team]}
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={index === 0}
+                    aria-label={`Move ${APPLICATION_TEAM_LABELS[team]} up`}
+                    title="Move up"
+                    onClick={() => moveTeam(index, index - 1)}
+                  >
+                    <ArrowUp className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={index === value.length - 1}
+                    aria-label={`Move ${APPLICATION_TEAM_LABELS[team]} down`}
+                    title="Move down"
+                    onClick={() => moveTeam(index, index + 1)}
+                  >
+                    <ArrowDown className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Remove ${APPLICATION_TEAM_LABELS[team]}`}
+                    title="Remove"
+                    onClick={() => removeTeam(team)}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })
+        ) : (
           <div
-            key={team}
-            draggable
-            onDragStart={(event) => handleDragStart(event, index)}
-            onDragOver={(event) => {
-              event.preventDefault();
-              event.dataTransfer.dropEffect = "move";
-            }}
-            onDrop={(event) => handleDrop(event, index)}
-            onDragEnd={() => setDraggedIndex(null)}
             className={cn(
-              "flex items-start gap-3 rounded-lg border bg-background p-3 text-sm transition-colors",
-              "hover:bg-secondary/20",
+              "rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground",
               invalid && "border-destructive/50",
-              isDragging && "opacity-60",
             )}
           >
-            <div className="flex items-center gap-2 pt-0.5">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full border bg-muted font-mono text-xs font-semibold">
-                {index + 1}
-              </span>
-              <GripVertical
-                className="size-4 cursor-grab text-muted-foreground active:cursor-grabbing"
-                aria-hidden="true"
-              />
-            </div>
-
-            <div className="min-w-0 flex-1 space-y-0.5">
-              <div className="font-medium">{APPLICATION_TEAM_LABELS[team]}</div>
-              <div className="text-xs leading-5 text-muted-foreground">
-                {APPLICATION_TEAM_DESCRIPTIONS[team]}
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                disabled={index === 0}
-                aria-label={`Move ${APPLICATION_TEAM_LABELS[team]} up`}
-                title="Move up"
-                onClick={() => moveTeam(index, index - 1)}
-              >
-                <ArrowUp className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                disabled={index === value.length - 1}
-                aria-label={`Move ${APPLICATION_TEAM_LABELS[team]} down`}
-                title="Move down"
-                onClick={() => moveTeam(index, index + 1)}
-              >
-                <ArrowDown className="size-4" />
-              </Button>
-            </div>
+            Add the teams you would genuinely join, then rank them in order.
           </div>
-        );
-      })}
+        )}
+      </div>
+
+      {availableTeams.length > 0 ? (
+        <div className="space-y-2 pt-3">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Other teams
+          </p>
+          <div className="grid gap-2">
+            {availableTeams.map((team) => (
+              <div
+                key={team}
+                className="flex items-start gap-3 rounded-lg border bg-background p-3 text-sm"
+              >
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="font-medium">
+                    {APPLICATION_TEAM_LABELS[team]}
+                  </div>
+                  <div className="text-xs leading-5 text-muted-foreground">
+                    {APPLICATION_TEAM_DESCRIPTIONS[team]}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => addTeam(team)}
+                >
+                  <Plus className="size-4" />
+                  Add
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -819,7 +889,6 @@ export function ApplicationForm() {
   const [showStepErrors, setShowStepErrors] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
   const stepScrollRef = useRef<HTMLDivElement>(null);
-  const hasShuffledTeams = useRef(false);
   const pendingStepFocusRef = useRef(false);
 
   function focusFirstStepInput(stepIndex: number) {
@@ -981,7 +1050,6 @@ export function ApplicationForm() {
     if (!isValid) return;
     setShowStepErrors(false);
     const nextStep = Math.min(currentStep + 1, APPLICATION_STEPS.length - 1);
-    if (nextStep === 3) shuffleTeamsIfNeeded();
     pendingStepFocusRef.current = true;
     setCurrentStep(nextStep);
   }
@@ -992,16 +1060,9 @@ export function ApplicationForm() {
     setCurrentStep((step) => Math.max(step - 1, 0));
   }
 
-  function shuffleTeamsIfNeeded() {
-    if (hasShuffledTeams.current) return;
-    hasShuffledTeams.current = true;
-    form.setFieldValue("teams", shuffledApplicationTeams());
-  }
-
   function goToStep(step: number) {
     setSubmitState(null);
     setShowStepErrors(false);
-    if (step === 3) shuffleTeamsIfNeeded();
     setCurrentStep(step);
   }
 
@@ -1330,19 +1391,12 @@ export function ApplicationForm() {
                         }}
                         aria-invalid={isInvalid}
                       >
-                        <NativeSelectOption value="">
-                          Select your university
-                        </NativeSelectOption>
                         {STOCKHOLM_UNIVERSITIES.map((university) => (
                           <NativeSelectOption key={university} value={university}>
                             {university}
                           </NativeSelectOption>
                         ))}
                       </NativeSelect>
-                      <FieldDescription>
-                        We prioritize KTH students, but applicants from other
-                        Stockholm universities are also welcome.
-                      </FieldDescription>
                       {isInvalid ? (
                         <FieldError errors={field.state.meta.errors} />
                       ) : null}
@@ -1607,8 +1661,9 @@ export function ApplicationForm() {
                   <Field data-invalid={isInvalid}>
                     <FieldLabel>Rank your team preferences</FieldLabel>
                     <FieldDescription>
-                      Drag teams into your preferred order. Rank 1 is your first
-                      choice.
+                      Add only teams you would genuinely join, then rank them.
+                      Rank 1 is your first choice. Teams you do not add will not
+                      be included in your application.
                     </FieldDescription>
                     <TeamRankingInput
                       value={field.state.value}
