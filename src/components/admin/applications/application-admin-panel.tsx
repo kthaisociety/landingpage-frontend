@@ -668,6 +668,9 @@ function TeamPreferencesDetail({
     return (
       <div className="space-y-2">
         <h3 className="text-sm font-semibold">Team preferences</h3>
+        <p className="text-xs text-muted-foreground">
+          Omitted teams were not included in this application.
+        </p>
         <ol className="space-y-1 text-sm text-muted-foreground">
           {application.teams.map((team, index) => (
             <li key={team}>

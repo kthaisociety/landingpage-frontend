@@ -32,7 +32,7 @@ async function submitGeneralApplication(
   appendTrimmed(
     formData,
     "teamInterestReason",
-    `Ranked team preferences: ${input.teams.join(", ")}`,
+    `Ranked selected team preferences: ${input.teams.join(", ")}`,
   );
   appendTrimmed(formData, "availability", input.availability);
   appendTrimmed(formData, "contribution", input.contribution);
