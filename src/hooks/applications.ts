@@ -176,3 +176,33 @@ export function useDeleteApplication() {
 export function getApplicationResumeUrl(id: string) {
   return `${API_URL}/applications/admin/${id}/resume`;
 }
+
+export async function downloadApplicationResume(
+  application: Pick<GeneralApplication, "id" | "resume_file_name">,
+) {
+  try {
+    const response = await fetch(getApplicationResumeUrl(application.id), {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+      throw new Error(data?.error || "Failed to download resume");
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = application.resume_file_name || "resume";
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  } catch (error) {
+    toast.error(
+      error instanceof Error ? error.message : "Failed to download resume",
+    );
+  }
+}

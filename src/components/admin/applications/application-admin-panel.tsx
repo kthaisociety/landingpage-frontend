@@ -79,7 +79,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  getApplicationResumeUrl,
+  downloadApplicationResume,
   useAdminApplications,
   useDeleteApplication,
   useUpdateApplicationStatus,
@@ -149,10 +149,6 @@ function statusVariant(status: ApplicationStatus) {
 
 function applicationName(application: GeneralApplication) {
   return `${application.first_name} ${application.last_name}`.trim();
-}
-
-function openResume(application: GeneralApplication) {
-  window.open(getApplicationResumeUrl(application.id), "_blank", "noopener");
 }
 
 function csvCell(value: string | number | boolean | string[] | null | undefined) {
@@ -350,7 +346,9 @@ function ApplicationRowActions({
           <Eye className="mr-2 h-4 w-4" />
           View details
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => openResume(application)}>
+        <DropdownMenuItem
+          onClick={() => void downloadApplicationResume(application)}
+        >
           <Download className="mr-2 h-4 w-4" />
           Download resume
         </DropdownMenuItem>
@@ -787,7 +785,10 @@ function ApplicationDetail({
 
       <DetailText label="Motivation" value={application.contribution} />
 
-      <Button type="button" onClick={() => openResume(application)}>
+      <Button
+        type="button"
+        onClick={() => void downloadApplicationResume(application)}
+      >
         <Download className="mr-2 h-4 w-4" />
         Download resume
       </Button>
