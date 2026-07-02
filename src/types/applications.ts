@@ -36,8 +36,8 @@ export const APPLICATION_TEAM_LABELS: Record<ApplicationTeam, string> = {
   Business: "Business Development",
   Development: "AI Development",
   Research: "AI Research",
-  Growth: "Growth Team",
-  IT: "IT Team",
+  Growth: "Growth",
+  IT: "IT",
 };
 
 export const APPLICATION_TEAM_DESCRIPTIONS: Record<ApplicationTeam, string> = {
@@ -50,7 +50,7 @@ export const APPLICATION_TEAM_DESCRIPTIONS: Record<ApplicationTeam, string> = {
   Growth:
     "Drive member growth through social media, branding, growth initiatives, and internal events.",
   IT:
-    "Empower the AI society through high-quality digital infrastructure, custom internal tools, and a robust developer environment.",
+    "Empower the AI society through high-quality digital infrastructure, custom internal tools, and a robust developer platform.",
 };
 
 export const APPLICATION_TEAM_FULL_DESCRIPTIONS: Record<
@@ -65,6 +65,9 @@ export const APPLICATION_TEAM_FULL_DESCRIPTIONS: Record<
   ],
   IT: [
     "The IT team is responsible for the digital infrastructure that powers AI Society. Standard obligations include maintaining and improving the AI Society website, developing custom solutions, and enabling other teams by providing a developer platform and internal tools.",
+    "To achieve our mission, we are building out two specialized tracks: Software Engineering and Platform Engineering.",
+    "Our Software Engineers will be the core builders. You will be a highly code-oriented contributor responsible for maintaining and evolving our key digital assets. This involves direct work on the public website (built with Next.js), backend development (Golang, Postgres), and constructing custom tooling across various frameworks and languages. If you can dive deep into code, adapt quickly to new technologies, and exercise an independent engineering mindset, this track is for you.",
+    "Our Platform Engineers will take a broader, system-thinking approach. You will be deeply embedded with all the teams within AI Society, acting as workflow architects. Your mission is to map existing operational workflows, identify organizational bottlenecks and pain points, and design comprehensive solutions. This role requires versatility; the tools might range from light scripting workflows to integrating diverse services of all sorts. If you are passionate about optimizing processes, improving efficiency through systems thinking, and automating absolutely everything possible, you will thrive in this role.",
     "We are looking for students who enjoy building, experimenting, and learning by doing. You do not need to be an expert already, but you should be comfortable writing code, curious about how systems work, and motivated to ship useful projects together with others. The team is a good fit if you want hands-on experience with collaborative software development, resilient system design, and taking technical ideas from prototype to working product.",
   ],
   Research: [
