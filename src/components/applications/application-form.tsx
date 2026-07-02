@@ -251,11 +251,9 @@ const applicationBaseSchema = z.object({
   graduationYear: z
     .string()
     .trim()
-    .min(1, "Please select your expected graduation year.")
-    .refine((value) => /^\d{4}$/.test(value), "Use the format YYYY.")
     .refine(
       (value) => GRADUATION_YEAR_OPTIONS.includes(value),
-      `Graduation year must be between ${GRADUATION_YEAR_OPTIONS[0]} and ${GRADUATION_YEAR_OPTIONS[GRADUATION_YEAR_OPTIONS.length - 1]}.`,
+      "Please select your expected graduation year.",
     ),
   linkedinUrl: z
     .string()
@@ -375,7 +373,10 @@ const applicationFieldValidators = {
   firstName: { onBlur: applicationBaseSchema.shape.firstName },
   lastName: { onBlur: applicationBaseSchema.shape.lastName },
   email: { onBlur: applicationBaseSchema.shape.email },
-  gender: { onChange: applicationBaseSchema.shape.gender },
+  gender: {
+    onBlur: applicationBaseSchema.shape.gender,
+    onChange: applicationBaseSchema.shape.gender,
+  },
   university: { onChange: applicationBaseSchema.shape.university },
   universityOther: { onBlur: applicationBaseSchema.shape.universityOther },
   programme: { onBlur: applicationBaseSchema.shape.programme },
