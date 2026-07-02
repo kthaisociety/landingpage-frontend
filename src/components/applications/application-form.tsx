@@ -86,6 +86,11 @@ const STOCKHOLM_UNIVERSITIES = [
   "Södertörn University",
   OTHER_UNIVERSITY_VALUE,
 ] as const;
+const CURRENT_GRADUATION_YEAR = new Date().getFullYear();
+const GRADUATION_YEAR_OPTIONS = Array.from({ length: 6 }, (_, index) =>
+  // length: 6 is for 6 years from current year - suitable for people who are starting their 5-year studies this year
+  String(CURRENT_GRADUATION_YEAR + index),
+);
 const RESUME_MIME_TYPES = [
   "application/pdf",
   "application/msword",
@@ -246,12 +251,12 @@ const applicationBaseSchema = z.object({
   graduationYear: z
     .string()
     .trim()
-    .min(1, "Please enter your expected graduation year.")
+    .min(1, "Please select your expected graduation year.")
     .refine((value) => /^\d{4}$/.test(value), "Use the format YYYY.")
-    .refine((value) => {
-      const year = Number(value);
-      return year >= 2026 && year <= 2100;
-    }, "Graduation year must be 2026 or later."),
+    .refine(
+      (value) => GRADUATION_YEAR_OPTIONS.includes(value),
+      `Graduation year must be between ${GRADUATION_YEAR_OPTIONS[0]} and ${GRADUATION_YEAR_OPTIONS[GRADUATION_YEAR_OPTIONS.length - 1]}.`,
+    ),
   linkedinUrl: z
     .string()
     .trim()
@@ -1523,21 +1528,27 @@ export function ApplicationForm() {
                       <FieldLabel htmlFor={field.name}>
                         Expected graduation year
                       </FieldLabel>
-                      <Input
+                      <NativeSelect
                         id={field.name}
                         name={field.name}
-                        type="number"
-                        min={2026}
-                        max={2100}
-                        placeholder="2028"
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(event) => {
                           setSubmitState(null);
                           field.handleChange(event.target.value);
+                          field.handleBlur();
                         }}
                         aria-invalid={isInvalid}
-                      />
+                      >
+                        <NativeSelectOption value="">
+                          Select graduation year
+                        </NativeSelectOption>
+                        {GRADUATION_YEAR_OPTIONS.map((year) => (
+                          <NativeSelectOption key={year} value={year}>
+                            {year}
+                          </NativeSelectOption>
+                        ))}
+                      </NativeSelect>
                       {isInvalid ? (
                         <FieldError errors={field.state.meta.errors} />
                       ) : null}
