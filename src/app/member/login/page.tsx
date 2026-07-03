@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 import { API_URL } from "@/config";
@@ -119,8 +120,8 @@ export default function MemberLogin() {
             {/* Embedded Google Login Button */}
             <GoogleLoginButton />
 
-            <a
-              href="mailto:applications@kthais.com"
+            <Link
+              href="/apply"
               className="
                 inline-flex items-center justify-center
                 rounded-xl px-6 py-3
@@ -133,7 +134,7 @@ export default function MemberLogin() {
               "
             >
               Apply for Membership
-            </a>
+            </Link>
           </div>
         </div>
       </section>
