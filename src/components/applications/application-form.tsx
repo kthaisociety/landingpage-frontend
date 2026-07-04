@@ -412,6 +412,14 @@ function fieldIsInvalid(
   return (meta.isTouched || showErrors) && !meta.isValid;
 }
 
+function selectableOptionBoxClassName(isSelected: boolean, isInvalid = false) {
+  return cn(
+    "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-secondary/20",
+    isSelected && "border-primary/40 bg-primary/5",
+    isInvalid && !isSelected && "border-destructive/50",
+  );
+}
+
 const defaultApplicationValues: ApplicationFormValues = {
   firstName: "",
   lastName: "",
@@ -1718,10 +1726,9 @@ export function ApplicationForm() {
                         return (
                           <label
                             key={interest}
-                            className={cn(
-                              "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-secondary/20",
-                              isSelected && "border-primary/40 bg-primary/5",
-                              isInvalid && !isSelected && "border-destructive/50",
+                            className={selectableOptionBoxClassName(
+                              isSelected,
+                              isInvalid,
                             )}
                           >
                             <Checkbox
@@ -1797,10 +1804,8 @@ export function ApplicationForm() {
                       {APPLICATION_AVAILABILITY.map((availability) => (
                         <label
                           key={availability}
-                          className={cn(
-                            "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-secondary/20",
-                            field.state.value === availability &&
-                              "border-primary/40 bg-primary/5",
+                          className={selectableOptionBoxClassName(
+                            field.state.value === availability,
                           )}
                         >
                           <RadioGroupItem
