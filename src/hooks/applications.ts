@@ -29,6 +29,7 @@ async function submitGeneralApplication(
     appendTrimmed(formData, "additionalLinks", link),
   );
   input.teams.forEach((team) => formData.append("teams", team));
+  input.interests.forEach((interest) => formData.append("interests", interest));
   appendTrimmed(
     formData,
     "teamInterestReason",

@@ -206,6 +206,7 @@ function exportApplicationsCsv({
     "Additional links",
     "Resume file",
     "Team interest reason",
+    "Areas of interest",
     "Contribution",
   ];
   const rows = applications.map((application) => [
@@ -224,6 +225,7 @@ function exportApplicationsCsv({
     application.additional_links ?? [],
     application.resume_file_name,
     application.team_interest_reason,
+    application.interests ?? [],
     application.contribution,
   ]);
   const csv = [headers, ...rows]
@@ -253,6 +255,7 @@ function getApplicationSearchText(application: GeneralApplication) {
     application.status,
     ...application.teams,
     ...application.teams.map((team) => APPLICATION_TEAM_LABELS[team]),
+    ...(application.interests ?? []),
   ]
     .join(" ")
     .toLowerCase();
@@ -763,6 +766,19 @@ function ApplicationDetail({
       </div>
 
       <TeamPreferencesDetail application={application} />
+
+      {application.interests?.length ? (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Areas of interest</h3>
+          <div className="flex flex-wrap gap-1">
+            {application.interests.map((interest) => (
+              <Badge key={interest} variant="outline">
+                {interest}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {application.additional_links?.length ? (
         <div className="space-y-2">
