@@ -1715,7 +1715,7 @@ export function ApplicationForm() {
                   <Field data-invalid={isInvalid}>
                     <FieldLabel>Areas of interest</FieldLabel>
                     <FieldDescription>
-                      Select any industries or areas you&apos;d like to explore.
+                      Select at least one industry or area you&apos;d like to explore.
                     </FieldDescription>
                     <div
                       className="grid gap-3 sm:grid-cols-2"
