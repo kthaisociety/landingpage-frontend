@@ -54,6 +54,26 @@ export function getGraduationYearOptions(): string[] {
   return Array.from({ length: 6 }, (_, index) => String(currentYear + index));
 }
 
+// Shared by the application and newsletter forms, which both pair a select
+// with an "Other" free-text fallback for university/programme.
+export function resolveUniversity(values: {
+  university: string;
+  universityOther: string;
+}): string {
+  return values.university === OTHER_UNIVERSITY_VALUE
+    ? values.universityOther.trim()
+    : values.university.trim();
+}
+
+export function resolveProgramme(values: {
+  programme: string;
+  programmeOther: string;
+}): string {
+  return values.programme === OTHER_PROGRAMME_VALUE
+    ? values.programmeOther.trim()
+    : values.programme.trim();
+}
+
 export type ApplicationTeam = (typeof APPLICATION_TEAMS)[number];
 export type ApplicationAvailability = (typeof APPLICATION_AVAILABILITY)[number];
 export type ApplicationGender = (typeof APPLICATION_GENDERS)[number];

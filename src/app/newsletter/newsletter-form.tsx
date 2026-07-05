@@ -34,8 +34,14 @@ import {
   OTHER_UNIVERSITY_VALUE,
   UNIVERSITIES,
   getGraduationYearOptions,
+  resolveUniversity,
+  resolveProgramme,
   type ApplicationGender,
 } from "@/types/applications"
+import {
+  fieldIsInvalid,
+  selectableOptionBoxClassName,
+} from "@/lib/form-field-utils"
 import { useSubmitNewsletterSubscription } from "@/hooks/newsletter"
 
 const GRADUATION_YEAR_OPTIONS = getGraduationYearOptions()
@@ -129,30 +135,6 @@ const newsletterSchema = z
       })
     }
   })
-
-function resolveUniversity(values: Pick<NewsletterFormValues, "university" | "universityOther">) {
-  return values.university === OTHER_UNIVERSITY_VALUE
-    ? values.universityOther.trim()
-    : values.university.trim()
-}
-
-function resolveProgramme(values: Pick<NewsletterFormValues, "programme" | "programmeOther">) {
-  return values.programme === OTHER_PROGRAMME_VALUE
-    ? values.programmeOther.trim()
-    : values.programme.trim()
-}
-
-function fieldIsInvalid(meta: { isTouched: boolean; isValid: boolean }) {
-  return meta.isTouched && !meta.isValid
-}
-
-function selectableOptionBoxClassName(isSelected: boolean, isInvalid = false) {
-  return cn(
-    "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-secondary/20",
-    isSelected && "border-primary/40 bg-primary/5",
-    isInvalid && !isSelected && "border-destructive/50",
-  )
-}
 
 const defaultNewsletterValues: NewsletterFormValues = {
   firstName: "",

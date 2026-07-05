@@ -61,7 +61,13 @@ import {
   OTHER_PROGRAMME_VALUE,
   UNIVERSITIES,
   getGraduationYearOptions,
+  resolveUniversity,
+  resolveProgramme,
 } from "@/types/applications";
+import {
+  fieldIsInvalid,
+  selectableOptionBoxClassName,
+} from "@/lib/form-field-utils";
 
 const LINKEDIN_HANDLE_PREFIX = "linkedin.com/in/";
 const LINKEDIN_HANDLE_PATTERN = /^[A-Za-z0-9_-]{3,100}$/;
@@ -157,18 +163,6 @@ type ApplicationFormValues = {
   dataRetentionConsent: boolean;
   newsletterOptIn: boolean;
 };
-
-function resolveUniversity(values: Pick<ApplicationFormValues, "university" | "universityOther">) {
-  return values.university === OTHER_UNIVERSITY_VALUE
-    ? values.universityOther.trim()
-    : values.university.trim();
-}
-
-function resolveProgramme(values: Pick<ApplicationFormValues, "programme" | "programmeOther">) {
-  return values.programme === OTHER_PROGRAMME_VALUE
-    ? values.programmeOther.trim()
-    : values.programme.trim();
-}
 
 function normalizeWebsiteLink(value: string) {
   const trimmed = value.trim();
@@ -400,21 +394,6 @@ const applicationFieldValidators = {
     onChange: applicationBaseSchema.shape.newsletterOptIn,
   },
 };
-
-function fieldIsInvalid(
-  meta: { isTouched: boolean; isValid: boolean },
-  showErrors = false,
-) {
-  return (meta.isTouched || showErrors) && !meta.isValid;
-}
-
-function selectableOptionBoxClassName(isSelected: boolean, isInvalid = false) {
-  return cn(
-    "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-secondary/20",
-    isSelected && "border-primary/40 bg-primary/5",
-    isInvalid && !isSelected && "border-destructive/50",
-  );
-}
 
 const defaultApplicationValues: ApplicationFormValues = {
   firstName: "",
