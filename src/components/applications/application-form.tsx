@@ -57,9 +57,17 @@ import {
   type ApplicationTeam,
   APPLICATION_INTERESTS,
   type ApplicationInterest,
+  OTHER_UNIVERSITY_VALUE,
+  OTHER_PROGRAMME_VALUE,
+  UNIVERSITIES,
+  getGraduationYearOptions,
+  resolveUniversity,
+  resolveProgramme,
 } from "@/types/applications";
-
-const OTHER_PROGRAMME_VALUE = "Other / not listed";
+import {
+  fieldIsInvalid,
+  selectableOptionBoxClassName,
+} from "@/lib/form-field-utils";
 
 const LINKEDIN_HANDLE_PREFIX = "linkedin.com/in/";
 const LINKEDIN_HANDLE_PATTERN = /^[A-Za-z0-9_-]{3,100}$/;
@@ -79,20 +87,8 @@ function buildLinkedInUrl(handle: string) {
 
 const MAX_RESUME_BYTES = 10 * 1024 * 1024;
 const RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"] as const;
-const OTHER_UNIVERSITY_VALUE = "Other";
-const STOCKHOLM_UNIVERSITIES = [
-  "KTH Royal Institute of Technology",
-  "Stockholm University",
-  "Stockholm School of Economics",
-  "Karolinska Institutet",
-  "Södertörn University",
-  OTHER_UNIVERSITY_VALUE,
-] as const;
-const CURRENT_GRADUATION_YEAR = new Date().getFullYear();
-const GRADUATION_YEAR_OPTIONS = Array.from({ length: 6 }, (_, index) =>
-  // length: 6 is for 6 years from current year - suitable for people who are starting their 5-year studies this year
-  String(CURRENT_GRADUATION_YEAR + index),
-);
+const STOCKHOLM_UNIVERSITIES = UNIVERSITIES;
+const GRADUATION_YEAR_OPTIONS = getGraduationYearOptions();
 const RESUME_MIME_TYPES = [
   "application/pdf",
   "application/msword",
@@ -165,19 +161,8 @@ type ApplicationFormValues = {
   availability: ApplicationAvailability | "";
   contribution: string;
   dataRetentionConsent: boolean;
+  newsletterOptIn: boolean;
 };
-
-function resolveUniversity(values: Pick<ApplicationFormValues, "university" | "universityOther">) {
-  return values.university === OTHER_UNIVERSITY_VALUE
-    ? values.universityOther.trim()
-    : values.university.trim();
-}
-
-function resolveProgramme(values: Pick<ApplicationFormValues, "programme" | "programmeOther">) {
-  return values.programme === OTHER_PROGRAMME_VALUE
-    ? values.programmeOther.trim()
-    : values.programme.trim();
-}
 
 function normalizeWebsiteLink(value: string) {
   const trimmed = value.trim();
@@ -310,6 +295,7 @@ const applicationBaseSchema = z.object({
       (value) => value,
       "You need to consent to data collection and storage before submitting.",
     ),
+  newsletterOptIn: z.boolean(),
 });
 
 function validateUniversityOther(
@@ -377,6 +363,7 @@ const stepSchemas = [
   }),
   applicationBaseSchema.pick({
     dataRetentionConsent: true,
+    newsletterOptIn: true,
   }),
 ] as const;
 
@@ -403,22 +390,10 @@ const applicationFieldValidators = {
   dataRetentionConsent: {
     onChange: applicationBaseSchema.shape.dataRetentionConsent,
   },
+  newsletterOptIn: {
+    onChange: applicationBaseSchema.shape.newsletterOptIn,
+  },
 };
-
-function fieldIsInvalid(
-  meta: { isTouched: boolean; isValid: boolean },
-  showErrors = false,
-) {
-  return (meta.isTouched || showErrors) && !meta.isValid;
-}
-
-function selectableOptionBoxClassName(isSelected: boolean, isInvalid = false) {
-  return cn(
-    "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-secondary/20",
-    isSelected && "border-primary/40 bg-primary/5",
-    isInvalid && !isSelected && "border-destructive/50",
-  );
-}
 
 const defaultApplicationValues: ApplicationFormValues = {
   firstName: "",
@@ -438,6 +413,7 @@ const defaultApplicationValues: ApplicationFormValues = {
   availability: "",
   contribution: "",
   dataRetentionConsent: false,
+  newsletterOptIn: false,
 };
 
 function ApplicationWizardProgress({
@@ -1026,6 +1002,7 @@ export function ApplicationForm() {
           availability: parsed.data.availability,
           contribution: parsed.data.contribution,
           dataRetentionConsent: parsed.data.dataRetentionConsent,
+          newsletterOptIn: parsed.data.newsletterOptIn,
         });
         setSubmitState({
           type: "success",
@@ -1266,6 +1243,34 @@ export function ApplicationForm() {
                         </Field>
                       );
                     }}
+                  </form.Field>
+
+                  <form.Field name="newsletterOptIn">
+                    {(field) => (
+                      <Field>
+                        <label className="flex items-start gap-3 rounded-lg border p-4 text-sm">
+                          <Checkbox
+                            className="mt-0.5"
+                            checked={field.state.value}
+                            onCheckedChange={(value) => {
+                              setSubmitState(null);
+                              field.handleChange(Boolean(value));
+                            }}
+                          />
+                          <span className="space-y-1">
+                            <span className="block font-medium">
+                              Also sign me up for the KTH AI Society
+                              newsletter.
+                            </span>
+                            <span className="block text-muted-foreground">
+                              Optional. We&apos;ll use the details above to
+                              send you relevant updates, and you can
+                              unsubscribe at any time.
+                            </span>
+                          </span>
+                        </label>
+                      </Field>
+                    )}
                   </form.Field>
                 </div>
               );

@@ -36,6 +36,44 @@ export const APPLICATION_STATUSES = [
   "rejected",
 ] as const;
 
+// Shared with the newsletter signup form so both flows offer the same options.
+export const OTHER_PROGRAMME_VALUE = "Other / not listed";
+export const OTHER_UNIVERSITY_VALUE = "Other";
+export const UNIVERSITIES = [
+  "KTH Royal Institute of Technology",
+  "Stockholm University",
+  "Stockholm School of Economics",
+  "Karolinska Institutet",
+  "Södertörn University",
+  OTHER_UNIVERSITY_VALUE,
+] as const;
+
+export function getGraduationYearOptions(): string[] {
+  const currentYear = new Date().getFullYear();
+  // 6 years out covers students starting a 5-year programme this year.
+  return Array.from({ length: 6 }, (_, index) => String(currentYear + index));
+}
+
+// Shared by the application and newsletter forms, which both pair a select
+// with an "Other" free-text fallback for university/programme.
+export function resolveUniversity(values: {
+  university: string;
+  universityOther: string;
+}): string {
+  return values.university === OTHER_UNIVERSITY_VALUE
+    ? values.universityOther.trim()
+    : values.university.trim();
+}
+
+export function resolveProgramme(values: {
+  programme: string;
+  programmeOther: string;
+}): string {
+  return values.programme === OTHER_PROGRAMME_VALUE
+    ? values.programmeOther.trim()
+    : values.programme.trim();
+}
+
 export type ApplicationTeam = (typeof APPLICATION_TEAMS)[number];
 export type ApplicationAvailability = (typeof APPLICATION_AVAILABILITY)[number];
 export type ApplicationGender = (typeof APPLICATION_GENDERS)[number];
@@ -140,6 +178,7 @@ export type CreateGeneralApplicationInput = {
   availability: ApplicationAvailability;
   contribution: string;
   dataRetentionConsent: boolean;
+  newsletterOptIn: boolean;
 };
 
 export type CreateGeneralApplicationResponse = {
