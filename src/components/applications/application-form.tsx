@@ -55,6 +55,8 @@ import {
   APPLICATION_GENDERS,
   type ApplicationGender,
   type ApplicationTeam,
+  APPLICATION_INTERESTS,
+  type ApplicationInterest,
 } from "@/types/applications";
 
 const OTHER_PROGRAMME_VALUE = "Other / not listed";
@@ -120,8 +122,8 @@ const APPLICATION_STEPS = [
   },
   {
     title: "Profile",
-    description: "Links and resume.",
-    fields: ["linkedinUrl", "additionalLinksText", "resume"] as const,
+    description: "Links, resume, and interests.",
+    fields: ["linkedinUrl", "additionalLinksText", "resume", "interests"] as const,
   },
   {
     title: "Your fit",
@@ -158,6 +160,7 @@ type ApplicationFormValues = {
   linkedinUrl: string;
   additionalLinksText: string;
   resume: File | null;
+  interests: ApplicationInterest[];
   teams: ApplicationTeam[];
   availability: ApplicationAvailability | "";
   contribution: string;
@@ -278,6 +281,13 @@ const applicationBaseSchema = z.object({
       "Resume must be at most 10 MiB.",
     )
     .refine(isAllowedResume, "Resume must be a PDF, DOC, or DOCX file."),
+  interests: z
+    .array(z.enum(APPLICATION_INTERESTS))
+    .min(1, "Choose at least one area of interest.")
+    .refine(
+      (interests) => new Set(interests).size === interests.length,
+      "Each interest can appear only once.",
+    ),
   teams: z
     .array(z.enum(APPLICATION_TEAMS))
     .min(1, "Choose at least one team you would genuinely join.")
@@ -358,6 +368,7 @@ const stepSchemas = [
     linkedinUrl: true,
     additionalLinksText: true,
     resume: true,
+    interests: true,
   }),
   applicationBaseSchema.pick({
     teams: true,
@@ -385,6 +396,7 @@ const applicationFieldValidators = {
   linkedinUrl: { onBlur: applicationBaseSchema.shape.linkedinUrl },
   additionalLinksText: { onBlur: applicationBaseSchema.shape.additionalLinksText },
   resume: { onBlur: applicationBaseSchema.shape.resume },
+  interests: { onChange: applicationBaseSchema.shape.interests },
   teams: { onChange: applicationBaseSchema.shape.teams },
   availability: { onChange: applicationBaseSchema.shape.availability },
   contribution: { onBlur: applicationBaseSchema.shape.contribution },
@@ -400,6 +412,14 @@ function fieldIsInvalid(
   return (meta.isTouched || showErrors) && !meta.isValid;
 }
 
+function selectableOptionBoxClassName(isSelected: boolean, isInvalid = false) {
+  return cn(
+    "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-secondary/20",
+    isSelected && "border-primary/40 bg-primary/5",
+    isInvalid && !isSelected && "border-destructive/50",
+  );
+}
+
 const defaultApplicationValues: ApplicationFormValues = {
   firstName: "",
   lastName: "",
@@ -413,6 +433,7 @@ const defaultApplicationValues: ApplicationFormValues = {
   linkedinUrl: "",
   additionalLinksText: "",
   resume: null,
+  interests: [],
   teams: [],
   availability: "",
   contribution: "",
@@ -1000,6 +1021,7 @@ export function ApplicationForm() {
           linkedinUrl: buildLinkedInUrl(parsed.data.linkedinUrl),
           additionalLinks: splitAdditionalLinks(parsed.data.additionalLinksText),
           resume: parsed.data.resume,
+          interests: parsed.data.interests,
           teams: parsed.data.teams,
           availability: parsed.data.availability,
           contribution: parsed.data.contribution,
@@ -1025,7 +1047,11 @@ export function ApplicationForm() {
   async function touchAndValidateStepFields(fields: readonly ApplicationStepField[]) {
     for (const fieldName of fields) {
       await form.validateField(fieldName, "blur");
-      if (fieldName === "teams" || fieldName === "availability") {
+      if (
+        fieldName === "teams" ||
+        fieldName === "availability" ||
+        fieldName === "interests"
+      ) {
         await form.validateField(fieldName, "change");
       }
     }
@@ -1174,6 +1200,14 @@ export function ApplicationForm() {
                     <ReviewItem
                       label="Resume"
                       value={values.resume?.name ?? "No file uploaded"}
+                    />
+                    <ReviewItem
+                      label="Areas of interest"
+                      value={
+                        values.interests.length > 0
+                          ? values.interests.join(", ")
+                          : "None selected"
+                      }
                     />
                   </ReviewSection>
 
@@ -1660,6 +1694,60 @@ export function ApplicationForm() {
                 );
               }}
             </form.Field>
+
+            <form.Field
+              name="interests"
+              validators={applicationFieldValidators.interests}
+            >
+              {(field) => {
+                const isInvalid = fieldIsInvalid(field.state.meta, showStepErrors);
+                function toggleInterest(interest: ApplicationInterest) {
+                  setSubmitState(null);
+                  const isSelected = field.state.value.includes(interest);
+                  field.handleChange(
+                    isSelected
+                      ? field.state.value.filter((value) => value !== interest)
+                      : [...field.state.value, interest],
+                  );
+                  field.handleBlur();
+                }
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel>Areas of interest</FieldLabel>
+                    <FieldDescription>
+                      Select at least one industry or area you&apos;d like to explore.
+                    </FieldDescription>
+                    <div
+                      className="grid gap-3 sm:grid-cols-2"
+                      aria-invalid={isInvalid}
+                    >
+                      {APPLICATION_INTERESTS.map((interest) => {
+                        const isSelected = field.state.value.includes(interest);
+                        return (
+                          <label
+                            key={interest}
+                            className={selectableOptionBoxClassName(
+                              isSelected,
+                              isInvalid,
+                            )}
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleInterest(interest)}
+                              aria-invalid={isInvalid}
+                            />
+                            <span className="font-medium">{interest}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {isInvalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : null}
+                  </Field>
+                );
+              }}
+            </form.Field>
             </ApplicationStepPanel>
 
             <ApplicationStepPanel step={3} currentStep={currentStep}>
@@ -1716,10 +1804,8 @@ export function ApplicationForm() {
                       {APPLICATION_AVAILABILITY.map((availability) => (
                         <label
                           key={availability}
-                          className={cn(
-                            "flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-secondary/20",
-                            field.state.value === availability &&
-                              "border-primary/40 bg-primary/5",
+                          className={selectableOptionBoxClassName(
+                            field.state.value === availability,
                           )}
                         >
                           <RadioGroupItem

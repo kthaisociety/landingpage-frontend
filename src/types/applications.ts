@@ -20,6 +20,15 @@ export const APPLICATION_GENDERS = [
   "Other",
 ] as const;
 
+export const APPLICATION_INTERESTS = [
+  "Startups & Venture Creation",
+  "Venture Capital & Private Equity",
+  "AI Consulting & Implementation",
+  "Healthcare & Biotech",
+  "Consumer Tech & Retail",
+  "Finance & Investment",
+] as const;
+
 export const APPLICATION_STATUSES = [
   "pending",
   "reviewed",
@@ -30,6 +39,7 @@ export const APPLICATION_STATUSES = [
 export type ApplicationTeam = (typeof APPLICATION_TEAMS)[number];
 export type ApplicationAvailability = (typeof APPLICATION_AVAILABILITY)[number];
 export type ApplicationGender = (typeof APPLICATION_GENDERS)[number];
+export type ApplicationInterest = (typeof APPLICATION_INTERESTS)[number];
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
 export const APPLICATION_TEAM_LABELS: Record<ApplicationTeam, string> = {
@@ -105,6 +115,7 @@ export type GeneralApplication = {
   teams: ApplicationTeam[];
   team_preferences_ranked: boolean;
   team_interest_reason: string;
+  interests: ApplicationInterest[];
   availability: ApplicationAvailability;
   contribution: string;
   data_retention_consent: boolean;
@@ -125,6 +136,7 @@ export type CreateGeneralApplicationInput = {
   additionalLinks: string[];
   resume: File;
   teams: ApplicationTeam[];
+  interests: ApplicationInterest[];
   availability: ApplicationAvailability;
   contribution: string;
   dataRetentionConsent: boolean;
