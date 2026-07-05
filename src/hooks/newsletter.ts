@@ -7,7 +7,7 @@ import type {
 
 async function submitNewsletterSubscription(
   input: CreateNewsletterSubscriptionInput,
-): Promise<CreateNewsletterSubscriptionResponse> {
+): Promise<CreateNewsletterSubscriptionResponse | null> {
   const response = await fetch(`${API_URL}/newsletter/subscribe`, {
     method: "POST",
     credentials: "include",
@@ -38,7 +38,7 @@ async function submitNewsletterSubscription(
     throw new Error(message);
   }
 
-  return data as CreateNewsletterSubscriptionResponse;
+  return data as CreateNewsletterSubscriptionResponse | null;
 }
 
 export function useSubmitNewsletterSubscription() {

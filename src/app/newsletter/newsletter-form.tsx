@@ -159,7 +159,7 @@ const defaultNewsletterValues: NewsletterFormValues = {
   lastName: "",
   email: "",
   gender: "",
-  university: UNIVERSITIES[0],
+  university: "",
   universityOther: "",
   programme: "",
   programmeOther: "",
@@ -380,6 +380,9 @@ function NewsletterFormFields({
                     }}
                     aria-invalid={isInvalid}
                   >
+                    <NativeSelectOption value="">
+                      Select your university
+                    </NativeSelectOption>
                     {UNIVERSITIES.map((university) => (
                       <NativeSelectOption key={university} value={university}>
                         {university}
@@ -472,7 +475,7 @@ function NewsletterFormFields({
                             setSubmitState(null)
                             field.handleChange(event.target.value)
                           }}
-                          placeholder="Your university and degree"
+                          placeholder="Enter your programme or degree"
                           aria-invalid={isInvalid}
                         />
                         {isInvalid ? (
