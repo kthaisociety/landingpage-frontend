@@ -520,6 +520,7 @@ function NewsletterFormFields({
                 onBlur={field.handleBlur}
                 isInvalid={isInvalid}
                 errors={isInvalid ? field.state.meta.errors : undefined}
+                description="Select at least one industry or area that you are interested in."
               />
             )
           }}

@@ -1718,6 +1718,7 @@ export function ApplicationForm() {
                     onBlur={field.handleBlur}
                     isInvalid={isInvalid}
                     errors={isInvalid ? field.state.meta.errors : undefined}
+                    description="Select at least one industry or area you'd like to explore."
                   />
                 );
               }}

@@ -17,6 +17,7 @@ type InterestsFieldProps = {
   onBlur?: () => void;
   isInvalid?: boolean;
   errors?: Array<{ message?: string } | undefined>;
+  description?: string;
 };
 
 export function InterestsField({
@@ -26,6 +27,7 @@ export function InterestsField({
   onBlur,
   isInvalid = false,
   errors,
+  description = "Select at least one industry or area you'd like to explore.",
 }: InterestsFieldProps) {
   const [open, setOpen] = useState(false);
 
@@ -40,9 +42,7 @@ export function InterestsField({
   return (
     <Field data-invalid={isInvalid}>
       <FieldLabel htmlFor={id}>Areas of interest</FieldLabel>
-      <FieldDescription>
-        Select at least one industry or area you&apos;d like to explore.
-      </FieldDescription>
+      <FieldDescription>{description}</FieldDescription>
       <Popover
         open={open}
         onOpenChange={(nextOpen) => {
