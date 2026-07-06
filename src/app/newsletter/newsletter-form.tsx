@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/input-group"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { ProgrammeSelect } from "@/components/member/programme-select"
+import { InterestsField } from "@/components/applications/interests-field"
 import {
   APPLICATION_GENDERS,
   APPLICATION_INTERESTS,
@@ -38,10 +39,7 @@ import {
   resolveProgramme,
   type ApplicationGender,
 } from "@/types/applications"
-import {
-  fieldIsInvalid,
-  selectableOptionBoxClassName,
-} from "@/lib/form-field-utils"
+import { fieldIsInvalid } from "@/lib/form-field-utils"
 import { useSubmitNewsletterSubscription } from "@/hooks/newsletter"
 
 const GRADUATION_YEAR_OPTIONS = getGraduationYearOptions()
@@ -511,45 +509,19 @@ function NewsletterFormFields({
         <form.Field name="interests">
           {(field) => {
             const isInvalid = fieldIsInvalid(field.state.meta)
-            const toggleInterest = (interest: (typeof APPLICATION_INTERESTS)[number]) => {
-              setSubmitState(null)
-              const isSelected = field.state.value.includes(interest)
-              field.handleChange(
-                isSelected
-                  ? field.state.value.filter((value) => value !== interest)
-                  : [...field.state.value, interest],
-              )
-              field.handleBlur()
-            }
             return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel>Areas of interest</FieldLabel>
-                <FieldDescription>
-                  Select at least one industry or area you&apos;d like to hear
-                  about.
-                </FieldDescription>
-                <div className="grid gap-3 sm:grid-cols-2" aria-invalid={isInvalid}>
-                  {APPLICATION_INTERESTS.map((interest) => {
-                    const isSelected = field.state.value.includes(interest)
-                    return (
-                      <label
-                        key={interest}
-                        className={selectableOptionBoxClassName(isSelected, isInvalid)}
-                      >
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleInterest(interest)}
-                          aria-invalid={isInvalid}
-                        />
-                        <span className="font-medium">{interest}</span>
-                      </label>
-                    )
-                  })}
-                </div>
-                {isInvalid ? (
-                  <FieldError errors={field.state.meta.errors} />
-                ) : null}
-              </Field>
+              <InterestsField
+                id={field.name}
+                value={field.state.value}
+                onChange={(value) => {
+                  setSubmitState(null)
+                  field.handleChange(value)
+                }}
+                onBlur={field.handleBlur}
+                isInvalid={isInvalid}
+                errors={isInvalid ? field.state.meta.errors : undefined}
+                description="Select at least one industry or area that you are interested in."
+              />
             )
           }}
         </form.Field>
@@ -693,8 +665,8 @@ export function NewsletterForm({
       </section>
 
       <div className="px-4 sm:px-6 md:px-8 lg:px-8 xl:px-8">
-        <section className="relative z-20 mx-auto -mt-24 mb-24 flex max-w-7xl flex-col items-center gap-8 rounded-3xl border bg-neutral-50 p-4 text-center shadow-lg md:p-8">
-          <div className="flex w-full max-w-3xl flex-col items-center gap-2">
+        <section className="relative z-20 mx-auto -mt-24 mb-24 flex max-w-7xl flex-col gap-8 rounded-3xl border bg-neutral-50 p-4 shadow-lg md:p-8">
+          <div className="flex max-w-3xl flex-col gap-2">
             <div>
               <Link
                 href="/"
@@ -713,9 +685,7 @@ export function NewsletterForm({
             </p>
           </div>
 
-          <div className="flex w-full justify-center text-left">
-            <NewsletterFormFields className={cn("w-full max-w-4xl", className)} />
-          </div>
+          <NewsletterFormFields className={cn("max-w-2xl", className)} />
         </section>
       </div>
     </div>
