@@ -19,6 +19,7 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { ProgrammeSelect } from "@/components/member/programme-select";
 import { ResumeUploadField } from "@/components/applications/resume-upload-field";
+import { InterestsField } from "@/components/applications/interests-field";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1706,50 +1707,18 @@ export function ApplicationForm() {
             >
               {(field) => {
                 const isInvalid = fieldIsInvalid(field.state.meta, showStepErrors);
-                function toggleInterest(interest: ApplicationInterest) {
-                  setSubmitState(null);
-                  const isSelected = field.state.value.includes(interest);
-                  field.handleChange(
-                    isSelected
-                      ? field.state.value.filter((value) => value !== interest)
-                      : [...field.state.value, interest],
-                  );
-                  field.handleBlur();
-                }
                 return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel>Areas of interest</FieldLabel>
-                    <FieldDescription>
-                      Select at least one industry or area you&apos;d like to explore.
-                    </FieldDescription>
-                    <div
-                      className="grid gap-3 sm:grid-cols-2"
-                      aria-invalid={isInvalid}
-                    >
-                      {APPLICATION_INTERESTS.map((interest) => {
-                        const isSelected = field.state.value.includes(interest);
-                        return (
-                          <label
-                            key={interest}
-                            className={selectableOptionBoxClassName(
-                              isSelected,
-                              isInvalid,
-                            )}
-                          >
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => toggleInterest(interest)}
-                              aria-invalid={isInvalid}
-                            />
-                            <span className="font-medium">{interest}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                    {isInvalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
+                  <InterestsField
+                    id={field.name}
+                    value={field.state.value}
+                    onChange={(value) => {
+                      setSubmitState(null);
+                      field.handleChange(value);
+                    }}
+                    onBlur={field.handleBlur}
+                    isInvalid={isInvalid}
+                    errors={isInvalid ? field.state.meta.errors : undefined}
+                  />
                 );
               }}
             </form.Field>
