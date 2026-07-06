@@ -21,12 +21,18 @@ export const APPLICATION_GENDERS = [
 ] as const;
 
 export const APPLICATION_INTERESTS = [
-  "Startups & Venture Creation",
+  "Machine Learning",
+  "Robotics & Autonomous Systems",
+  "Computer Vision & Graphics",
+  "Natural Language Processing",
+  "Data Science & Big Data Infrastructure",
+  "Embedded Systems & Edge AI",
+  "Cybersecurity & AI Safety Engineering",
+  "AI Research & Theoretical ML",
+  "Bioinformatics & Computational Biology",
+  "Quantitative Finance & Investment",
   "Venture Capital & Private Equity",
-  "AI Consulting & Implementation",
-  "Healthcare & Biotech",
-  "Consumer Tech & Retail",
-  "Finance & Investment",
+  "Startups & Venture Creation",
 ] as const;
 
 export const APPLICATION_STATUSES = [
