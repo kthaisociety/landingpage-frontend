@@ -481,11 +481,12 @@ export interface JobPostInput {
 export interface SmallJobListing {
   id: string;
   title: string;
-  company: string; 
-  companyId: string; 
+  company: string;
+  companyId: string;
   salary: string;
-  jobType: string; 
-  location: string; 
+  jobType: string;
+  location: string;
+  applyClickCount: number;
 }
 
 
@@ -494,13 +495,25 @@ export interface FullJobListing {
   title: string;
   description: string;
   salary: string;
-  location: string; 
+  location: string;
   jobType: string;
-  company: string; 
-  startdate: string; 
-  enddate: string; 
+  company: string;
+  startdate: string;
+  enddate: string;
   appurl: string;
-  contact: string; 
+  contact: string;
+  applyClickCount: number;
+}
+
+/**
+ * Fire-and-forget: records a click on a job listing's Apply button/link.
+ * Endpoint: POST /joblistings/click?id={id}
+ */
+export function trackJobApplyClick(id: string) {
+  fetch(`${API_URL}/joblistings/click?id=${id}`, {
+    method: "POST",
+    keepalive: true,
+  }).catch(() => {});
 }
 
 export function useJobs() {

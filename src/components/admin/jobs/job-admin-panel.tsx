@@ -2,7 +2,15 @@
 
 import { useState, useMemo } from "react";
 import Fuse from "fuse.js";
-import { Plus, Search, Edit, Trash2, Briefcase, X } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Briefcase,
+  X,
+  MousePointerClick,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,6 +157,10 @@ export function JobAdminPanel() {
                           <p className="font-medium truncate">{job.title}</p>
                           <p className="text-sm text-muted-foreground truncate">
                             {job.company} • {job.jobType}
+                          </p>
+                          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MousePointerClick className="h-3 w-3" />
+                            {job.applyClickCount ?? 0} apply clicks
                           </p>
                         </div>
                       </div>
