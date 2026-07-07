@@ -845,6 +845,7 @@ export function ApplicationAdminPanel() {
   const summary = useMemo(() => {
     const counts = {
       total: applications.length,
+      totalTeamApplications: 0,
       pending: 0,
       reviewed: 0,
       accepted: 0,
@@ -852,6 +853,7 @@ export function ApplicationAdminPanel() {
     };
     applications.forEach((application) => {
       counts[application.status] += 1;
+      counts.totalTeamApplications += application.teams.length;
     });
     return counts;
   }, [applications]);
@@ -992,9 +994,10 @@ export function ApplicationAdminPanel() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         {[
-          ["Total", summary.total],
+          ["Unique Applicants", summary.total],
+          ["Total Applications", summary.totalTeamApplications],
           ["Pending", summary.pending],
           ["Reviewed", summary.reviewed],
           ["Accepted", summary.accepted],
