@@ -510,7 +510,7 @@ export interface FullJobListing {
  * Endpoint: POST /joblistings/click?id={id}
  */
 export function trackJobApplyClick(id: string) {
-  fetch(`${API_URL}/joblistings/click?id=${id}`, {
+  fetch(`${API_URL}/joblistings/click?id=${encodeURIComponent(id)}`, {
     method: "POST",
     keepalive: true,
   }).catch(() => {});
