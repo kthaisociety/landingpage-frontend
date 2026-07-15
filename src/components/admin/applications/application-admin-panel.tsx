@@ -1209,7 +1209,8 @@ export function ApplicationAdminPanel() {
   // Primary: team from their actual profile team-membership entries
   const { data: teamEntries = [], isLoading: teamEntriesLoading } =
     useAdminUserTeamEntries(user?.userId ?? "", !!user?.userId);
-  const teamFromProfile = teamEntries[0]?.team ?? "";
+  const teamFromProfile =
+    teamEntries.find((e) => (APPLICATION_TEAMS as readonly string[]).includes(e.team))?.team ?? "";
 
   // Fallback: manually declared team (for admins not yet assigned in team management)
   const { data: interviewSettings, isLoading: settingsLoading } = useInterviewSettings();
