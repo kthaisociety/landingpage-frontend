@@ -1247,6 +1247,7 @@ export function ApplicationAdminPanel() {
     useState<ApplicationPreferenceTypeFilter>("all");
   const [graduationYearFilter, setGraduationYearFilterState] = useState("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [myInterviewingFilter, setMyInterviewingFilter] = useState(false);
   const [selectedApplication, setSelectedApplication] =
     useState<GeneralApplication | null>(null);
   const [applicationToDelete, setApplicationToDelete] =
@@ -1298,8 +1299,15 @@ export function ApplicationAdminPanel() {
     [filters.team, currentAdminEmail],
   );
 
+  const tableData = useMemo(
+    () => myInterviewingFilter
+      ? applications.filter((a) => a.interviewing_by_email === currentAdminEmail)
+      : applications,
+    [applications, myInterviewingFilter, currentAdminEmail],
+  );
+
   const table = useReactTable({
-    data: applications,
+    data: tableData,
     columns,
     state: {
       sorting,
@@ -1379,6 +1387,7 @@ export function ApplicationAdminPanel() {
     setPreferenceTypeFilterState("all");
     setGraduationYearFilterState("all");
     setSorting([{ id: "created_at", desc: true }]);
+    setMyInterviewingFilter(false);
   }
 
   function exportFilteredApplications() {
@@ -1515,11 +1524,21 @@ export function ApplicationAdminPanel() {
             </div>
             <Button
               onClick={() => {
+                setMyInterviewingFilter(false);
                 setStatusFilter("available");
                 setTeamFilter(effectiveTeam as ApplicationTeamFilter);
               }}
             >
               Available for {APPLICATION_TEAM_LABELS[effectiveTeam as ApplicationTeam] ?? effectiveTeam}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetFilters();
+                setMyInterviewingFilter(true);
+              }}
+            >
+              Currently interviewing
             </Button>
             <Button
               type="button"
