@@ -175,6 +175,267 @@ export function useDeleteApplication() {
   });
 }
 
+async function cancelInterview(id: string): Promise<GeneralApplication> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/cancel-interview`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to cancel interview");
+  }
+  return response.json();
+}
+
+async function markIneligible(id: string): Promise<GeneralApplication> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/ineligible`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to mark as ineligible");
+  }
+  return response.json();
+}
+
+async function restoreApplication(id: string): Promise<GeneralApplication> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/restore`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to restore application");
+  }
+  return response.json();
+}
+
+async function claimApplication(id: string): Promise<GeneralApplication> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/claim`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to claim application");
+  }
+  return response.json();
+}
+
+async function releaseApplication(id: string): Promise<GeneralApplication> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/release`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to release application");
+  }
+  return response.json();
+}
+
+async function sendInterviewInvite(id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/send-invite`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to send interview invite");
+  }
+}
+
+async function fetchApplicationNotes(id: string): Promise<string> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/notes`, {
+    credentials: "include",
+  });
+  if (!response.ok) return "";
+  const data = (await response.json()) as { note: string };
+  return data.note;
+}
+
+async function updateApplicationNotes({ id, note }: { id: string; note: string }): Promise<string> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/notes`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to save notes");
+  }
+  const data = (await response.json()) as { note: string };
+  return data.note;
+}
+
+export type InterviewSettings = {
+  booking_page_url: string;
+  interview_email_template: string;
+  /** The team this admin declared themselves head of, or "none" if advisor/no team, or "" if unset. */
+  admin_team: string;
+};
+
+async function fetchInterviewSettings(): Promise<InterviewSettings> {
+  const response = await fetch(`${API_URL}/profile/me/interview-settings`, {
+    credentials: "include",
+  });
+  if (!response.ok) throw new Error("Failed to fetch interview settings");
+  return response.json();
+}
+
+async function updateInterviewSettings(settings: InterviewSettings): Promise<InterviewSettings> {
+  const response = await fetch(`${API_URL}/profile/me/interview-settings`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(settings),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to save interview settings");
+  }
+  return response.json();
+}
+
+/** Patch a single application in every admin-applications cache entry. */
+function patchApplicationInCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  updated: GeneralApplication,
+) {
+  queryClient.setQueriesData<GeneralApplication[]>(
+    { queryKey: ["admin-applications"] },
+    (prev) => prev?.map((a) => (a.id === updated.id ? updated : a)),
+  );
+  void queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+}
+
+export function useClaimApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: claimApplication,
+    onSuccess: (updated) => {
+      toast.success("Application claimed.");
+      patchApplicationInCache(queryClient, updated);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to claim application.");
+    },
+  });
+}
+
+export function useReleaseApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: releaseApplication,
+    onSuccess: (updated) => {
+      toast.success("Application released.");
+      patchApplicationInCache(queryClient, updated);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to release application.");
+    },
+  });
+}
+
+export function useCancelInterview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: cancelInterview,
+    onSuccess: (updated) => {
+      toast.success("Interview cancelled.");
+      patchApplicationInCache(queryClient, updated);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to cancel interview.");
+    },
+  });
+}
+
+export function useMarkIneligible() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markIneligible,
+    onSuccess: (updated) => {
+      toast.success("Application marked as ineligible.");
+      patchApplicationInCache(queryClient, updated);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to mark as ineligible.");
+    },
+  });
+}
+
+export function useRestoreApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: restoreApplication,
+    onSuccess: (updated) => {
+      toast.success("Application restored to available.");
+      patchApplicationInCache(queryClient, updated);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to restore application.");
+    },
+  });
+}
+
+export function useSendInterviewInvite() {
+  return useMutation({
+    mutationFn: sendInterviewInvite,
+    onSuccess: () => {
+      toast.success("Interview invite sent.");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to send interview invite.");
+    },
+  });
+}
+
+export function useApplicationNotes(id: string) {
+  return useQuery({
+    queryKey: ["application-notes", id],
+    queryFn: () => fetchApplicationNotes(id),
+    enabled: !!id,
+  });
+}
+
+export function useUpdateApplicationNotes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateApplicationNotes,
+    onSuccess: (_, variables) => {
+      toast.success("Notes saved.");
+      queryClient.setQueryData(["application-notes", variables.id], variables.note);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save notes.");
+    },
+  });
+}
+
+export function useInterviewSettings() {
+  return useQuery({
+    queryKey: ["interview-settings"],
+    queryFn: fetchInterviewSettings,
+  });
+}
+
+export function useUpdateInterviewSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateInterviewSettings,
+    onSuccess: (data) => {
+      toast.success("Interview settings saved.");
+      queryClient.setQueryData(["interview-settings"], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save interview settings.");
+    },
+  });
+}
+
 export function getApplicationResumeUrl(id: string) {
   return `${API_URL}/applications/admin/${id}/resume`;
 }

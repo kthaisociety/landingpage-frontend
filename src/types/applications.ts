@@ -36,10 +36,9 @@ export const APPLICATION_INTERESTS = [
 ] as const;
 
 export const APPLICATION_STATUSES = [
-  "pending",
-  "reviewed",
-  "accepted",
-  "rejected",
+  "available",
+  "interviewing",
+  "ineligible",
 ] as const;
 
 // Shared with the newsletter signup form so both flows offer the same options.
@@ -164,6 +163,9 @@ export type GeneralApplication = {
   contribution: string;
   data_retention_consent: boolean;
   status: ApplicationStatus;
+  interviewing_by_user_id: string | null;
+  interviewing_by_email: string;
+  interviewed_by: string[];
   created_at: string;
   updated_at: string;
 };

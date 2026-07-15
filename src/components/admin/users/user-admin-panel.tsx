@@ -2,7 +2,17 @@
 
 import { Fragment, useState } from "react";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import {
   useAdminUsers,
+  useDeleteUser,
   usePromoteAdmin,
   useDemoteAdmin,
 } from "@/hooks/admin";
@@ -22,10 +33,12 @@ import { AdminUserProfileForm } from "@/components/admin/users/admin-user-profil
 export function UserAdminPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
 
   const { data: users = [], isLoading, isError } = useAdminUsers();
   const promoteMutation = usePromoteAdmin();
   const demoteMutation = useDemoteAdmin();
+  const deleteMutation = useDeleteUser();
 
   const filteredUsers = users.filter((user) =>
     user.email.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -130,6 +143,14 @@ export function UserAdminPanel() {
                         Make Admin
                       </Button>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setUserToDelete({ id: user.user_id, email: user.email })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
 
@@ -167,6 +188,29 @@ export function UserAdminPanel() {
           })
         )}
       </div>
+
+      <AlertDialog open={Boolean(userToDelete)} onOpenChange={(open) => { if (!open) setUserToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete user</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{userToDelete?.email}</strong> and their profile. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (userToDelete) deleteMutation.mutate(userToDelete.id);
+                setUserToDelete(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

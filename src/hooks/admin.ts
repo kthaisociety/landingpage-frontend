@@ -29,6 +29,17 @@ async function promoteAdmin(userId: string) {
   return response.json();
 }
 
+async function deleteUser(userId: string) {
+  const response = await fetch(`${API_URL}/admin/users/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to delete user");
+  }
+}
+
 async function demoteAdmin(userId: string) {
   const response = await fetch(`${API_URL}/admin/unsetadmin`, {
     method: "PUT",
@@ -53,6 +64,20 @@ export function usePromoteAdmin() {
     mutationFn: promoteAdmin,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+}
+
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      toast.success("User deleted.");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete user.");
+    },
   });
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -20,13 +20,18 @@ import {
 import {
   AlertCircle,
   ArrowUpDown,
+  Ban,
   ChevronDown,
   Download,
   Eye,
-  MoreHorizontal,
+  Lock,
+  Mail,
   RotateCcw,
   Search,
+  Settings,
   Trash2,
+  Unlock,
+  XCircle,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -50,17 +55,23 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import {
   Sheet,
@@ -70,6 +81,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -81,8 +93,17 @@ import {
 import {
   downloadApplicationResume,
   useAdminApplications,
+  useApplicationNotes,
+  useCancelInterview,
+  useClaimApplication,
+  useRestoreApplication,
   useDeleteApplication,
-  useUpdateApplicationStatus,
+  useInterviewSettings,
+  useMarkIneligible,
+  useReleaseApplication,
+  useSendInterviewInvite,
+  useUpdateApplicationNotes,
+  useUpdateInterviewSettings,
 } from "@/hooks/applications";
 import {
   APPLICATION_AVAILABILITY,
@@ -95,6 +116,8 @@ import {
   type ApplicationTeam,
   type GeneralApplication,
 } from "@/types/applications";
+import { useAdminUserTeamEntries } from "@/hooks/admin";
+import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 
 const SKELETON_ROWS = [
   "loading-1",
@@ -119,6 +142,12 @@ const COLUMN_LABELS: Record<string, string> = {
   team_preferences_ranked: "Preference type",
 };
 
+const STATUS_BADGE_VARIANT: Record<ApplicationStatus, "default" | "destructive" | "secondary" | "outline"> = {
+  available: "outline",
+  interviewing: "default",
+  ineligible: "destructive",
+};
+
 type ApplicationStatusFilter = ApplicationStatus | "all";
 type ApplicationTeamFilter = ApplicationTeam | "all";
 type ApplicationRankFilter = "all" | "1" | "2" | "3" | "4" | "5";
@@ -132,19 +161,6 @@ function formatDate(value: string) {
     month: "short",
     day: "numeric",
   }).format(new Date(value));
-}
-
-function statusVariant(status: ApplicationStatus) {
-  switch (status) {
-    case "accepted":
-      return "default";
-    case "rejected":
-      return "destructive";
-    case "reviewed":
-      return "secondary";
-    default:
-      return "outline";
-  }
 }
 
 function applicationName(application: GeneralApplication) {
@@ -162,7 +178,6 @@ function formatTeamPreferences(application: GeneralApplication) {
       .map((team, index) => `${index + 1}. ${APPLICATION_TEAM_LABELS[team]}`)
       .join("; ");
   }
-
   return `Legacy unranked: ${application.teams
     .map((team) => APPLICATION_TEAM_LABELS[team])
     .join("; ")}`;
@@ -208,6 +223,8 @@ function exportApplicationsCsv({
     "Team interest reason",
     "Areas of interest",
     "Contribution",
+    "Interviewing by",
+    "Interviewed by",
   ];
   const rows = applications.map((application) => [
     application.created_at,
@@ -227,6 +244,8 @@ function exportApplicationsCsv({
     application.team_interest_reason,
     application.interests ?? [],
     application.contribution,
+    application.interviewing_by_email,
+    application.interviewed_by,
   ]);
   const csv = [headers, ...rows]
     .map((row) => row.map(csvCell).join(","))
@@ -236,7 +255,6 @@ function exportApplicationsCsv({
   });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-
   link.href = url;
   link.download = `applications-${year}-${status}-${team}.csv`;
   link.click();
@@ -253,6 +271,8 @@ function getApplicationSearchText(application: GeneralApplication) {
     application.linkedin_url,
     application.availability,
     application.status,
+    application.interviewing_by_email,
+    ...application.interviewed_by,
     ...application.teams,
     ...application.teams.map((team) => APPLICATION_TEAM_LABELS[team]),
     ...(application.interests ?? []),
@@ -283,7 +303,6 @@ function DataTableColumnHeader<TData>({
   if (!column.getCanSort()) {
     return <div className={className}>{title}</div>;
   }
-
   return (
     <Button
       variant="ghost"
@@ -324,73 +343,102 @@ function TeamPreferenceBadges({
   );
 }
 
-function ApplicationRowActions({
+function ApplicationRowContextMenu({
   application,
+  currentAdminEmail,
   onView,
-  onStatusChange,
   onDeleteRequest,
+  onClaim,
+  onRelease,
+  onCancel,
+  onIneligible,
+  children,
 }: {
   application: GeneralApplication;
+  currentAdminEmail: string;
   onView: (application: GeneralApplication) => void;
-  onStatusChange: (application: GeneralApplication, status: ApplicationStatus) => void;
   onDeleteRequest: (application: GeneralApplication) => void;
+  onClaim: (application: GeneralApplication) => void;
+  onRelease: (application: GeneralApplication) => void;
+  onCancel: (application: GeneralApplication) => void;
+  onIneligible: (application: GeneralApplication) => void;
+  children: React.ReactNode;
 }) {
+  const isClaimedByMe =
+    application.status === "interviewing" &&
+    application.interviewing_by_email === currentAdminEmail;
+  const isClaimedByOther =
+    application.status === "interviewing" &&
+    application.interviewing_by_email !== currentAdminEmail;
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm">
-          <MoreHorizontal className="h-4 w-4" />
-          <span className="sr-only">Open actions</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => onView(application)}>
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent className="w-56">
+        <ContextMenuLabel>{applicationName(application)}</ContextMenuLabel>
+        <ContextMenuSeparator />
+        <ContextMenuItem onClick={() => onView(application)}>
           <Eye className="mr-2 h-4 w-4" />
           View details
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => void downloadApplicationResume(application)}
-        >
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => void downloadApplicationResume(application)}>
           <Download className="mr-2 h-4 w-4" />
           Download resume
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          variant="destructive"
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuLabel>Interview</ContextMenuLabel>
+        {application.status === "available" && (
+          <ContextMenuItem onClick={() => onClaim(application)}>
+            <Lock className="mr-2 h-4 w-4" />
+            Claim for interview
+          </ContextMenuItem>
+        )}
+        {isClaimedByMe && (
+          <>
+            <ContextMenuItem onClick={() => onRelease(application)}>
+              <Unlock className="mr-2 h-4 w-4" />
+              Mark interview completed
+            </ContextMenuItem>
+            <ContextMenuItem onClick={() => onCancel(application)}>
+              <XCircle className="mr-2 h-4 w-4" />
+              Cancel interview
+            </ContextMenuItem>
+          </>
+        )}
+        {isClaimedByOther && (
+          <ContextMenuItem disabled>
+            <Lock className="mr-2 h-4 w-4" />
+            Claimed by {application.interviewing_by_email}
+          </ContextMenuItem>
+        )}
+        {application.status !== "ineligible" && (
+          <ContextMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={() => onIneligible(application)}
+          >
+            <Ban className="mr-2 h-4 w-4" />
+            Mark as ineligible
+          </ContextMenuItem>
+        )}
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          className="text-destructive focus:text-destructive"
           onClick={() => onDeleteRequest(application)}
         >
           <Trash2 className="mr-2 h-4 w-4" />
           Delete application
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Status</DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={application.status}
-          onValueChange={(status) =>
-            onStatusChange(application, status as ApplicationStatus)
-          }
-        >
-          {APPLICATION_STATUSES.map((status) => (
-            <DropdownMenuRadioItem key={status} value={status}>
-              {status}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
 function createApplicationColumns({
-  onView,
-  onStatusChange,
-  onDeleteRequest,
   selectedTeam,
+  currentAdminEmail,
 }: {
-  onView: (application: GeneralApplication) => void;
-  onStatusChange: (application: GeneralApplication, status: ApplicationStatus) => void;
-  onDeleteRequest: (application: GeneralApplication) => void;
   selectedTeam: ApplicationTeamFilter;
+  currentAdminEmail: string;
 }): ColumnDef<GeneralApplication>[] {
   return [
     {
@@ -406,29 +454,48 @@ function createApplicationColumns({
         />
       ),
       cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label={`Select ${applicationName(row.original)}`}
-        />
+        <div onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label={`Select ${applicationName(row.original)}`}
+          />
+        </div>
       ),
       enableSorting: false,
       enableHiding: false,
     },
     {
-      accessorKey: "created_at",
+      accessorKey: "status",
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Submitted"
-          className="-ml-2"
-        />
+        <DataTableColumnHeader column={column} title="Status" className="-ml-2" />
       ),
-      cell: ({ row }) => (
-        <span className="font-mono text-xs">
-          {formatDate(row.original.created_at)}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const app = row.original;
+        if (app.status === "interviewing") {
+          const isMine = app.interviewing_by_email === currentAdminEmail;
+          return (
+            <Badge
+              variant="outline"
+              className={
+                isMine
+                  ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                  : "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300"
+              }
+            >
+              {isMine ? "interviewing (you)" : "interviewing (other)"}
+            </Badge>
+          );
+        }
+        return (
+          <Badge variant={STATUS_BADGE_VARIANT[app.status] ?? "outline"}>
+            {app.status}
+          </Badge>
+        );
+      },
+      filterFn: (row, columnId, filterValue: ApplicationStatusFilter) =>
+        filterValue === "all" || row.getValue(columnId) === filterValue,
+      enableHiding: false,
     },
     {
       id: "applicant",
@@ -443,9 +510,7 @@ function createApplicationColumns({
       cell: ({ row }) => (
         <div className="min-w-44">
           <p className="font-medium">{applicationName(row.original)}</p>
-          <p className="text-xs text-muted-foreground">
-            {row.original.email}
-          </p>
+          <p className="text-xs text-muted-foreground">{row.original.email}</p>
         </div>
       ),
     },
@@ -538,34 +603,19 @@ function createApplicationColumns({
         (filterValue === "legacy" && row.getValue(columnId) !== true),
     },
     {
-      accessorKey: "status",
+      accessorKey: "created_at",
       header: ({ column }) => (
         <DataTableColumnHeader
           column={column}
-          title="Status"
+          title="Submitted"
           className="-ml-2"
         />
       ),
       cell: ({ row }) => (
-        <Badge variant={statusVariant(row.original.status)}>
-          {row.original.status}
-        </Badge>
+        <span className="font-mono text-xs">
+          {formatDate(row.original.created_at)}
+        </span>
       ),
-      filterFn: (row, columnId, filterValue: ApplicationStatusFilter) =>
-        filterValue === "all" || row.getValue(columnId) === filterValue,
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => (
-        <ApplicationRowActions
-          application={row.original}
-          onView={onView}
-          onStatusChange={onStatusChange}
-          onDeleteRequest={onDeleteRequest}
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
     },
   ];
 }
@@ -614,7 +664,6 @@ function DataTablePagination({
         {table.getFilteredSelectedRowModel().rows.length} of{" "}
         {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
-
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Rows per page</span>
@@ -631,12 +680,10 @@ function DataTablePagination({
             ))}
           </NativeSelect>
         </div>
-
         <p className="text-sm text-muted-foreground">
           Page {table.getState().pagination.pageIndex + 1} of{" "}
           {Math.max(table.getPageCount(), 1)}
         </p>
-
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -683,7 +730,6 @@ function TeamPreferencesDetail({
       </div>
     );
   }
-
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold">Legacy unranked preferences</h3>
@@ -738,21 +784,169 @@ function DetailText({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ApplicationNotes({ applicationId }: { applicationId: string }) {
+  const { data: savedNote = "" } = useApplicationNotes(applicationId);
+  const [draft, setDraft] = useState<string | null>(null);
+  const updateNotes = useUpdateApplicationNotes();
+
+  const value = draft ?? savedNote;
+
+  function handleSave() {
+    updateNotes.mutate(
+      { id: applicationId, note: value },
+      { onSuccess: () => setDraft(null) },
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold">My notes (private)</h3>
+      <Textarea
+        placeholder="Add your private interview notes here…"
+        className="min-h-[120px] resize-y text-sm"
+        value={value}
+        onChange={(e) => setDraft(e.target.value)}
+      />
+      <Button
+        size="sm"
+        disabled={updateNotes.isPending || draft === null || draft === savedNote}
+        onClick={handleSave}
+      >
+        {updateNotes.isPending ? "Saving…" : "Save notes"}
+      </Button>
+    </div>
+  );
+}
+
 function ApplicationDetail({
   application,
+  currentAdminEmail,
+  onApplicationUpdated,
 }: {
   application: GeneralApplication;
+  currentAdminEmail: string;
+  onApplicationUpdated: (app: GeneralApplication) => void;
 }) {
+  const sendInvite = useSendInterviewInvite();
+  const claim = useClaimApplication();
+  const release = useReleaseApplication();
+  const cancel = useCancelInterview();
+  const markIneligible = useMarkIneligible();
+  const restore = useRestoreApplication();
+
+  const isClaimedByMe =
+    application.status === "interviewing" &&
+    application.interviewing_by_email === currentAdminEmail;
+  const isClaimedByOther =
+    application.status === "interviewing" &&
+    application.interviewing_by_email !== currentAdminEmail;
+
   return (
     <div className="space-y-6 px-4 pb-6">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={statusVariant(application.status)}>
+        <Badge variant={STATUS_BADGE_VARIANT[application.status] ?? "outline"}>
           {application.status}
         </Badge>
         {application.team_preferences_ranked === true ? null : (
           <Badge variant="secondary">Legacy unranked preferences</Badge>
         )}
+        {application.interviewing_by_email && (
+          <Badge
+            variant="outline"
+            className={
+              isClaimedByMe
+                ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                : "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300"
+            }
+          >
+            <Lock className="mr-1 h-3 w-3" />
+            {isClaimedByMe ? "Claimed by you" : `Claimed by ${application.interviewing_by_email}`}
+          </Badge>
+        )}
       </div>
+
+      {/* Interview actions */}
+      <div className="flex flex-wrap gap-2">
+        {application.status === "available" && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={claim.isPending}
+            onClick={() => claim.mutate(application.id, { onSuccess: onApplicationUpdated })}
+          >
+            <Lock className="mr-2 h-4 w-4" />
+            Claim for interview
+          </Button>
+        )}
+        {isClaimedByMe && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={release.isPending}
+              onClick={() => release.mutate(application.id, { onSuccess: onApplicationUpdated })}
+            >
+              <Unlock className="mr-2 h-4 w-4" />
+              Mark interview completed
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={cancel.isPending}
+              onClick={() => cancel.mutate(application.id, { onSuccess: onApplicationUpdated })}
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              Cancel interview
+            </Button>
+            <Button
+              size="sm"
+              disabled={sendInvite.isPending}
+              onClick={() => sendInvite.mutate(application.id)}
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Send invite email
+            </Button>
+          </>
+        )}
+        {isClaimedByOther && (
+          <p className="text-sm text-muted-foreground">
+            Interviewing is locked by {application.interviewing_by_email}.
+          </p>
+        )}
+        {application.status !== "ineligible" && (
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={markIneligible.isPending}
+            onClick={() => markIneligible.mutate(application.id, { onSuccess: onApplicationUpdated })}
+          >
+            <Ban className="mr-2 h-4 w-4" />
+            Mark as ineligible
+          </Button>
+        )}
+        {application.status === "ineligible" && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={restore.isPending}
+            onClick={() => restore.mutate(application.id, { onSuccess: onApplicationUpdated })}
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Restore to available
+          </Button>
+        )}
+      </div>
+
+      {application.interviewed_by.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Interviewed by</h3>
+          <div className="flex flex-wrap gap-1">
+            {application.interviewed_by.map((email) => (
+              <Badge key={email} variant="secondary">{email}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 text-sm sm:grid-cols-2">
         <DetailItem label="Gender" value={application.gender} />
@@ -808,11 +1002,228 @@ function ApplicationDetail({
         <Download className="mr-2 h-4 w-4" />
         Download resume
       </Button>
+
+      <ApplicationNotes applicationId={application.id} />
     </div>
   );
 }
 
+const DEFAULT_INTERVIEW_TEMPLATE =
+  "Hi {{first_name}},\n\nCongratulations! We'd love to invite you to an interview with KTH AI Society.\n\nYou can book a time slot using the link below:\n{{booking_url}}\n\nLooking forward to speaking with you!\n\nBest regards,\nKTH AI Society";
+
+function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
+  const { data: settings, isLoading } = useInterviewSettings();
+  const updateSettings = useUpdateInterviewSettings();
+  const [open, setOpen] = useState(false);
+  const [bookingUrl, setBookingUrl] = useState("");
+  const [emailTemplate, setEmailTemplate] = useState("");
+  const [initialised, setInitialised] = useState(false);
+
+  if (settings && !initialised) {
+    setBookingUrl(settings.booking_page_url);
+    setEmailTemplate(settings.interview_email_template);
+    setInitialised(true);
+  }
+
+  function handleSave() {
+    updateSettings.mutate(
+      {
+        booking_page_url: bookingUrl,
+        interview_email_template: emailTemplate,
+        admin_team: currentTeam,
+      },
+      { onSuccess: () => setOpen(false) },
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader
+        className="cursor-pointer select-none"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Settings className="h-4 w-4" />
+            My interview settings
+          </CardTitle>
+          <ChevronDown
+            className="h-4 w-4 text-muted-foreground transition-transform"
+            style={{ transform: open ? "rotate(180deg)" : undefined }}
+          />
+        </div>
+        {!open && (
+          <CardDescription>
+            Booking page and email template — click to view or edit.
+          </CardDescription>
+        )}
+      </CardHeader>
+      {open && (
+        <CardContent className="space-y-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          ) : (
+            <>
+              <CardDescription>
+                Configure your personal booking link and the email template sent to candidates.
+                Use <code className="rounded bg-muted px-1 text-xs">{"{{first_name}}"}</code> and{" "}
+                <code className="rounded bg-muted px-1 text-xs">{"{{booking_url}}"}</code> as placeholders.
+              </CardDescription>
+              <div className="space-y-2">
+                <Label htmlFor="booking-url">Booking page URL</Label>
+                <Input
+                  id="booking-url"
+                  type="url"
+                  placeholder="https://calendar.app.google/..."
+                  value={bookingUrl}
+                  onChange={(e) => setBookingUrl(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="email-template">Email template</Label>
+                  {!emailTemplate && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto py-0 text-xs"
+                      onClick={() => setEmailTemplate(DEFAULT_INTERVIEW_TEMPLATE)}
+                    >
+                      Use default
+                    </Button>
+                  )}
+                </div>
+                <Textarea
+                  id="email-template"
+                  placeholder={DEFAULT_INTERVIEW_TEMPLATE}
+                  className="min-h-[180px] resize-y font-mono text-sm"
+                  value={emailTemplate}
+                  onChange={(e) => setEmailTemplate(e.target.value)}
+                />
+              </div>
+              <Button disabled={updateSettings.isPending} onClick={handleSave}>
+                {updateSettings.isPending ? "Saving…" : "Save settings"}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function AdminTeamSetup({
+  currentTeam,
+  onSaved,
+}: {
+  currentTeam: string;
+  onSaved: (team: string) => void;
+}) {
+  const updateSettings = useUpdateInterviewSettings();
+  const { data: settings } = useInterviewSettings();
+  const [selected, setSelected] = useState(currentTeam || "");
+
+  function handleSave() {
+    if (!selected) return;
+    updateSettings.mutate(
+      {
+        booking_page_url: settings?.booking_page_url ?? "",
+        interview_email_template: settings?.interview_email_template ?? "",
+        admin_team: selected,
+      },
+      { onSuccess: () => onSaved(selected) },
+    );
+  }
+
+  return (
+    <Card className="mx-auto max-w-md">
+      <CardHeader>
+        <CardTitle>Declare your role</CardTitle>
+        <CardDescription>
+          Before accessing applications, let us know which team you lead. This
+          personalises your view and determines which applications you can see.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-2">
+          {APPLICATION_TEAMS.map((team) => (
+            <label
+              key={team}
+              className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+                selected === team
+                  ? "border-primary bg-primary/5"
+                  : "hover:bg-muted/50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="admin-team"
+                value={team}
+                checked={selected === team}
+                onChange={() => setSelected(team)}
+                className="accent-primary"
+              />
+              <span className="font-medium">{APPLICATION_TEAM_LABELS[team]}</span>
+            </label>
+          ))}
+          <label
+            className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
+              selected === "none"
+                ? "border-primary bg-primary/5"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            <input
+              type="radio"
+              name="admin-team"
+              value="none"
+              checked={selected === "none"}
+              onChange={() => setSelected("none")}
+              className="accent-primary"
+            />
+            <span className="font-medium text-muted-foreground">
+              I&apos;m not a team head (advisor, board, etc.)
+            </span>
+          </label>
+        </div>
+        <Button
+          disabled={!selected || updateSettings.isPending}
+          onClick={handleSave}
+          className="w-full"
+        >
+          {updateSettings.isPending ? "Saving…" : "Continue"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ApplicationAdminPanel() {
+  const { user } = useAuth();
+  const currentAdminEmail = user?.email ?? "";
+
+  // Primary: team from their actual profile team-membership entries
+  const { data: teamEntries = [], isLoading: teamEntriesLoading } =
+    useAdminUserTeamEntries(user?.userId ?? "", !!user?.userId);
+  const teamFromProfile = teamEntries[0]?.team ?? "";
+
+  // Fallback: manually declared team (for admins not yet assigned in team management)
+  const { data: interviewSettings, isLoading: settingsLoading } = useInterviewSettings();
+  const updateSettings = useUpdateInterviewSettings();
+  const [declaredTeam, setDeclaredTeam] = useState<string | null>(null);
+  useEffect(() => {
+    if (interviewSettings !== undefined && declaredTeam === null) {
+      setDeclaredTeam(interviewSettings.admin_team ?? "");
+    }
+  }, [interviewSettings, declaredTeam]);
+
+  // Team entries win; fall back to manual declaration
+  const effectiveTeam = teamFromProfile || (declaredTeam ?? "");
+
   const [filters, setFilters] = useState<AdminApplicationsFilters>({
     year: 2026,
     status: "all",
@@ -823,7 +1234,9 @@ export function ApplicationAdminPanel() {
     { id: "created_at", desc: true },
   ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    created_at: false,
+  });
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [rankFilter, setRankFilterState] = useState<ApplicationRankFilter>("all");
@@ -832,6 +1245,7 @@ export function ApplicationAdminPanel() {
   const [preferenceTypeFilter, setPreferenceTypeFilterState] =
     useState<ApplicationPreferenceTypeFilter>("all");
   const [graduationYearFilter, setGraduationYearFilterState] = useState("all");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedApplication, setSelectedApplication] =
     useState<GeneralApplication | null>(null);
   const [applicationToDelete, setApplicationToDelete] =
@@ -839,21 +1253,29 @@ export function ApplicationAdminPanel() {
 
   const { data: applications = [], isLoading, isError } =
     useAdminApplications({ year: filters.year });
-  const updateStatus = useUpdateApplicationStatus();
   const deleteApplication = useDeleteApplication();
+  const claim = useClaimApplication();
+  const release = useReleaseApplication();
+  const cancel = useCancelInterview();
+  const markIneligible = useMarkIneligible();
+
+  // Keep the side panel in sync with the latest server data after mutations.
+  const displayedApplication = useMemo(
+    () =>
+      selectedApplication
+        ? (applications.find((a) => a.id === selectedApplication.id) ?? selectedApplication)
+        : null,
+    [selectedApplication, applications],
+  );
 
   const summary = useMemo(() => {
-    const counts = {
-      total: applications.length,
-      totalTeamApplications: 0,
-      pending: 0,
-      reviewed: 0,
-      accepted: 0,
-      rejected: 0,
-    };
+    const counts = { total: 0, totalTeamApplications: 0, available: 0, interviewing: 0, ineligible: 0 };
     applications.forEach((application) => {
-      counts[application.status] += 1;
+      counts.total += 1;
       counts.totalTeamApplications += application.teams.length;
+      if (application.status === "available") counts.available += 1;
+      else if (application.status === "interviewing") counts.interviewing += 1;
+      else if (application.status === "ineligible") counts.ineligible += 1;
     });
     return counts;
   }, [applications]);
@@ -869,16 +1291,10 @@ export function ApplicationAdminPanel() {
   const columns = useMemo(
     () =>
       createApplicationColumns({
-        onView: setSelectedApplication,
-        onStatusChange: (application, status) =>
-          updateStatus.mutate({
-            id: application.id,
-            status,
-          }),
-        onDeleteRequest: setApplicationToDelete,
         selectedTeam: (filters.team ?? "all") as ApplicationTeamFilter,
+        currentAdminEmail,
       }),
-    [filters.team, updateStatus],
+    [filters.team, currentAdminEmail],
   );
 
   const table = useReactTable({
@@ -983,27 +1399,87 @@ export function ApplicationAdminPanel() {
     setApplicationToDelete(null);
   }
 
+  // Wait for both sources to resolve before deciding which screen to show
+  if (teamEntriesLoading || settingsLoading || declaredTeam === null) {
+    return (
+      <section className="space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-48 w-full max-w-md" />
+      </section>
+    );
+  }
+
+  // No team from profile entries AND no manual declaration → ask them to declare
+  if (effectiveTeam === "") {
+    return (
+      <section className="flex min-h-[40vh] items-center justify-center py-12">
+        <AdminTeamSetup currentTeam="" onSaved={setDeclaredTeam} />
+      </section>
+    );
+  }
+
+  // Admin declared they are not a team head — restricted view
+  if (effectiveTeam === "none") {
+    return (
+      <section className="flex min-h-[40vh] items-center justify-center py-12">
+        <Card className="mx-auto max-w-md text-center">
+          <CardHeader>
+            <CardTitle>No access to application data</CardTitle>
+            <CardDescription>
+              You&apos;ve declared that you&apos;re not a team head. Application
+              data is only accessible to team leads. If this is a mistake, update
+              your role below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={() =>
+                updateSettings.mutate(
+                  {
+                    booking_page_url: interviewSettings?.booking_page_url ?? "",
+                    interview_email_template: interviewSettings?.interview_email_template ?? "",
+                    admin_team: "",
+                  },
+                  { onSuccess: () => setDeclaredTeam("") },
+                )
+              }
+              disabled={updateSettings.isPending}
+            >
+              Change my role
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-semibold">General Applications 2026</h2>
           <p className="text-sm text-muted-foreground">
-            Review submissions and update application status.
+            Review submissions and manage the interview process.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-        {[
-          ["Unique Applicants", summary.total],
-          ["Total Applications", summary.totalTeamApplications],
-          ["Pending", summary.pending],
-          ["Reviewed", summary.reviewed],
-          ["Accepted", summary.accepted],
-          ["Rejected", summary.rejected],
-        ].map(([label, value]) => (
-          <Card key={label}>
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+        {(
+          [
+            ["Unique applicants", summary.total, null],
+            ["Total applications", summary.totalTeamApplications, null],
+            ["Available", summary.available, "available"],
+            ["Interviewing", summary.interviewing, "interviewing"],
+            ["Ineligible", summary.ineligible, "ineligible"],
+          ] as const
+        ).map(([label, value, statusFilter]) => (
+          <Card
+            key={label}
+            className={statusFilter ? "cursor-pointer transition-colors hover:bg-muted/50" : undefined}
+            onClick={statusFilter ? () => setStatusFilter(statusFilter) : undefined}
+          >
             <CardHeader className="pb-2">
               <CardDescription>{label}</CardDescription>
               <CardTitle className="font-mono text-2xl">{value}</CardTitle>
@@ -1012,17 +1488,18 @@ export function ApplicationAdminPanel() {
         ))}
       </div>
 
+      <InterviewSettingsPanel currentTeam={effectiveTeam} />
+
       <Card>
         <CardHeader>
           <CardTitle>All applications</CardTitle>
           <CardDescription>
-            Search, filter, inspect applications, and keep review status up to
-            date.
+            Search, filter, inspect applications, and manage the interview pipeline.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto_auto_auto]">
-            <div className="relative">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[200px] flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 value={globalFilter}
@@ -1031,10 +1508,30 @@ export function ApplicationAdminPanel() {
                   setGlobalFilter(value);
                   setFilters((current) => ({ ...current, q: value }));
                 }}
-                placeholder="Search name, email, programme, or LinkedIn..."
+                placeholder="Search name, email, programme…"
                 className="pl-9"
               />
             </div>
+            <Button
+              onClick={() => {
+                setStatusFilter("available");
+                setTeamFilter(effectiveTeam as ApplicationTeamFilter);
+              }}
+            >
+              Available for {APPLICATION_TEAM_LABELS[effectiveTeam as ApplicationTeam] ?? effectiveTeam}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowAdvancedFilters((v) => !v)}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Filters
+              <ChevronDown
+                className="ml-2 h-4 w-4 transition-transform"
+                style={{ transform: showAdvancedFilters ? "rotate(180deg)" : undefined }}
+              />
+            </Button>
             <DataTableViewOptions table={table} />
             <Button type="button" variant="outline" onClick={resetFilters}>
               <RotateCcw className="mr-2 h-4 w-4" />
@@ -1051,103 +1548,105 @@ export function ApplicationAdminPanel() {
             </Button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-            <NativeSelect
-              aria-label="Filter applications by status"
-              className="w-full"
-              value={filters.status ?? "all"}
-              onChange={(event) =>
-                setStatusFilter(event.target.value as ApplicationStatusFilter)
-              }
-            >
-              <NativeSelectOption value="all">All statuses</NativeSelectOption>
-              {APPLICATION_STATUSES.map((status) => (
-                <NativeSelectOption key={status} value={status}>
-                  {status}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+          {showAdvancedFilters && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+              <NativeSelect
+                aria-label="Filter applications by status"
+                className="w-full"
+                value={filters.status ?? "all"}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as ApplicationStatusFilter)
+                }
+              >
+                <NativeSelectOption value="all">All statuses</NativeSelectOption>
+                {APPLICATION_STATUSES.map((status) => (
+                  <NativeSelectOption key={status} value={status}>
+                    {status}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
 
-            <NativeSelect
-              aria-label="Filter applications by team"
-              className="w-full"
-              value={filters.team ?? "all"}
-              onChange={(event) =>
-                setTeamFilter(event.target.value as ApplicationTeamFilter)
-              }
-            >
-              <NativeSelectOption value="all">All teams</NativeSelectOption>
-              {APPLICATION_TEAMS.map((team) => (
-                <NativeSelectOption key={team} value={team}>
-                  {team}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              <NativeSelect
+                aria-label="Filter applications by team"
+                className="w-full"
+                value={filters.team ?? "all"}
+                onChange={(event) =>
+                  setTeamFilter(event.target.value as ApplicationTeamFilter)
+                }
+              >
+                <NativeSelectOption value="all">All teams</NativeSelectOption>
+                {APPLICATION_TEAMS.map((team) => (
+                  <NativeSelectOption key={team} value={team}>
+                    {team}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
 
-            <NativeSelect
-              aria-label="Filter applications by selected team rank"
-              className="w-full"
-              value={rankFilter}
-              disabled={(filters.team ?? "all") === "all"}
-              onChange={(event) =>
-                setRankFilter(event.target.value as ApplicationRankFilter)
-              }
-            >
-              <NativeSelectOption value="all">All ranks</NativeSelectOption>
-              {[1, 2, 3, 4, 5].map((rank) => (
-                <NativeSelectOption key={rank} value={String(rank)}>
-                  Rank {rank}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              <NativeSelect
+                aria-label="Filter applications by selected team rank"
+                className="w-full"
+                value={rankFilter}
+                disabled={(filters.team ?? "all") === "all"}
+                onChange={(event) =>
+                  setRankFilter(event.target.value as ApplicationRankFilter)
+                }
+              >
+                <NativeSelectOption value="all">All ranks</NativeSelectOption>
+                {[1, 2, 3, 4, 5].map((rank) => (
+                  <NativeSelectOption key={rank} value={String(rank)}>
+                    Rank {rank}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
 
-            <NativeSelect
-              aria-label="Filter applications by availability"
-              className="w-full"
-              value={availabilityFilter}
-              onChange={(event) =>
-                setAvailabilityFilter(
-                  event.target.value as ApplicationAvailabilityFilter,
-                )
-              }
-            >
-              <NativeSelectOption value="all">All availability</NativeSelectOption>
-              {APPLICATION_AVAILABILITY.map((availability) => (
-                <NativeSelectOption key={availability} value={availability}>
-                  {availability}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              <NativeSelect
+                aria-label="Filter applications by availability"
+                className="w-full"
+                value={availabilityFilter}
+                onChange={(event) =>
+                  setAvailabilityFilter(
+                    event.target.value as ApplicationAvailabilityFilter,
+                  )
+                }
+              >
+                <NativeSelectOption value="all">All availability</NativeSelectOption>
+                {APPLICATION_AVAILABILITY.map((availability) => (
+                  <NativeSelectOption key={availability} value={availability}>
+                    {availability}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
 
-            <NativeSelect
-              aria-label="Filter applications by graduation year"
-              className="w-full"
-              value={graduationYearFilter}
-              onChange={(event) => setGraduationYearFilter(event.target.value)}
-            >
-              <NativeSelectOption value="all">All graduation years</NativeSelectOption>
-              {graduationYears.map((year) => (
-                <NativeSelectOption key={year} value={String(year)}>
-                  {year}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
+              <NativeSelect
+                aria-label="Filter applications by graduation year"
+                className="w-full"
+                value={graduationYearFilter}
+                onChange={(event) => setGraduationYearFilter(event.target.value)}
+              >
+                <NativeSelectOption value="all">All graduation years</NativeSelectOption>
+                {graduationYears.map((year) => (
+                  <NativeSelectOption key={year} value={String(year)}>
+                    {year}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
 
-            <NativeSelect
-              aria-label="Filter applications by preference type"
-              className="w-full"
-              value={preferenceTypeFilter}
-              onChange={(event) =>
-                setPreferenceTypeFilter(
-                  event.target.value as ApplicationPreferenceTypeFilter,
-                )
-              }
-            >
-              <NativeSelectOption value="all">All preference types</NativeSelectOption>
-              <NativeSelectOption value="ranked">Ranked only</NativeSelectOption>
-              <NativeSelectOption value="legacy">Legacy only</NativeSelectOption>
-            </NativeSelect>
-          </div>
+              <NativeSelect
+                aria-label="Filter applications by preference type"
+                className="w-full"
+                value={preferenceTypeFilter}
+                onChange={(event) =>
+                  setPreferenceTypeFilter(
+                    event.target.value as ApplicationPreferenceTypeFilter,
+                  )
+                }
+              >
+                <NativeSelectOption value="all">All preference types</NativeSelectOption>
+                <NativeSelectOption value="ranked">Ranked only</NativeSelectOption>
+                <NativeSelectOption value="legacy">Legacy only</NativeSelectOption>
+              </NativeSelect>
+            </div>
+          )}
 
           {isError ? (
             <Alert variant="destructive">
@@ -1191,19 +1690,32 @@ export function ApplicationAdminPanel() {
                   ))
                 ) : table.getRowModel().rows.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow
+                    <ApplicationRowContextMenu
                       key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
+                      application={row.original}
+                      currentAdminEmail={currentAdminEmail}
+                      onView={setSelectedApplication}
+                      onDeleteRequest={setApplicationToDelete}
+                      onClaim={(app) => claim.mutate(app.id)}
+                      onRelease={(app) => release.mutate(app.id)}
+                      onCancel={(app) => cancel.mutate(app.id)}
+                      onIneligible={(app) => markIneligible.mutate(app.id)}
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
+                      <TableRow
+                        data-state={row.getIsSelected() && "selected"}
+                        className="cursor-pointer"
+                        onClick={() => setSelectedApplication(row.original)}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </ApplicationRowContextMenu>
                   ))
                 ) : (
                   <TableRow>
@@ -1230,16 +1742,20 @@ export function ApplicationAdminPanel() {
         }}
       >
         <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
-          {selectedApplication ? (
+          {displayedApplication ? (
             <>
               <SheetHeader>
-                <SheetTitle>{applicationName(selectedApplication)}</SheetTitle>
+                <SheetTitle>{applicationName(displayedApplication)}</SheetTitle>
                 <SheetDescription>
-                  Submitted {formatDate(selectedApplication.created_at)} ·{" "}
-                  {selectedApplication.email}
+                  Submitted {formatDate(displayedApplication.created_at)} ·{" "}
+                  {displayedApplication.email}
                 </SheetDescription>
               </SheetHeader>
-              <ApplicationDetail application={selectedApplication} />
+              <ApplicationDetail
+                application={displayedApplication}
+                currentAdminEmail={currentAdminEmail}
+                onApplicationUpdated={setSelectedApplication}
+              />
             </>
           ) : null}
         </SheetContent>
