@@ -44,7 +44,8 @@ function JobCard({ job }: { job: SmallJobListing & { companyLogo?: string | null
   return (
     <Link href={`/business/jobs/${job.id}`}>
       <ImageCard
-        image={job.companyLogo || coverImage}
+        image={coverImage}
+        fallbackImage="/project-placeholder.webp"
         alt={job.company || "Company"}
         blurHeight="70%"
         gradientColors={gradientColors}
