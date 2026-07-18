@@ -41,6 +41,15 @@ export function ImageCard({
 }: ImageCardProps) {
   const [imgSrc, setImgSrc] = useState(image)
   const [hasError, setHasError] = useState(false)
+  const [prevImage, setPrevImage] = useState(image)
+
+  // Re-sync from props when `image` changes, without a post-paint effect
+  // (see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  if (image !== prevImage) {
+    setPrevImage(image)
+    setImgSrc(image)
+    setHasError(false)
+  }
 
   const handleError = () => {
     if (fallbackImage && !hasError) {

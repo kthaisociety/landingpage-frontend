@@ -79,8 +79,9 @@ function JobCard({ job }: { job: SmallJobListing & { companyLogo?: string | null
 }
 
 export function JobsPreview() {
-  const { data: jobs = [], isLoading } = useJobs()
-  const { data: companies = [] } = useCompanies()
+  const { data: jobs = [], isLoading: jobsLoading } = useJobs()
+  const { data: companies = [], isLoading: companiesLoading } = useCompanies()
+  const isLoading = jobsLoading || companiesLoading
 
   const enrichedJobs = useMemo(() => {
     return jobs.map((job) => {
