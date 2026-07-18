@@ -12,7 +12,6 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   type Row,
-  type RowSelectionState,
   type SortingState,
   type Table as ReactTable,
   type VisibilityState,
@@ -48,12 +47,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -448,30 +447,6 @@ function createApplicationColumns({
 }): ColumnDef<GeneralApplication>[] {
   return [
     {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all rows"
-        />
-      ),
-      cell: ({ row }) => (
-        <div onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label={`Select ${applicationName(row.original)}`}
-          />
-        </div>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
       accessorKey: "status",
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" className="-ml-2" />
@@ -665,11 +640,7 @@ function DataTablePagination({
   table: ReactTable<GeneralApplication>;
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="text-sm text-muted-foreground">
-        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-        {table.getFilteredRowModel().rows.length} row(s) selected.
-      </div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Rows per page</span>
@@ -1242,7 +1213,6 @@ export function ApplicationAdminPanel() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     created_at: false,
   });
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = useState("");
   const [rankFilter, setRankFilterState] = useState<ApplicationRankFilter>("all");
   const [availabilityFilter, setAvailabilityFilterState] =
@@ -1317,14 +1287,12 @@ export function ApplicationAdminPanel() {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
       globalFilter,
     },
     globalFilterFn: applicationGlobalFilter,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -1385,7 +1353,6 @@ export function ApplicationAdminPanel() {
     setFilters({ year: 2026, status: "all", team: "all", q: "" });
     setGlobalFilter("");
     setColumnFilters([]);
-    setRowSelection({});
     setRankFilterState("all");
     setAvailabilityFilterState("all");
     setPreferenceTypeFilterState("all");
@@ -1406,7 +1373,6 @@ export function ApplicationAdminPanel() {
   async function deleteSelectedApplication() {
     if (!applicationToDelete) return;
     await deleteApplication.mutateAsync(applicationToDelete.id);
-    setRowSelection({});
     setSelectedApplication((current) =>
       current?.id === applicationToDelete.id ? null : current,
     );
@@ -1510,6 +1476,12 @@ export function ApplicationAdminPanel() {
           <CardDescription>
             Search, filter, inspect applications, and manage the interview pipeline.
           </CardDescription>
+          <CardAction>
+            <Badge variant="outline">
+              {table.getFilteredRowModel().rows.length} result
+              {table.getFilteredRowModel().rows.length === 1 ? "" : "s"}
+            </Badge>
+          </CardAction>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
