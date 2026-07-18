@@ -33,6 +33,7 @@ function GoogleLoginButton() {
         rounded-xl px-6 py-3
         text-base font-semibold
         bg-primary text-white
+        cursor-pointer
         transition-all duration-300 ease-out
         hover:bg-primary/90
         hover:shadow-lg hover:-translate-y-0.5
