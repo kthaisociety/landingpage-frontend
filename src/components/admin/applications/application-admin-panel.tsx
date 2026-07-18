@@ -346,6 +346,7 @@ function TeamPreferenceBadges({
 function ApplicationRowContextMenu({
   application,
   currentAdminEmail,
+  isITAdmin,
   onView,
   onDeleteRequest,
   onClaim,
@@ -356,6 +357,7 @@ function ApplicationRowContextMenu({
 }: {
   application: GeneralApplication;
   currentAdminEmail: string;
+  isITAdmin: boolean;
   onView: (application: GeneralApplication) => void;
   onDeleteRequest: (application: GeneralApplication) => void;
   onClaim: (application: GeneralApplication) => void;
@@ -420,14 +422,18 @@ function ApplicationRowContextMenu({
             Mark as ineligible
           </ContextMenuItem>
         )}
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          className="text-destructive focus:text-destructive"
-          onClick={() => onDeleteRequest(application)}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete application
-        </ContextMenuItem>
+        {isITAdmin && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => onDeleteRequest(application)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete application
+            </ContextMenuItem>
+          </>
+        )}
       </ContextMenuContent>
     </ContextMenu>
   );
@@ -1085,17 +1091,15 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="email-template">Email template</Label>
-                  {!emailTemplate && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto py-0 text-xs"
-                      onClick={() => setEmailTemplate(DEFAULT_INTERVIEW_TEMPLATE)}
-                    >
-                      Use default
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto py-0 text-xs"
+                    onClick={() => setEmailTemplate(DEFAULT_INTERVIEW_TEMPLATE)}
+                  >
+                    {emailTemplate ? "Reset to default" : "Use default"}
+                  </Button>
                 </div>
                 <Textarea
                   id="email-template"
@@ -1714,6 +1718,7 @@ export function ApplicationAdminPanel() {
                       key={row.id}
                       application={row.original}
                       currentAdminEmail={currentAdminEmail}
+                      isITAdmin={effectiveTeam === "IT"}
                       onView={setSelectedApplication}
                       onDeleteRequest={setApplicationToDelete}
                       onClaim={(app) => claim.mutate(app.id)}
