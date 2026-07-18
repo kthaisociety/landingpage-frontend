@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Camera, User, Plus, Trash2 } from "lucide-react";
@@ -185,12 +184,11 @@ export function MemberProfileForm() {
           aria-label="Upload profile picture"
         >
           {currentPictureUrl ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element -- external, per-user backend image; next/image's optimizer requires an allowlisted remote host, see AvatarImage usage elsewhere
+            <img
               src={currentPictureUrl}
               alt="Profile picture"
-              fill
-              sizes="80px"
-              className="object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           ) : initials ? (
             <span className="text-2xl font-semibold text-muted-foreground">
