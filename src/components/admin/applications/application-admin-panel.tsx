@@ -1009,7 +1009,7 @@ function ApplicationDetail({
 }
 
 const DEFAULT_INTERVIEW_TEMPLATE =
-  "Hi {{first_name}},\n\nCongratulations! We'd love to invite you to an interview with KTH AI Society.\n\nYou can book a time slot using the link below:\n{{booking_url}}\n\nLooking forward to speaking with you!\n\nBest regards,\nKTH AI Society";
+  "Congratulations! We'd love to invite you to an interview with KTH AI Society.\n\nYou can book a time slot using the link below:\n{{booking_url}}\n\nLooking forward to speaking with you!\n\nBest regards,\nKTH AI Society";
 
 function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
   const { data: settings, isLoading } = useInterviewSettings();
