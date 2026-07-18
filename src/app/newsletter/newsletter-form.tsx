@@ -169,6 +169,7 @@ function NewsletterFormFields({
   const form = useForm({
     defaultValues: defaultNewsletterValues,
     validators: {
+      onMount: newsletterSchema,
       onBlur: newsletterSchema,
       onSubmit: newsletterSchema,
     },
