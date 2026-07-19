@@ -299,6 +299,28 @@ async function updateInterviewSettings(settings: InterviewSettings): Promise<Int
   return response.json();
 }
 
+export type InterviewInvitePreview = {
+  subject: string;
+  html: string;
+};
+
+/** Renders the interview invite email server-side, from the same code path used to send it. */
+async function previewInterviewSettings(
+  settings: Pick<InterviewSettings, "booking_page_url" | "interview_email_template">,
+): Promise<InterviewInvitePreview> {
+  const response = await fetch(`${API_URL}/profile/me/interview-settings/preview`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(settings),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to render preview");
+  }
+  return response.json();
+}
+
 /** Patch a single application in every admin-applications cache entry. */
 function patchApplicationInCache(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -432,6 +454,15 @@ export function useUpdateInterviewSettings() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to save interview settings.");
+    },
+  });
+}
+
+export function usePreviewInterviewSettings() {
+  return useMutation({
+    mutationFn: previewInterviewSettings,
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to render preview.");
     },
   });
 }

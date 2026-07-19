@@ -73,6 +73,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -99,6 +107,7 @@ import {
   useDeleteApplication,
   useInterviewSettings,
   useMarkIneligible,
+  usePreviewInterviewSettings,
   useReleaseApplication,
   useSendInterviewInvite,
   useUpdateApplicationNotes,
@@ -986,7 +995,62 @@ function ApplicationDetail({
 }
 
 const DEFAULT_INTERVIEW_TEMPLATE =
-  "Congratulations! We'd love to invite you to an interview with KTH AI Society.\n\nUse the button below to book a time slot that works for you.\n\nLooking forward to speaking with you!";
+  "Congratulations! We'd love to invite you to an interview with KTH AI Society.\n\nLooking forward to speaking with you!";
+
+// Renders the invite by calling the backend, which builds it with the exact same
+// email.RenderInterviewInvite used when actually sending — so this can never drift from
+// the real email the way a hand-rolled client-side mockup could.
+function InterviewEmailPreviewDialog({ bookingUrl, emailTemplate }: { bookingUrl: string; emailTemplate: string }) {
+  const preview = usePreviewInterviewSettings();
+
+  return (
+    <Dialog
+      onOpenChange={(open) => {
+        if (open) {
+          preview.mutate({
+            booking_page_url: bookingUrl || "https://your-booking-link",
+            interview_email_template: emailTemplate || DEFAULT_INTERVIEW_TEMPLATE,
+          });
+        } else {
+          preview.reset();
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button type="button" size="lg" className="font-semibold">
+          <Eye className="h-4 w-4" />
+          Preview email
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Interview invitation preview</DialogTitle>
+          <DialogDescription>
+            {preview.data
+              ? `Subject: ${preview.data.subject}`
+              : "Rendered server-side by the same code that sends the real email."}
+          </DialogDescription>
+        </DialogHeader>
+        {preview.isPending && <Skeleton className="h-[500px] w-full" />}
+        {preview.isError && (
+          <p className="text-sm text-destructive">Couldn&apos;t render the preview. Try again.</p>
+        )}
+        {preview.data && (
+          // The booking link needs to open in a real new tab: Google (and most booking
+          // pages) refuse to render inside an iframe, so a same-frame navigation just
+          // fails with "refused to connect". allow-popups(-to-escape-sandbox) + a <base
+          // target="_blank"> makes clicking it open normally instead.
+          <iframe
+            title="Interview invitation email preview"
+            srcDoc={preview.data.html.replace("<head>", '<head><base target="_blank">')}
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
+            className="h-[500px] w-full rounded-md border bg-white"
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
   const { data: settings, isLoading } = useInterviewSettings();
@@ -1045,9 +1109,10 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
           ) : (
             <>
               <CardDescription>
-                Configure your personal booking link and the email template sent to candidates.
-                Use <code className="rounded bg-muted px-1 text-xs">{"{{first_name}}"}</code> and{" "}
-                <code className="rounded bg-muted px-1 text-xs">{"{{booking_url}}"}</code> as placeholders.
+                The greeting and sign-off are added automatically, and your booking link becomes a button below
+                your message — just write what goes in between. Use{" "}
+                <code className="rounded bg-muted px-1 text-xs">{"{{first_name}}"}</code> to address the candidate
+                by name.
               </CardDescription>
               <div className="space-y-2">
                 <Label htmlFor="booking-url">Booking page URL</Label>
@@ -1061,7 +1126,7 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="email-template">Email template</Label>
+                  <Label htmlFor="email-template">Your message</Label>
                   <Button
                     type="button"
                     variant="ghost"
@@ -1069,7 +1134,7 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
                     className="h-auto py-0 text-xs"
                     onClick={() => setEmailTemplate(DEFAULT_INTERVIEW_TEMPLATE)}
                   >
-                    {emailTemplate ? "Reset to default" : "Use default"}
+                    Use recommended message
                   </Button>
                 </div>
                 <Textarea
@@ -1080,9 +1145,12 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
                   onChange={(e) => setEmailTemplate(e.target.value)}
                 />
               </div>
-              <Button disabled={updateSettings.isPending} onClick={handleSave}>
-                {updateSettings.isPending ? "Saving…" : "Save settings"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <InterviewEmailPreviewDialog bookingUrl={bookingUrl} emailTemplate={emailTemplate} />
+                <Button variant="outline" disabled={updateSettings.isPending} onClick={handleSave}>
+                  {updateSettings.isPending ? "Saving…" : "Save settings"}
+                </Button>
+              </div>
             </>
           )}
         </CardContent>
