@@ -270,6 +270,40 @@ async function updateApplicationNotes({ id, note }: { id: string; note: string }
   return data.note;
 }
 
+export type ApplicationSharedNote = {
+  note: string;
+  last_edited_email: string;
+  updated_at: string | null;
+};
+
+async function fetchApplicationSharedNotes(id: string): Promise<ApplicationSharedNote> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/notes/shared`, {
+    credentials: "include",
+  });
+  if (!response.ok) return { note: "", last_edited_email: "", updated_at: null };
+  return response.json();
+}
+
+async function updateApplicationSharedNotes({
+  id,
+  note,
+}: {
+  id: string;
+  note: string;
+}): Promise<ApplicationSharedNote> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/notes/shared`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to save shared notes");
+  }
+  return response.json();
+}
+
 export type InterviewSettings = {
   booking_page_url: string;
   interview_email_template: string;
@@ -433,6 +467,28 @@ export function useUpdateApplicationNotes() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to save notes.");
+    },
+  });
+}
+
+export function useApplicationSharedNotes(id: string) {
+  return useQuery({
+    queryKey: ["application-shared-notes", id],
+    queryFn: () => fetchApplicationSharedNotes(id),
+    enabled: !!id,
+  });
+}
+
+export function useUpdateApplicationSharedNotes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateApplicationSharedNotes,
+    onSuccess: (result, variables) => {
+      toast.success("Shared notes saved.");
+      queryClient.setQueryData(["application-shared-notes", variables.id], result);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save shared notes.");
     },
   });
 }

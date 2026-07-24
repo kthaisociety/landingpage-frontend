@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import {
   flexRender,
   getCoreRowModel,
@@ -101,6 +102,7 @@ import {
   downloadApplicationResume,
   useAdminApplications,
   useApplicationNotes,
+  useApplicationSharedNotes,
   useCancelInterview,
   useClaimApplication,
   useRestoreApplication,
@@ -111,6 +113,7 @@ import {
   useReleaseApplication,
   useSendInterviewInvite,
   useUpdateApplicationNotes,
+  useUpdateApplicationSharedNotes,
   useUpdateInterviewSettings,
 } from "@/hooks/applications";
 import {
@@ -770,7 +773,86 @@ function DetailText({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ApplicationNotes({ applicationId }: { applicationId: string }) {
+/**
+ * A note editor that stays collapsed to a single row when there's nothing
+ * saved and the admin hasn't opted to write one, and auto-expands the one
+ * time it loads with existing content so it's never missed.
+ */
+function NoteField({
+  title,
+  placeholder,
+  value,
+  hasContent,
+  isPending,
+  canSave,
+  onChange,
+  onSave,
+  footer,
+}: {
+  title: string;
+  placeholder: string;
+  value: string;
+  hasContent: boolean;
+  isPending: boolean;
+  canSave: boolean;
+  onChange: (value: string) => void;
+  onSave: () => void;
+  footer?: React.ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const autoOpenedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasContent && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setIsOpen(true);
+    }
+  }, [hasContent]);
+
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="flex w-full items-center justify-between rounded-md border border-dashed px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:border-solid hover:bg-accent/50"
+      >
+        <span className="flex items-center gap-2">
+          {hasContent ? <span className="h-1.5 w-1.5 rounded-full bg-primary" /> : null}
+          {title}
+        </span>
+        <span className="text-xs">{hasContent ? "View / edit" : "Add note"}</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setIsOpen(false)}
+        className="flex items-center gap-1 text-sm font-semibold"
+      >
+        <ChevronDown className="h-4 w-4" />
+        {title}
+      </button>
+      <Textarea
+        autoFocus
+        placeholder={placeholder}
+        className="min-h-[120px] resize-y text-sm"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <div className="flex items-center justify-between">
+        <Button size="sm" disabled={isPending || !canSave} onClick={onSave}>
+          {isPending ? "Saving…" : "Save notes"}
+        </Button>
+        {footer}
+      </div>
+    </div>
+  );
+}
+
+function ApplicationPrivateNotes({ applicationId }: { applicationId: string }) {
   const { data: savedNote = "" } = useApplicationNotes(applicationId);
   const [draft, setDraft] = useState<string | null>(null);
   const updateNotes = useUpdateApplicationNotes();
@@ -785,22 +867,53 @@ function ApplicationNotes({ applicationId }: { applicationId: string }) {
   }
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold">My notes (private)</h3>
-      <Textarea
-        placeholder="Add your private interview notes here…"
-        className="min-h-[120px] resize-y text-sm"
-        value={value}
-        onChange={(e) => setDraft(e.target.value)}
-      />
-      <Button
-        size="sm"
-        disabled={updateNotes.isPending || draft === null || draft === savedNote}
-        onClick={handleSave}
-      >
-        {updateNotes.isPending ? "Saving…" : "Save notes"}
-      </Button>
-    </div>
+    <NoteField
+      title="My notes (private)"
+      placeholder="Add your private interview notes here…"
+      value={value}
+      hasContent={savedNote.trim().length > 0}
+      isPending={updateNotes.isPending}
+      canSave={draft !== null && draft !== savedNote}
+      onChange={setDraft}
+      onSave={handleSave}
+    />
+  );
+}
+
+function ApplicationSharedNotes({ applicationId }: { applicationId: string }) {
+  const { data } = useApplicationSharedNotes(applicationId);
+  const savedNote = data?.note ?? "";
+  const [draft, setDraft] = useState<string | null>(null);
+  const updateSharedNotes = useUpdateApplicationSharedNotes();
+
+  const value = draft ?? savedNote;
+
+  function handleSave() {
+    updateSharedNotes.mutate(
+      { id: applicationId, note: value },
+      { onSuccess: () => setDraft(null) },
+    );
+  }
+
+  return (
+    <NoteField
+      title="Shared notes (visible to all admins)"
+      placeholder="Add notes visible to all admins here…"
+      value={value}
+      hasContent={savedNote.trim().length > 0}
+      isPending={updateSharedNotes.isPending}
+      canSave={draft !== null && draft !== savedNote}
+      onChange={setDraft}
+      onSave={handleSave}
+      footer={
+        data?.last_edited_email && data.updated_at ? (
+          <p className="text-xs text-muted-foreground">
+            Last edited by {data.last_edited_email},{" "}
+            {formatDistanceToNow(new Date(data.updated_at), { addSuffix: true })}
+          </p>
+        ) : null
+      }
+    />
   );
 }
 
@@ -989,7 +1102,8 @@ function ApplicationDetail({
         Download resume
       </Button>
 
-      <ApplicationNotes applicationId={application.id} />
+      <ApplicationSharedNotes applicationId={application.id} />
+      <ApplicationPrivateNotes applicationId={application.id} />
     </div>
   );
 }
