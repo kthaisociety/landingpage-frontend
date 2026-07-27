@@ -21,6 +21,7 @@ The repo currently contains `package-lock.json`. Prefer `npm` unless the branch 
 - When editing auth, verify both the mock JWT flow and the route protection in `src/proxy.ts`.
 - When editing `src/app/api/*`, remember these handlers run on the Next server, not in the browser.
 - Preserve public-facing copy, images, and brand assets unless the task explicitly asks for content/design changes.
+- Use semantic/conventional commit messages (`feat:`, `fix:`, `style:`, `refactor:`, `chore:`, `docs:`, `test:`, ...) for every commit, matching this repo's existing history — check `git log --oneline` if unsure of the convention.
 
 ## Verification
 
