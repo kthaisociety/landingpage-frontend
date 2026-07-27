@@ -169,6 +169,7 @@ export type GeneralApplication = {
   interviewing_by_email: string;
   interviewed_by: string[];
   interview_invite_sent_at: string | null;
+  team_questions_invite_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { ChevronDown, Eye, Mail, Send, Settings } from "lucide-react";
 import {
   AlertDialog,
@@ -328,19 +329,31 @@ function SubmissionDialog({ application }: { application: GeneralApplication }) 
   );
 }
 
-function ResendButton({ applicationId }: { applicationId: string }) {
+// Labeled "Send" the first time (no prior team_questions_invite_sent_at) and
+// "Resend" after that — otherwise every never-invited pending applicant would
+// misleadingly show a "Resend" button for an invite they never received.
+function TeamQuestionsInviteButton({ application }: { application: GeneralApplication }) {
   const resend = useResendTeamQuestions();
+  const alreadySent = Boolean(application.team_questions_invite_sent_at);
+
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      disabled={resend.isPending}
-      onClick={() => resend.mutate(applicationId)}
-    >
-      <Mail className="h-4 w-4" />
-      Resend
-    </Button>
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={resend.isPending}
+        onClick={() => resend.mutate(application.id)}
+      >
+        <Mail className="h-4 w-4" />
+        {alreadySent ? "Resend" : "Send"}
+      </Button>
+      {alreadySent && application.team_questions_invite_sent_at && (
+        <span className="text-xs text-muted-foreground">
+          Sent {formatDistanceToNow(new Date(application.team_questions_invite_sent_at))} ago
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -403,7 +416,7 @@ export function TeamQuestionsAdminPanel({ currentAdminEmail }: { currentAdminEma
                       </TableCell>
                       <TableCell className="flex justify-end gap-2">
                         {application.status === "pending" && (
-                          <ResendButton applicationId={application.id} />
+                          <TeamQuestionsInviteButton application={application} />
                         )}
                         <SubmissionDialog application={application} />
                       </TableCell>

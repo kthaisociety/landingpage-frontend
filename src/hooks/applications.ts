@@ -644,7 +644,7 @@ export function useSendBulkTeamQuestions() {
   });
 }
 
-async function resendTeamQuestions(id: string): Promise<void> {
+async function resendTeamQuestions(id: string): Promise<GeneralApplication> {
   const response = await fetch(`${API_URL}/applications/admin/${id}/team-questions/resend`, {
     method: "POST",
     credentials: "include",
@@ -653,13 +653,16 @@ async function resendTeamQuestions(id: string): Promise<void> {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
     throw new Error(data?.error || "Failed to resend team questions invite");
   }
+  return response.json();
 }
 
 export function useResendTeamQuestions() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: resendTeamQuestions,
-    onSuccess: () => {
-      toast.success("Team questions invite resent.");
+    onSuccess: (updated) => {
+      toast.success("Team questions invite sent.");
+      patchApplicationInCache(queryClient, updated);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to resend team questions invite.");
