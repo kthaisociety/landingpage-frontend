@@ -54,6 +54,7 @@ import {
 } from "@/hooks/applications";
 import { APPLICATION_TEAM_LABELS, type GeneralApplication } from "@/types/applications";
 import { getStatusBadgeStyle } from "@/components/admin/applications/status-badge";
+import { TeamQuestionDefinitionsPanel } from "@/components/admin/applications/team-question-definitions-panel";
 
 const DEFAULT_TEAM_QUESTIONS_TEMPLATE =
   "Thanks for applying to KTH AI Society! To move forward, we need you to answer a few extra questions about the team(s) you applied to.\n\nIt only takes a few minutes.";
@@ -364,6 +365,7 @@ export function TeamQuestionsAdminPanel({ currentAdminEmail }: { currentAdminEma
     <section className="space-y-6">
       <TeamQuestionsSendBulkCard />
       <TeamQuestionsTemplatePanel />
+      <TeamQuestionDefinitionsPanel />
 
       <Card>
         <CardHeader>

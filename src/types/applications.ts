@@ -252,3 +252,10 @@ export type TeamQuestionsSendBulkResult = {
 export type TeamQuestionsSendBulkPreview = {
   count: number;
 };
+
+export type TeamQuestionsForTeam = {
+  can_edit: boolean;
+  questions: TeamQuestion[];
+};
+
+export type TeamQuestionsByTeam = Partial<Record<ApplicationTeam, TeamQuestionsForTeam>>;

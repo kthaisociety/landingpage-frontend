@@ -7,6 +7,8 @@ import type {
   CreateGeneralApplicationInput,
   CreateGeneralApplicationResponse,
   GeneralApplication,
+  TeamQuestion,
+  TeamQuestionsByTeam,
   TeamQuestionsForm,
   TeamQuestionsSendBulkPreview,
   TeamQuestionsSendBulkResult,
@@ -737,6 +739,147 @@ export function usePreviewTeamQuestionsTemplate() {
     mutationFn: previewTeamQuestionsTemplate,
     onError: (error: Error) => {
       toast.error(error.message || "Failed to render preview.");
+    },
+  });
+}
+
+async function fetchTeamQuestionDefinitions(): Promise<TeamQuestionsByTeam> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/questions`, {
+    credentials: "include",
+  });
+  if (!response.ok) throw new Error("Failed to fetch team questions");
+  const data = (await response.json()) as { teams: TeamQuestionsByTeam };
+  return data.teams;
+}
+
+export function useTeamQuestionDefinitions() {
+  return useQuery({
+    queryKey: ["team-question-definitions"],
+    queryFn: fetchTeamQuestionDefinitions,
+  });
+}
+
+async function createTeamQuestion(input: {
+  team: string;
+  text: string;
+  required: boolean;
+}): Promise<TeamQuestion> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/questions`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to create question");
+  }
+  return response.json();
+}
+
+export function useCreateTeamQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createTeamQuestion,
+    onSuccess: () => {
+      toast.success("Question added.");
+      queryClient.invalidateQueries({ queryKey: ["team-question-definitions"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to create question.");
+    },
+  });
+}
+
+async function updateTeamQuestion({
+  id,
+  text,
+  required,
+}: {
+  id: string;
+  text: string;
+  required: boolean;
+}): Promise<TeamQuestion> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/questions/${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, required }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to save question");
+  }
+  return response.json();
+}
+
+export function useUpdateTeamQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateTeamQuestion,
+    onSuccess: () => {
+      toast.success("Question saved.");
+      queryClient.invalidateQueries({ queryKey: ["team-question-definitions"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save question.");
+    },
+  });
+}
+
+async function deleteTeamQuestion(id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/questions/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to delete question");
+  }
+}
+
+export function useDeleteTeamQuestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteTeamQuestion,
+    onSuccess: () => {
+      toast.success("Question deleted.");
+      queryClient.invalidateQueries({ queryKey: ["team-question-definitions"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete question.");
+    },
+  });
+}
+
+async function reorderTeamQuestions({
+  team,
+  orderedIds,
+}: {
+  team: string;
+  orderedIds: string[];
+}): Promise<void> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/questions/reorder`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ team, ordered_ids: orderedIds }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to reorder questions");
+  }
+}
+
+export function useReorderTeamQuestions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: reorderTeamQuestions,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-question-definitions"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to reorder questions.");
     },
   });
 }
