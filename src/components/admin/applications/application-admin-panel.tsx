@@ -89,7 +89,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { TeamQuestionsAdminPanel } from "@/components/admin/applications/team-questions-admin-panel";
+import { getStatusBadgeStyle } from "@/components/admin/applications/status-badge";
 import {
   Table,
   TableBody,
@@ -153,11 +156,6 @@ const COLUMN_LABELS: Record<string, string> = {
   team_preferences_ranked: "Preference type",
 };
 
-const STATUS_BADGE_VARIANT: Record<ApplicationStatus, "default" | "destructive" | "secondary" | "outline"> = {
-  available: "outline",
-  interviewing: "default",
-  ineligible: "destructive",
-};
 
 type ApplicationStatusFilter = ApplicationStatus | "all";
 type ApplicationTeamFilter = ApplicationTeam | "all";
@@ -465,24 +463,13 @@ function createApplicationColumns({
       ),
       cell: ({ row }) => {
         const app = row.original;
-        if (app.status === "interviewing") {
-          const isMine = app.interviewing_by_email === currentAdminEmail;
-          return (
-            <Badge
-              variant="outline"
-              className={
-                isMine
-                  ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                  : "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300"
-              }
-            >
-              {isMine ? "interviewing (you)" : "interviewing (other)"}
-            </Badge>
-          );
-        }
+        const badge = getStatusBadgeStyle(app.status, {
+          interviewingByEmail: app.interviewing_by_email,
+          currentAdminEmail,
+        });
         return (
-          <Badge variant={STATUS_BADGE_VARIANT[app.status] ?? "outline"}>
-            {app.status}
+          <Badge variant={badge.variant} className={badge.className}>
+            {badge.label}
           </Badge>
         );
       },
@@ -940,11 +927,16 @@ function ApplicationDetail({
     application.status === "interviewing" &&
     application.interviewing_by_email !== currentAdminEmail;
 
+  const statusBadge = getStatusBadgeStyle(application.status, {
+    interviewingByEmail: application.interviewing_by_email,
+    currentAdminEmail,
+  });
+
   return (
     <div className="space-y-6 px-4 pb-6">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={STATUS_BADGE_VARIANT[application.status] ?? "outline"}>
-          {application.status}
+        <Badge variant={statusBadge.variant} className={statusBadge.className}>
+          {statusBadge.label}
         </Badge>
         {application.team_preferences_ranked === true ? null : (
           <Badge variant="secondary">Legacy unranked preferences</Badge>
@@ -997,14 +989,22 @@ function ApplicationDetail({
               <XCircle className="mr-2 h-4 w-4" />
               Cancel interview
             </Button>
-            <Button
-              size="sm"
-              disabled={sendInvite.isPending}
-              onClick={() => sendInvite.mutate(application.id)}
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Send invite email
-            </Button>
+            <div className="flex flex-col gap-1">
+              <Button
+                size="sm"
+                variant={application.interview_invite_sent_at ? "outline" : "default"}
+                disabled={sendInvite.isPending}
+                onClick={() => sendInvite.mutate(application.id)}
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                {application.interview_invite_sent_at ? "Resend invite email" : "Send invite email"}
+              </Button>
+              {application.interview_invite_sent_at && (
+                <p className="text-xs text-muted-foreground">
+                  Sent {formatDistanceToNow(new Date(application.interview_invite_sent_at))} ago
+                </p>
+              )}
+            </div>
           </>
         )}
         {isClaimedByOther && (
@@ -1131,14 +1131,14 @@ function InterviewEmailPreviewDialog({ bookingUrl, emailTemplate }: { bookingUrl
       }}
     >
       <DialogTrigger asChild>
-        <Button type="button" size="lg" className="font-semibold">
+        <Button type="button" size="lg">
           <Eye className="h-4 w-4" />
           Preview email
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Interview invitation preview</DialogTitle>
+          <DialogTitle>Interview invite preview</DialogTitle>
           <DialogDescription>
             {preview.data
               ? `Subject: ${preview.data.subject}`
@@ -1174,11 +1174,17 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
   const [emailTemplate, setEmailTemplate] = useState("");
   const [initialised, setInitialised] = useState(false);
 
+  const savedBookingUrl = settings?.booking_page_url ?? "";
+  const savedEmailTemplate = settings ? settings.interview_email_template || DEFAULT_INTERVIEW_TEMPLATE : "";
+
   if (settings && !initialised) {
-    setBookingUrl(settings.booking_page_url);
-    setEmailTemplate(settings.interview_email_template);
+    setBookingUrl(savedBookingUrl);
+    setEmailTemplate(savedEmailTemplate);
     setInitialised(true);
   }
+
+  const isDirty =
+    initialised && (bookingUrl !== savedBookingUrl || emailTemplate !== savedEmailTemplate);
 
   function handleSave() {
     updateSettings.mutate(
@@ -1191,16 +1197,24 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
     );
   }
 
+  // Collapsing with unsaved edits discards them — reverting to the last
+  // saved values here (rather than leaving them sitting in memory) means
+  // there's never an invisible unsaved draft lingering after you close this.
+  function handleToggle() {
+    if (open && isDirty) {
+      setBookingUrl(savedBookingUrl);
+      setEmailTemplate(savedEmailTemplate);
+    }
+    setOpen((v) => !v);
+  }
+
   return (
     <Card>
-      <CardHeader
-        className="cursor-pointer select-none"
-        onClick={() => setOpen((v) => !v)}
-      >
+      <CardHeader className="cursor-pointer select-none" onClick={handleToggle}>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <Settings className="h-4 w-4" />
-            My interview settings
+            Interview invite
           </CardTitle>
           <ChevronDown
             className="h-4 w-4 text-muted-foreground transition-transform"
@@ -1209,7 +1223,7 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
         </div>
         {!open && (
           <CardDescription>
-            Booking page and email template — click to view or edit.
+            The booking link and message sent to applicants when you claim them for interview. Click to view or edit.
           </CardDescription>
         )}
       </CardHeader>
@@ -1224,7 +1238,7 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
             <>
               <CardDescription>
                 The greeting and sign-off are added automatically, and your booking link becomes a button below
-                your message — just write what goes in between. Use{" "}
+                your message, just write what goes in between. Use{" "}
                 <code className="rounded bg-muted px-1 text-xs">{"{{first_name}}"}</code> to address the candidate
                 by name.
               </CardDescription>
@@ -1248,7 +1262,7 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
                     className="h-auto py-0 text-xs"
                     onClick={() => setEmailTemplate(DEFAULT_INTERVIEW_TEMPLATE)}
                   >
-                    Use recommended message
+                    Reset to default message
                   </Button>
                 </div>
                 <Textarea
@@ -1259,11 +1273,16 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
                   onChange={(e) => setEmailTemplate(e.target.value)}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <InterviewEmailPreviewDialog bookingUrl={bookingUrl} emailTemplate={emailTemplate} />
-                <Button variant="outline" disabled={updateSettings.isPending} onClick={handleSave}>
-                  {updateSettings.isPending ? "Saving…" : "Save settings"}
+                <Button variant="outline" disabled={!isDirty || updateSettings.isPending} onClick={handleSave}>
+                  {updateSettings.isPending ? "Saving…" : isDirty ? "Save changes" : "Saved"}
                 </Button>
+                {isDirty && !updateSettings.isPending && (
+                  <span className="text-xs text-muted-foreground">
+                    Unsaved - collapsing this without saving will discard your changes.
+                  </span>
+                )}
               </div>
             </>
           )}
@@ -1359,7 +1378,13 @@ function AdminTeamSetup({
   );
 }
 
-export function ApplicationAdminPanel() {
+export function ApplicationAdminPanel({
+  activeTab,
+  onActiveTabChange,
+}: {
+  activeTab: "general" | "team-questions";
+  onActiveTabChange: (tab: "general" | "team-questions") => void;
+}) {
   const { user } = useAuth();
   const currentAdminEmail = user?.email ?? "";
 
@@ -1427,13 +1452,23 @@ export function ApplicationAdminPanel() {
   );
 
   const summary = useMemo(() => {
-    const counts = { total: 0, totalTeamApplications: 0, available: 0, interviewing: 0, ineligible: 0 };
+    const counts = {
+      total: 0,
+      totalTeamApplications: 0,
+      pending: 0,
+      available: 0,
+      interviewing: 0,
+      ineligible: 0,
+      withdrawn: 0,
+    };
     applications.forEach((application) => {
       counts.total += 1;
       counts.totalTeamApplications += application.teams.length;
-      if (application.status === "available") counts.available += 1;
+      if (application.status === "pending") counts.pending += 1;
+      else if (application.status === "available") counts.available += 1;
       else if (application.status === "interviewing") counts.interviewing += 1;
       else if (application.status === "ineligible") counts.ineligible += 1;
+      else if (application.status === "withdrawn") counts.withdrawn += 1;
     });
     return counts;
   }, [applications]);
@@ -1617,30 +1652,37 @@ export function ApplicationAdminPanel() {
   }
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">General Applications 2026</h2>
-          <p className="text-sm text-muted-foreground">
-            Review submissions and manage the interview process.
-          </p>
-        </div>
-      </div>
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => onActiveTabChange(value as "general" | "team-questions")}
+      className="space-y-6"
+    >
+      <TabsList>
+        <TabsTrigger value="general">General Information</TabsTrigger>
+        <TabsTrigger value="team-questions">Team Questions</TabsTrigger>
+      </TabsList>
 
-      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+      <TabsContent value="team-questions">
+        <TeamQuestionsAdminPanel currentAdminEmail={currentAdminEmail} />
+      </TabsContent>
+
+      <TabsContent value="general" className="space-y-6">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-7">
         {(
           [
-            ["Unique applicants", summary.total, null],
-            ["Total applications", summary.totalTeamApplications, null],
-            ["Available", summary.available, "available"],
-            ["Interviewing", summary.interviewing, "interviewing"],
-            ["Ineligible", summary.ineligible, "ineligible"],
+            { label: "Unique applicants", value: summary.total, onClick: resetFilters },
+            { label: "Total applications", value: summary.totalTeamApplications, onClick: undefined },
+            { label: "Pending team questions", value: summary.pending, onClick: () => setStatusFilter("pending") },
+            { label: "Available", value: summary.available, onClick: () => setStatusFilter("available") },
+            { label: "Interviewing", value: summary.interviewing, onClick: () => setStatusFilter("interviewing") },
+            { label: "Ineligible", value: summary.ineligible, onClick: () => setStatusFilter("ineligible") },
+            { label: "Withdrawn", value: summary.withdrawn, onClick: () => setStatusFilter("withdrawn") },
           ] as const
-        ).map(([label, value, statusFilter]) => (
+        ).map(({ label, value, onClick }) => (
           <Card
             key={label}
-            className={statusFilter ? "cursor-pointer transition-colors hover:bg-muted/50" : undefined}
-            onClick={statusFilter ? () => setStatusFilter(statusFilter) : undefined}
+            className={onClick ? "cursor-pointer transition-colors hover:bg-muted/50" : undefined}
+            onClick={onClick}
           >
             <CardHeader className="pb-2">
               <CardDescription>{label}</CardDescription>
@@ -1977,6 +2019,7 @@ export function ApplicationAdminPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </section>
+      </TabsContent>
+    </Tabs>
   );
 }

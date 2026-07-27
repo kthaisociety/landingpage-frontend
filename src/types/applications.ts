@@ -36,9 +36,11 @@ export const APPLICATION_INTERESTS = [
 ] as const;
 
 export const APPLICATION_STATUSES = [
+  "pending",
   "available",
   "interviewing",
   "ineligible",
+  "withdrawn",
 ] as const;
 
 // Shared with the newsletter signup form so both flows offer the same options.
@@ -166,6 +168,7 @@ export type GeneralApplication = {
   interviewing_by_user_id: string | null;
   interviewing_by_email: string;
   interviewed_by: string[];
+  interview_invite_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -200,4 +203,51 @@ export type AdminApplicationsFilters = {
   status?: ApplicationStatus | "all";
   team?: ApplicationTeam | "all";
   q?: string;
+};
+
+export type TeamQuestion = {
+  id: string;
+  text: string;
+  required: boolean;
+};
+
+export type TeamQuestionsForm = {
+  first_name: string;
+  teams: ApplicationTeam[];
+  questions: Partial<Record<ApplicationTeam, TeamQuestion[]>>;
+};
+
+export type TeamQuestionsAnswers = Record<string, Record<string, string>>;
+
+export type TeamQuestionsSubmitInput = {
+  answers: TeamQuestionsAnswers;
+  withdrawn_teams: string[];
+};
+
+export type TeamQuestionsSubmitResponse = {
+  status: ApplicationStatus;
+};
+
+export type TeamQuestionsSubmission =
+  | { submitted: false }
+  | {
+      submitted: true;
+      answers: TeamQuestionsAnswers;
+      withdrawn_teams: string[];
+      submitted_at: string;
+    };
+
+export type TeamQuestionsTemplate = {
+  email_template: string;
+  updated_by_email: string;
+  can_edit: boolean;
+};
+
+export type TeamQuestionsSendBulkResult = {
+  sent: number;
+  failed: string[];
+};
+
+export type TeamQuestionsSendBulkPreview = {
+  count: number;
 };

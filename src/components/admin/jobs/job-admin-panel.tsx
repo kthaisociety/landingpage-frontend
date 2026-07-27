@@ -52,20 +52,13 @@ export function JobAdminPanel() {
 
   return (
     <section className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">Job Posts</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage roles for the KTH AIS community.
-          </p>
-        </div>
-        {!formMode && (
+      {!formMode && (
+        <div className="flex justify-end">
           <Button onClick={() => setFormMode({ type: "new" })}>
             <Plus className="mr-2 h-4 w-4" /> New Job
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Inline Form — drops in above listings */}
       {formMode && (

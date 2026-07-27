@@ -21,7 +21,11 @@ import { ApplicationAdminPanel } from "@/components/admin/applications/applicati
 // Added "users" to the ID union type
 type AdminSection = {
   id: "users" | "applications" | "companies" | "jobs" | "projects";
+  /** Short text for the nav pill / mobile dropdown. */
   label: string;
+  /** The section's actual page title — rendered big, once, here — so adding a
+   * new admin page never means writing a duplicate title inside its content. */
+  title: string;
   description: string;
   content: ReactNode;
 };
@@ -30,38 +34,59 @@ const adminSections: AdminSection[] = [
   {
     id: "users",
     label: "Users",
+    title: "Users",
     description: "Manage users and assign admin roles.",
     content: <UserAdminPanel />,
   },
   {
     id: "applications",
     label: "Applications",
-    description: "Review 2026 general applications.",
-    content: <ApplicationAdminPanel />,
+    // Unused for rendering — Applications has its own sub-tabs (General
+    // Information / Team Questions), so AdminWorkspace computes its title
+    // from applicationsTab instead. Kept here for type-shape consistency.
+    title: "Applications",
+    description: "Review general applications and manage the interview pipeline.",
+    content: null,
   },
   {
     id: "companies",
     label: "Companies",
-    description: "Add companies once and reuse them for jobs.",
+    title: "Companies",
+    description: "Manage company profiles used for job postings.",
     content: <CompanyAdminPanel />,
   },
   {
     id: "jobs",
     label: "Jobs",
-    description: "Publish new job posts.",
+    title: "Job Posts",
+    description: "Manage roles for the KTH AIS community.",
     content: <JobAdminPanel />,
   },
   {
     id: "projects",
     label: "Projects",
-    description: "Create project entries for the website.",
+    title: "Project entries",
+    description: "Manage your showcase projects here.",
     content: <ProjectAdminPanel />,
   },
 ];
 
+const APPLICATIONS_TAB_COPY = {
+  general: {
+    title: "General Information",
+    description: "Review general applications and manage the interview pipeline.",
+  },
+  "team-questions": {
+    title: "Team Questions",
+    description: "Send, track, and review team-specific follow-up answers.",
+  },
+} as const;
+
 export function AdminWorkspace() {
   const [activeSectionId, setActiveSectionId] =
     useState<AdminSection["id"]>("users"); // Defaulting to the new users tab
+  const [applicationsTab, setApplicationsTab] =
+    useState<"general" | "team-questions">("general");
 
   const activeSection = useMemo(() => {
     return (
@@ -70,16 +95,21 @@ export function AdminWorkspace() {
     );
   }, [activeSectionId]);
 
+  const isApplications = activeSectionId === "applications";
+  const { title, description } = isApplications
+    ? APPLICATIONS_TAB_COPY[applicationsTab]
+    : activeSection;
+
   return (
     <section className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <p className="text-sm font-medium">{activeSection.label}</p>
-          <p className="text-sm text-muted-foreground">
-            {activeSection.description}
-          </p>
+        {/* The one place any admin page's title is rendered — pages never
+            carry their own duplicate title, they just supply the text. */}
+        <div>
+          <h2 className="text-2xl font-semibold">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:ml-auto">
           <div className="sm:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -120,7 +150,16 @@ export function AdminWorkspace() {
         </div>
       </div>
 
-      <div>{activeSection.content}</div>
+      <div>
+        {isApplications ? (
+          <ApplicationAdminPanel
+            activeTab={applicationsTab}
+            onActiveTabChange={setApplicationsTab}
+          />
+        ) : (
+          activeSection.content
+        )}
+      </div>
     </section>
   );
 }

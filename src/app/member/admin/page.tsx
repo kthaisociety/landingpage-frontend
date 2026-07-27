@@ -57,10 +57,10 @@ export default function MemberAdminPage() {
               <CardHeader>
                 <CardTitle className="text-2xl font-display font-bold flex items-center gap-2">
                   <ShieldCheck className="w-6 h-6" />
-                  Member Admin
+                  Admin Panel
                 </CardTitle>
                 <CardDescription>
-                  Manage companies, jobs, and projects from the admin workspace.
+                  Manage users, applications, companies, jobs, and projects - all in one place.
                 </CardDescription>
               </CardHeader>
               <CardContent>

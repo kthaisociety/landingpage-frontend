@@ -48,20 +48,14 @@ export function ProjectAdminPanel() {
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold">Project entries</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage your showcase projects here.
-          </p>
-        </div>
-        {!formMode && (
+      {!formMode && (
+        <div className="flex justify-end">
           <Button onClick={() => setFormMode({ type: "new" })}>
             <Plus className="mr-2 h-4 w-4" />
             New Project
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Inline Form */}
       {formMode && (

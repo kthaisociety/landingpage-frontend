@@ -7,6 +7,13 @@ import type {
   CreateGeneralApplicationInput,
   CreateGeneralApplicationResponse,
   GeneralApplication,
+  TeamQuestionsForm,
+  TeamQuestionsSendBulkPreview,
+  TeamQuestionsSendBulkResult,
+  TeamQuestionsSubmission,
+  TeamQuestionsSubmitInput,
+  TeamQuestionsSubmitResponse,
+  TeamQuestionsTemplate,
 } from "@/types/applications";
 
 function appendTrimmed(formData: FormData, key: string, value: string) {
@@ -235,7 +242,7 @@ async function releaseApplication(id: string): Promise<GeneralApplication> {
   return response.json();
 }
 
-async function sendInterviewInvite(id: string): Promise<void> {
+async function sendInterviewInvite(id: string): Promise<GeneralApplication> {
   const response = await fetch(`${API_URL}/applications/admin/${id}/send-invite`, {
     method: "POST",
     credentials: "include",
@@ -244,6 +251,7 @@ async function sendInterviewInvite(id: string): Promise<void> {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
     throw new Error(data?.error || "Failed to send interview invite");
   }
+  return response.json();
 }
 
 async function fetchApplicationNotes(id: string): Promise<string> {
@@ -438,10 +446,12 @@ export function useRestoreApplication() {
 }
 
 export function useSendInterviewInvite() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: sendInterviewInvite,
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast.success("Interview invite sent.");
+      patchApplicationInCache(queryClient, updated);
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to send interview invite.");
@@ -525,6 +535,207 @@ export function usePreviewInterviewSettings() {
 
 export function getApplicationResumeUrl(id: string) {
   return `${API_URL}/applications/admin/${id}/resume`;
+}
+
+async function fetchTeamQuestionsForm(token: string): Promise<TeamQuestionsForm> {
+  const response = await fetch(`${API_URL}/applications/team-questions/${token}`);
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "This link is invalid or has expired.");
+  }
+  return response.json();
+}
+
+async function submitTeamQuestions({
+  token,
+  ...input
+}: TeamQuestionsSubmitInput & { token: string }): Promise<TeamQuestionsSubmitResponse> {
+  const response = await fetch(`${API_URL}/applications/team-questions/${token}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to submit team questions");
+  }
+  return response.json();
+}
+
+export function useTeamQuestionsForm(token: string) {
+  return useQuery({
+    queryKey: ["team-questions-form", token],
+    queryFn: () => fetchTeamQuestionsForm(token),
+    enabled: !!token,
+    retry: false,
+  });
+}
+
+export function useSubmitTeamQuestions() {
+  return useMutation({
+    mutationFn: submitTeamQuestions,
+  });
+}
+
+async function fetchApplicationTeamQuestions(id: string): Promise<TeamQuestionsSubmission> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/team-questions`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch team questions submission");
+  }
+  return response.json();
+}
+
+export function useApplicationTeamQuestions(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ["application-team-questions", id],
+    queryFn: () => fetchApplicationTeamQuestions(id),
+    enabled: !!id && enabled,
+  });
+}
+
+async function fetchSendBulkTeamQuestionsPreview(): Promise<TeamQuestionsSendBulkPreview> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/send-bulk/preview`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to check how many applicants would be emailed");
+  }
+  return response.json();
+}
+
+/** How many applicants the next bulk send would actually email — same query the send itself uses. */
+export function useSendBulkTeamQuestionsPreview() {
+  return useQuery({
+    queryKey: ["team-questions-send-bulk-preview"],
+    queryFn: fetchSendBulkTeamQuestionsPreview,
+  });
+}
+
+async function sendBulkTeamQuestions(): Promise<TeamQuestionsSendBulkResult> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/send-bulk`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to send team questions invites");
+  }
+  return response.json();
+}
+
+export function useSendBulkTeamQuestions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: sendBulkTeamQuestions,
+    onSuccess: (result) => {
+      toast.success(
+        result.failed.length > 0
+          ? `Sent ${result.sent} invites, ${result.failed.length} failed.`
+          : `Sent ${result.sent} team questions invites.`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["team-questions-send-bulk-preview"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to send team questions invites.");
+    },
+  });
+}
+
+async function resendTeamQuestions(id: string): Promise<void> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/team-questions/resend`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to resend team questions invite");
+  }
+}
+
+export function useResendTeamQuestions() {
+  return useMutation({
+    mutationFn: resendTeamQuestions,
+    onSuccess: () => {
+      toast.success("Team questions invite resent.");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to resend team questions invite.");
+    },
+  });
+}
+
+async function fetchTeamQuestionsTemplate(): Promise<TeamQuestionsTemplate> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/template`, {
+    credentials: "include",
+  });
+  if (!response.ok) throw new Error("Failed to fetch team questions template");
+  return response.json();
+}
+
+async function updateTeamQuestionsTemplate(
+  emailTemplate: string,
+): Promise<TeamQuestionsTemplate> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/template`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email_template: emailTemplate }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to save team questions template");
+  }
+  return response.json();
+}
+
+export function useTeamQuestionsTemplate() {
+  return useQuery({
+    queryKey: ["team-questions-template"],
+    queryFn: fetchTeamQuestionsTemplate,
+  });
+}
+
+export function useUpdateTeamQuestionsTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateTeamQuestionsTemplate,
+    onSuccess: (data) => {
+      toast.success("Team questions template saved.");
+      queryClient.setQueryData(["team-questions-template"], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save team questions template.");
+    },
+  });
+}
+
+/** Renders the team questions invite email server-side, from the same code path used to send it. */
+async function previewTeamQuestionsTemplate(
+  emailTemplate: string,
+): Promise<InterviewInvitePreview> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/template/preview`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email_template: emailTemplate }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to render preview");
+  }
+  return response.json();
+}
+
+export function usePreviewTeamQuestionsTemplate() {
+  return useMutation({
+    mutationFn: previewTeamQuestionsTemplate,
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to render preview.");
+    },
+  });
 }
 
 export async function downloadApplicationResume(
