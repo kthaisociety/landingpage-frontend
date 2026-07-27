@@ -340,7 +340,7 @@ function TeamQuestionsInviteButton({ application }: { application: GeneralApplic
     <div className="flex flex-col items-end gap-1">
       <Button
         type="button"
-        variant="outline"
+        variant={alreadySent ? "outline" : "default"}
         size="sm"
         disabled={resend.isPending}
         onClick={() => resend.mutate(application.id)}
