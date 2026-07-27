@@ -1028,7 +1028,8 @@ export function ApplicationForm() {
       if (
         fieldName === "teams" ||
         fieldName === "availability" ||
-        fieldName === "interests"
+        fieldName === "interests" ||
+        fieldName === "dataRetentionConsent"
       ) {
         await form.validateField(fieldName, "change");
       }
@@ -1038,6 +1039,15 @@ export function ApplicationForm() {
   async function validateCurrentStep() {
     const step = APPLICATION_STEPS[currentStep];
     if (currentStep === APPLICATION_STEPS.length - 1) {
+      // Unlike every other step, this branch used to skip
+      // touchAndValidateStepFields and go straight to a raw schema check.
+      // That check alone can correctly detect an unchecked consent box, but
+      // it never runs the field's own registered validator, so the field's
+      // own meta.isValid (what actually drives its red border and error
+      // text) stays "valid" — nothing ever renders as invalid, so there's no
+      // "[data-invalid]" element for scrollToFirstStepError to find either.
+      // Running it first keeps this branch consistent with the others.
+      await touchAndValidateStepFields(step.fields);
       const parsed = applicationSchema.safeParse(form.state.values);
       if (!parsed.success) {
         setShowStepErrors(true);
@@ -1062,6 +1072,18 @@ export function ApplicationForm() {
     const nextStep = Math.min(currentStep + 1, APPLICATION_STEPS.length - 1);
     pendingStepFocusRef.current = true;
     setCurrentStep(nextStep);
+  }
+
+  // The submit button on the review step is never disabled (see below), so
+  // this is the only thing standing between an unchecked required checkbox
+  // and a submit attempt — it reuses the same validate-then-scroll-to-error
+  // flow as goToNextStep so a missing consent checkbox surfaces the same way
+  // a missing field on any earlier step already does, instead of silently
+  // doing nothing.
+  async function submitReviewStep() {
+    const isValid = await validateCurrentStep();
+    if (!isValid) return;
+    void form.handleSubmit();
   }
 
   function goToPreviousStep() {
@@ -1110,7 +1132,7 @@ export function ApplicationForm() {
       onSubmit={(event) => {
         event.preventDefault();
         if (isReviewStep) {
-          void form.handleSubmit();
+          void submitReviewStep();
         } else {
           void goToNextStep();
         }
@@ -1867,11 +1889,16 @@ export function ApplicationForm() {
           </Button>
 
           {isReviewStep ? (
-            <form.Subscribe
-              selector={(state) => [state.canSubmit, state.isSubmitting]}
-            >
-              {([canSubmit, isSubmitting]) => (
-                <Button type="submit" disabled={!canSubmit || isSubmitting}>
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+              {(isSubmitting) => (
+                // Not gated on state.canSubmit: that flips false as soon as
+                // the consent checkbox starts unchecked, which would disable
+                // this button before the user ever interacts with anything —
+                // a disabled button can't be clicked, so it'd never trigger
+                // the validation feedback in submitReviewStep. Staying
+                // clickable means an unchecked box now surfaces a real error
+                // and scrolls to it, instead of the button just doing nothing.
+                <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2
