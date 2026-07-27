@@ -68,7 +68,13 @@ function AccordionContent({
     >
       <div
         className={cn(
-          "h-(--radix-accordion-content-height) pt-0 pb-2.5 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+          // No explicit height here: the outer element's own animate-accordion-*
+          // classes already animate open/close using this same CSS variable, so
+          // pinning this inner div's height to it too just freezes it at
+          // whatever height was measured when the item last opened — any
+          // content added afterwards (e.g. a new row) then gets silently
+          // clipped by the outer element's overflow-hidden instead of growing.
+          "pt-0 pb-2.5 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
           className
         )}
       >
