@@ -104,7 +104,7 @@ export function Navigation() {
     return (
       <Link
         href="/"
-        aria-label="AI Society — home"
+        aria-label="AI Society - Home"
         className="flex items-center gap-[9px] rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         <Image

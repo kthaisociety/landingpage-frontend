@@ -51,7 +51,7 @@ export function DocumentsHero() {
           Documents
         </h1>
         <p className="text-lg md:text-xl leading-relaxed font-serif max-w-2xl opacity-95">
-          Official documents from KTH AI Society — statutes, annual reports, and
+          Official documents from KTH AI Society: statutes, annual reports, and
           meeting minutes.
         </p>
       </div>
