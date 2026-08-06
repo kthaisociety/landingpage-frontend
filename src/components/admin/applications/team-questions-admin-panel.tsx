@@ -49,10 +49,15 @@ import {
   useResendTeamQuestions,
   useSendBulkTeamQuestions,
   useSendBulkTeamQuestionsPreview,
+  useTeamQuestionDefinitions,
   useTeamQuestionsTemplate,
   useUpdateTeamQuestionsTemplate,
 } from "@/hooks/applications";
-import { APPLICATION_TEAM_LABELS, type GeneralApplication } from "@/types/applications";
+import {
+  APPLICATION_TEAM_LABELS,
+  type ApplicationTeam,
+  type GeneralApplication,
+} from "@/types/applications";
 import { getStatusBadgeStyle } from "@/components/admin/applications/status-badge";
 import { TeamQuestionDefinitionsPanel } from "@/components/admin/applications/team-question-definitions-panel";
 
@@ -287,6 +292,12 @@ function ApplicantName(application: GeneralApplication) {
 function SubmissionDialog({ application }: { application: GeneralApplication }) {
   const [open, setOpen] = useState(false);
   const { data: submission, isLoading } = useApplicationTeamQuestions(application.id, open);
+  const { data: definitions } = useTeamQuestionDefinitions();
+
+  function questionText(team: string, questionId: string): string {
+    const questions = definitions?.[team as ApplicationTeam]?.questions ?? [];
+    return questions.find((question) => question.id === questionId)?.text ?? questionId;
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -317,7 +328,9 @@ function SubmissionDialog({ application }: { application: GeneralApplication }) 
                 <p className="font-medium">{APPLICATION_TEAM_LABELS[team as keyof typeof APPLICATION_TEAM_LABELS] ?? team}</p>
                 {Object.entries(answers).map(([questionId, answer]) => (
                   <div key={questionId} className="rounded-md border p-2 text-sm">
-                    <p className="text-xs text-muted-foreground">{questionId}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {questionText(team, questionId)}
+                    </p>
                     <p className="whitespace-pre-wrap">{answer}</p>
                   </div>
                 ))}
