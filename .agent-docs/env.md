@@ -8,9 +8,6 @@ Use standard Next.js env files such as `.env.local`.
 - `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: required by the Google OAuth provider wrapper
 - `JWT_SECRET`: used by the mock member auth route handlers and `src/proxy.ts`
 - `LUMA_API_KEY`: required by `src/app/api/events/*`
-- `MAILCHIMP_API_KEY`
-- `MAILCHIMP_AUDIENCE_ID`
-- `MAILCHIMP_SERVER_PREFIX`
 
 ## Notes
 
