@@ -8,7 +8,7 @@ export default function TeamQuestionsPage() {
   const token = params.token as string;
 
   return (
-    <main className="min-h-screen bg-white px-4 text-secondary-black sm:px-6">
+    <main className="min-h-screen bg-white px-4 pt-24 text-secondary-black sm:px-6">
       <TeamQuestionsForm token={token} />
     </main>
   );

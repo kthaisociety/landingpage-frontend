@@ -168,7 +168,7 @@ export function TeamQuestionsForm({ token }: { token: string }) {
       <div>
         <h1 className="text-2xl font-semibold">Team questions</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Hi {form.first_name} — please answer the questions below for each team you applied to.
+          Hi {form.first_name}, please answer the questions below for each team you applied to.
           If you&apos;re no longer interested in one of them, you can mark it as such instead.
         </p>
       </div>
