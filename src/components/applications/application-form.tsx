@@ -1328,6 +1328,7 @@ export function ApplicationForm() {
                         autoComplete="given-name"
                         placeholder="Dario"
                         aria-invalid={isInvalid}
+                        className="text-sm"
                       />
                       {isInvalid ? (
                         <FieldError errors={field.state.meta.errors} />
@@ -1358,6 +1359,7 @@ export function ApplicationForm() {
                         autoComplete="family-name"
                         placeholder="Amodei"
                         aria-invalid={isInvalid}
+                        className="text-sm"
                       />
                       {isInvalid ? (
                         <FieldError errors={field.state.meta.errors} />
@@ -1390,6 +1392,7 @@ export function ApplicationForm() {
                       autoComplete="email"
                       placeholder="dario@anthropic.com"
                       aria-invalid={isInvalid}
+                      className="text-sm"
                     />
                     {isInvalid ? (
                       <FieldError errors={field.state.meta.errors} />
@@ -1419,9 +1422,10 @@ export function ApplicationForm() {
                         field.handleBlur();
                       }}
                       aria-invalid={isInvalid}
+                      required
                     >
-                      <NativeSelectOption value="">
-                        Select your gender
+                      <NativeSelectOption value="" disabled hidden>
+                        Not selected
                       </NativeSelectOption>
                       {APPLICATION_GENDERS.map((gender) => (
                         <NativeSelectOption key={gender} value={gender}>
@@ -1501,6 +1505,7 @@ export function ApplicationForm() {
                               }}
                               placeholder="Enter your university"
                               aria-invalid={isInvalid}
+                              className="text-sm"
                             />
                             {isInvalid ? (
                               <FieldError errors={field.state.meta.errors} />
@@ -1521,8 +1526,10 @@ export function ApplicationForm() {
                   const isInvalid = fieldIsInvalid(field.state.meta, showStepErrors);
                   return (
                     <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>Programme</FieldLabel>
                       <ProgrammeSelect
                         id={field.name}
+                        label=""
                         value={field.state.value}
                         onValueChange={(programme) => {
                           setSubmitState(null);
@@ -1568,6 +1575,7 @@ export function ApplicationForm() {
                               }}
                               placeholder="Your university and degree"
                               aria-invalid={isInvalid}
+                              className="text-sm"
                             />
                             {isInvalid ? (
                               <FieldError errors={field.state.meta.errors} />
@@ -1602,9 +1610,10 @@ export function ApplicationForm() {
                           field.handleBlur();
                         }}
                         aria-invalid={isInvalid}
+                        required
                       >
-                        <NativeSelectOption value="">
-                          Select graduation year
+                        <NativeSelectOption value="" disabled hidden>
+                          Not selected
                         </NativeSelectOption>
                         {GRADUATION_YEAR_OPTIONS.map((year) => (
                           <NativeSelectOption key={year} value={year}>
