@@ -1,13 +1,16 @@
 import { cn } from "@/lib/utils";
 
 // Shared by the application and newsletter forms: a field is only shown as
-// invalid once the user has interacted with it, unless the caller forces
-// errors to show (e.g. the application wizard's "review" step).
+// invalid once the user has left it, unless the caller forces errors to show
+// (e.g. the application wizard's "review" step). Deliberately keyed off
+// isBlurred rather than isTouched: TanStack Form flips isTouched to true on
+// the very first keystroke, which would flag a field invalid while the user
+// is still mid-typing (e.g. a half-typed email).
 export function fieldIsInvalid(
-  meta: { isTouched: boolean; isValid: boolean },
+  meta: { isBlurred: boolean; isValid: boolean },
   showErrors = false,
 ) {
-  return (meta.isTouched || showErrors) && !meta.isValid;
+  return (meta.isBlurred || showErrors) && !meta.isValid;
 }
 
 export function selectableOptionBoxClassName(

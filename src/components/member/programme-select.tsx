@@ -59,7 +59,7 @@ export function ProgrammeSelect({
   }, [baseList, customOptions, value]);
 
   return (
-    <div className="space-y-2 min-w-0 w-full max-w-md">
+    <div className="space-y-2 min-w-0 w-full">
       {label ? <Label htmlFor={id}>{label}</Label> : null}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -71,7 +71,7 @@ export function ProgrammeSelect({
             aria-expanded={open}
             aria-label={label ?? "Programme"}
             disabled={disabled}
-            className="h-auto min-h-9 w-full justify-between whitespace-normal px-3 py-2 text-left font-normal"
+            className="h-auto min-h-8 w-full justify-between whitespace-normal px-2.5 py-1 text-left font-normal"
           >
             <span
               className={cn(
