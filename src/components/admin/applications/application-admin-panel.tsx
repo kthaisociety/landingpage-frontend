@@ -89,6 +89,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { TeamQuestionsAdminPanel } from "@/components/admin/applications/team-questions-admin-panel";
@@ -739,27 +745,31 @@ function TeamQuestionsAnswers({ application }: { application: GeneralApplication
         <p className="text-sm text-muted-foreground">Not submitted yet.</p>
       )}
       {submission?.submitted && (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {submission.withdrawn_teams.length > 0 && (
             <p className="text-sm text-muted-foreground">
               Withdrew from: {submission.withdrawn_teams.join(", ")}
             </p>
           )}
-          {Object.entries(submission.answers).map(([team, answers]) => (
-            <div key={team} className="space-y-2">
-              <p className="text-sm font-medium">
-                {APPLICATION_TEAM_LABELS[team as ApplicationTeam] ?? team}
-              </p>
-              {Object.entries(answers).map(([questionId, answer]) => (
-                <div key={questionId} className="rounded-md border p-2 text-sm">
-                  <p className="text-xs text-muted-foreground">
-                    {questionText(team, questionId)}
-                  </p>
-                  <p className="whitespace-pre-wrap">{answer}</p>
-                </div>
-              ))}
-            </div>
-          ))}
+          <Accordion type="multiple" className="rounded-lg border px-3">
+            {Object.entries(submission.answers).map(([team, answers]) => (
+              <AccordionItem key={team} value={team}>
+                <AccordionTrigger>
+                  {APPLICATION_TEAM_LABELS[team as ApplicationTeam] ?? team}
+                </AccordionTrigger>
+                <AccordionContent className="space-y-2">
+                  {Object.entries(answers).map(([questionId, answer]) => (
+                    <div key={questionId} className="rounded-md border p-2 text-sm">
+                      <p className="text-xs text-muted-foreground">
+                        {questionText(team, questionId)}
+                      </p>
+                      <p className="whitespace-pre-wrap">{answer}</p>
+                    </div>
+                  ))}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       )}
     </div>
