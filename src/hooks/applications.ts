@@ -632,13 +632,13 @@ export function useSendBulkTeamQuestions() {
   return useMutation({
     mutationFn: sendBulkTeamQuestions,
     onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["team-questions-send-bulk-preview"] });
       toast.success(
         result.failed.length > 0
           ? `Sent ${result.sent} invites, ${result.failed.length} failed.`
           : `Sent ${result.sent} team questions invites.`,
       );
-      queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
-      queryClient.invalidateQueries({ queryKey: ["team-questions-send-bulk-preview"] });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to send team questions invites.");
