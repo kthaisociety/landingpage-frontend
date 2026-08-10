@@ -106,6 +106,7 @@ import {
   useAdminApplications,
   useApplicationNotes,
   useApplicationSharedNotes,
+  useApplicationTeamQuestions,
   useCancelInterview,
   useClaimApplication,
   useRestoreApplication,
@@ -115,6 +116,7 @@ import {
   usePreviewInterviewSettings,
   useReleaseApplication,
   useSendInterviewInvite,
+  useTeamQuestionDefinitions,
   useUpdateApplicationNotes,
   useUpdateApplicationSharedNotes,
   useUpdateInterviewSettings,
@@ -720,6 +722,50 @@ function TeamPreferencesDetail({
   );
 }
 
+function TeamQuestionsAnswers({ application }: { application: GeneralApplication }) {
+  const { data: submission, isLoading } = useApplicationTeamQuestions(application.id);
+  const { data: definitions } = useTeamQuestionDefinitions();
+
+  function questionText(team: string, questionId: string): string {
+    const questions = definitions?.[team as ApplicationTeam]?.questions ?? [];
+    return questions.find((question) => question.id === questionId)?.text ?? questionId;
+  }
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold">Team questions</h3>
+      {isLoading && <Skeleton className="h-24 w-full" />}
+      {submission && !submission.submitted && (
+        <p className="text-sm text-muted-foreground">Not submitted yet.</p>
+      )}
+      {submission?.submitted && (
+        <div className="space-y-4">
+          {submission.withdrawn_teams.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              Withdrew from: {submission.withdrawn_teams.join(", ")}
+            </p>
+          )}
+          {Object.entries(submission.answers).map(([team, answers]) => (
+            <div key={team} className="space-y-2">
+              <p className="text-sm font-medium">
+                {APPLICATION_TEAM_LABELS[team as ApplicationTeam] ?? team}
+              </p>
+              {Object.entries(answers).map(([questionId, answer]) => (
+                <div key={questionId} className="rounded-md border p-2 text-sm">
+                  <p className="text-xs text-muted-foreground">
+                    {questionText(team, questionId)}
+                  </p>
+                  <p className="whitespace-pre-wrap">{answer}</p>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1">
@@ -1059,6 +1105,7 @@ function ApplicationDetail({
       </div>
 
       <TeamPreferencesDetail application={application} />
+      <TeamQuestionsAnswers application={application} />
 
       {application.interests?.length ? (
         <div className="space-y-2">
