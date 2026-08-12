@@ -71,7 +71,7 @@ import {
 } from "@/lib/form-field-utils";
 
 const LINKEDIN_HANDLE_PREFIX = "linkedin.com/in/";
-const LINKEDIN_HANDLE_PATTERN = /^[A-Za-z0-9_-]{3,100}$/;
+const LINKEDIN_HANDLE_PATTERN = /^[A-Za-z0-9ÅÄÖåäö_-]{3,100}$/;
 
 function normalizeLinkedInHandle(value: string) {
   return value
