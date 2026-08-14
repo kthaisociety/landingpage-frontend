@@ -1,600 +1,63 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
-import { useForm } from "@tanstack/react-form"
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
-import { z } from "zod"
+import { motion, useReducedMotion } from "framer-motion"
+import { ArrowUpRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { AsciiGrid } from "@/components/ui/ascii-grid"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import { ProgrammeSelect } from "@/components/member/programme-select"
-import { InterestsField } from "@/components/applications/interests-field"
 import { EventsPreview } from "@/components/home/events-preview"
-import {
-  APPLICATION_GENDERS,
-  APPLICATION_INTERESTS,
-  OTHER_PROGRAMME_VALUE,
-  OTHER_UNIVERSITY_VALUE,
-  UNIVERSITIES,
-  getGraduationYearOptions,
-  resolveUniversity,
-  resolveProgramme,
-  type ApplicationGender,
-} from "@/types/applications"
-import { fieldIsInvalid } from "@/lib/form-field-utils"
-import { useSubmitNewsletterSubscription } from "@/hooks/newsletter"
 
-const GRADUATION_YEAR_OPTIONS = getGraduationYearOptions()
+const LUMA_SIGNUP_URL = "https://luma.com/kthais"
 
-type NewsletterFormValues = {
-  firstName: string
-  lastName: string
-  email: string
-  gender: ApplicationGender | ""
-  university: string
-  universityOther: string
-  programme: string
-  programmeOther: string
-  graduationYear: string
-  interests: (typeof APPLICATION_INTERESTS)[number][]
-  dataRetentionConsent: boolean
+const easeOutQuart = [0.25, 1, 0.5, 1] as const
+
+function subscribeToHydration() {
+  return () => {}
 }
-
-const newsletterSchema = z
-  .object({
-    firstName: z
-      .string()
-      .trim()
-      .min(1, "Please enter your first name.")
-      .max(80, "Please keep your first name under 80 characters."),
-    lastName: z
-      .string()
-      .trim()
-      .min(1, "Please enter your last name.")
-      .max(80, "Please keep your last name under 80 characters."),
-    email: z
-      .string()
-      .trim()
-      .min(1, "Please enter your email address.")
-      .email("Please enter a valid email address."),
-    gender: z
-      .union([z.enum(APPLICATION_GENDERS), z.literal("")])
-      .refine((value) => value !== "", "Please select your gender."),
-    university: z.string().trim().min(1, "Please select your university."),
-    universityOther: z
-      .string()
-      .trim()
-      .max(120, "Please keep your university under 120 characters."),
-    programme: z.string().trim().min(1, "Please select your programme."),
-    programmeOther: z
-      .string()
-      .trim()
-      .max(120, "Please keep your programme under 120 characters."),
-    graduationYear: z
-      .string()
-      .trim()
-      .refine(
-        (value) => GRADUATION_YEAR_OPTIONS.includes(value),
-        "Please select your expected graduation year.",
-      ),
-    interests: z
-      .array(z.enum(APPLICATION_INTERESTS))
-      .min(1, "Choose at least one area of interest.")
-      .refine(
-        (interests) => new Set(interests).size === interests.length,
-        "Each interest can appear only once.",
-      ),
-    dataRetentionConsent: z
-      .boolean()
-      .refine(
-        (value) => value,
-        "You need to consent to data collection and storage before subscribing.",
-      ),
-  })
-  .superRefine((value, ctx) => {
-    if (
-      value.university === OTHER_UNIVERSITY_VALUE &&
-      value.universityOther.trim().length === 0
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["universityOther"],
-        message: "Please enter your university.",
-      })
-    }
-  })
-  .superRefine((value, ctx) => {
-    if (
-      value.programme === OTHER_PROGRAMME_VALUE &&
-      value.programmeOther.trim().length === 0
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["programmeOther"],
-        message: "Please enter your programme or degree.",
-      })
-    }
-  })
-
-const defaultNewsletterValues: NewsletterFormValues = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  gender: "",
-  university: "",
-  universityOther: "",
-  programme: "",
-  programmeOther: "",
-  graduationYear: "",
-  interests: [],
-  dataRetentionConsent: false,
-}
-
-type SubmitState =
-  | {
-      type: "success" | "error"
-      message: string
-    }
-  | null
 
 type NewsletterFormProps = {
   variant?: "page" | "card"
   className?: string
 }
 
-function NewsletterFormFields({
-  className,
-}: Omit<NewsletterFormProps, "variant">) {
-  const [submitState, setSubmitState] = useState<SubmitState>(null)
-  const submitNewsletterSubscription = useSubmitNewsletterSubscription()
-
-  const form = useForm({
-    defaultValues: defaultNewsletterValues,
-    validators: {
-      onMount: newsletterSchema,
-      onBlur: newsletterSchema,
-      onSubmit: newsletterSchema,
-    },
-    onSubmit: async ({ value }) => {
-      setSubmitState(null)
-
-      try {
-        await submitNewsletterSubscription.mutateAsync({
-          firstName: value.firstName,
-          lastName: value.lastName,
-          email: value.email,
-          gender: value.gender as ApplicationGender,
-          university: resolveUniversity(value),
-          programme: resolveProgramme(value),
-          graduationYear: Number(value.graduationYear),
-          interests: value.interests,
-          dataRetentionConsent: value.dataRetentionConsent,
-        })
-      } catch (error) {
-        setSubmitState({
-          type: "error",
-          message:
-            error instanceof Error ? error.message : "Failed to subscribe.",
-        })
-        return
-      }
-
-      setSubmitState({
-        type: "success",
-        message: "Successfully subscribed to our newsletter!",
-      })
-      form.reset()
-    },
-  })
+function NewsletterCta({ className }: Omit<NewsletterFormProps, "variant">) {
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false
+  )
+  const prefersReducedMotion = useReducedMotion()
+  const enableInteractionMotion = isHydrated && !prefersReducedMotion
 
   return (
-    <form
-      id="newsletter-form"
-      noValidate
-      className={cn("w-full", className)}
-      onSubmit={(event) => {
-        event.preventDefault()
-        void form.handleSubmit()
-      }}
+    <motion.div
+      whileHover={enableInteractionMotion ? { y: -2, scale: 1.015 } : undefined}
+      whileTap={enableInteractionMotion ? { y: 0, scale: 0.985 } : undefined}
+      transition={{ duration: 0.18, ease: easeOutQuart }}
+      className="inline-block"
     >
-      <FieldGroup>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <form.Field name="firstName">
-            {(field) => {
-              const isInvalid = fieldIsInvalid(field.state.meta)
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>First name</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => {
-                      setSubmitState(null)
-                      field.handleChange(event.target.value)
-                    }}
-                    placeholder="Alan"
-                    autoComplete="given-name"
-                    aria-invalid={isInvalid}
-                    className="text-sm"
-                  />
-                  {isInvalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <form.Field name="lastName">
-            {(field) => {
-              const isInvalid = fieldIsInvalid(field.state.meta)
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Last name</FieldLabel>
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => {
-                      setSubmitState(null)
-                      field.handleChange(event.target.value)
-                    }}
-                    placeholder="Turing"
-                    autoComplete="family-name"
-                    aria-invalid={isInvalid}
-                    className="text-sm"
-                  />
-                  {isInvalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
-            }}
-          </form.Field>
-        </div>
-
-        <form.Field name="email">
-          {(field) => {
-            const isInvalid = fieldIsInvalid(field.state.meta)
-
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Email</FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => {
-                    setSubmitState(null)
-                    field.handleChange(event.target.value)
-                  }}
-                  placeholder="alan@turing.com"
-                  autoComplete="email"
-                  aria-invalid={isInvalid}
-                  className="text-sm"
-                />
-                <FieldDescription>
-                  We&apos;ll only send updates related to the KTH AI community.
-                </FieldDescription>
-                {isInvalid ? (
-                  <FieldError errors={field.state.meta.errors} />
-                ) : null}
-              </Field>
-            )
-          }}
-        </form.Field>
-
-        <form.Field name="gender">
-          {(field) => {
-            const isInvalid = fieldIsInvalid(field.state.meta)
-            return (
-              <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Gender</FieldLabel>
-                <NativeSelect
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => {
-                    setSubmitState(null)
-                    field.handleChange(event.target.value as ApplicationGender | "")
-                  }}
-                  aria-invalid={isInvalid}
-                  required
-                >
-                  <NativeSelectOption value="" disabled hidden>
-                    Not selected
-                  </NativeSelectOption>
-                  {APPLICATION_GENDERS.map((gender) => (
-                    <NativeSelectOption key={gender} value={gender}>
-                      {gender}
-                    </NativeSelectOption>
-                  ))}
-                </NativeSelect>
-                {isInvalid ? (
-                  <FieldError errors={field.state.meta.errors} />
-                ) : null}
-              </Field>
-            )
-          }}
-        </form.Field>
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          <form.Field name="university">
-            {(field) => {
-              const isInvalid = fieldIsInvalid(field.state.meta)
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>University</FieldLabel>
-                  <NativeSelect
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => {
-                      setSubmitState(null)
-                      field.handleChange(event.target.value)
-                    }}
-                    aria-invalid={isInvalid}
-                    required
-                  >
-                    <NativeSelectOption value="" disabled hidden>
-                      Not selected
-                    </NativeSelectOption>
-                    {UNIVERSITIES.map((university) => (
-                      <NativeSelectOption key={university} value={university}>
-                        {university}
-                      </NativeSelectOption>
-                    ))}
-                  </NativeSelect>
-                  {isInvalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <form.Subscribe selector={(state) => state.values.university}>
-            {(university) =>
-              university === OTHER_UNIVERSITY_VALUE ? (
-                <form.Field name="universityOther">
-                  {(field) => {
-                    const isInvalid = fieldIsInvalid(field.state.meta)
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>
-                          Other university
-                        </FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(event) => {
-                            setSubmitState(null)
-                            field.handleChange(event.target.value)
-                          }}
-                          placeholder="Enter your university"
-                          aria-invalid={isInvalid}
-                          className="text-sm"
-                        />
-                        {isInvalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-              ) : null
-            }
-          </form.Subscribe>
-
-          <form.Field name="programme">
-            {(field) => {
-              const isInvalid = fieldIsInvalid(field.state.meta)
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>Programme</FieldLabel>
-                  <ProgrammeSelect
-                    id={field.name}
-                    label=""
-                    value={field.state.value}
-                    onValueChange={(programme) => {
-                      setSubmitState(null)
-                      field.handleChange(programme)
-                      field.handleBlur()
-                    }}
-                    placeholder="Engineering Physics"
-                    customOptions={[OTHER_PROGRAMME_VALUE]}
-                  />
-                  {isInvalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <form.Subscribe selector={(state) => state.values.programme}>
-            {(programme) =>
-              programme === OTHER_PROGRAMME_VALUE ? (
-                <form.Field name="programmeOther">
-                  {(field) => {
-                    const isInvalid = fieldIsInvalid(field.state.meta)
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor={field.name}>
-                          Programme or degree
-                        </FieldLabel>
-                        <Input
-                          id={field.name}
-                          name={field.name}
-                          value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(event) => {
-                            setSubmitState(null)
-                            field.handleChange(event.target.value)
-                          }}
-                          placeholder="Enter your programme or degree"
-                          aria-invalid={isInvalid}
-                          className="text-sm"
-                        />
-                        {isInvalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-              ) : null
-            }
-          </form.Subscribe>
-
-          <form.Field name="graduationYear">
-            {(field) => {
-              const isInvalid = fieldIsInvalid(field.state.meta)
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={field.name}>
-                    Expected graduation year
-                  </FieldLabel>
-                  <NativeSelect
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => {
-                      setSubmitState(null)
-                      field.handleChange(event.target.value)
-                    }}
-                    aria-invalid={isInvalid}
-                    required
-                  >
-                    <NativeSelectOption value="" disabled hidden>
-                      Not selected
-                    </NativeSelectOption>
-                    {GRADUATION_YEAR_OPTIONS.map((year) => (
-                      <NativeSelectOption key={year} value={year}>
-                        {year}
-                      </NativeSelectOption>
-                    ))}
-                  </NativeSelect>
-                  {isInvalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
-            }}
-          </form.Field>
-        </div>
-
-        <form.Field name="interests">
-          {(field) => {
-            const isInvalid = fieldIsInvalid(field.state.meta)
-            return (
-              <InterestsField
-                id={field.name}
-                value={field.state.value}
-                onChange={(value) => {
-                  setSubmitState(null)
-                  field.handleChange(value)
-                }}
-                onBlur={field.handleBlur}
-                isInvalid={isInvalid}
-                errors={isInvalid ? field.state.meta.errors : undefined}
-                description="Select at least one industry or area that you are interested in."
-              />
-            )
-          }}
-        </form.Field>
-
-        <form.Field name="dataRetentionConsent">
-          {(field) => {
-            const isInvalid = fieldIsInvalid(field.state.meta)
-            return (
-              <Field data-invalid={isInvalid}>
-                <label className="flex items-start gap-3 rounded-lg border p-4 text-sm">
-                  <Checkbox
-                    className="mt-0.5"
-                    checked={field.state.value}
-                    onCheckedChange={(value) => {
-                      setSubmitState(null)
-                      field.handleChange(Boolean(value))
-                      field.handleBlur()
-                    }}
-                    aria-invalid={isInvalid}
-                  />
-                  <span className="space-y-1">
-                    <span className="block font-medium">
-                      I consent to KTH AI Society collecting and storing my
-                      information to send me newsletter updates.
-                    </span>
-                    <span className="block text-muted-foreground">
-                      You can unsubscribe at any time.
-                    </span>
-                  </span>
-                </label>
-                {isInvalid ? (
-                  <FieldError errors={field.state.meta.errors} />
-                ) : null}
-              </Field>
-            )
-          }}
-        </form.Field>
-
-        {submitState ? (
-          <Alert
-            variant={submitState.type === "error" ? "destructive" : "success"}
-          >
-            {submitState.type === "error" ? <AlertCircle /> : <CheckCircle2 />}
-            <AlertTitle>
-              {submitState.type === "error"
-                ? "Subscription failed"
-                : "Subscription confirmed"}
-            </AlertTitle>
-            <AlertDescription>{submitState.message}</AlertDescription>
-          </Alert>
-        ) : null}
-
-        <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
-          {([canSubmit, isSubmitting]) => (
-            <Button
-              type="submit"
-              disabled={!canSubmit || isSubmitting}
-              className="w-full sm:w-auto"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 data-icon="inline-start" className="animate-spin" />
-                  Subscribing...
-                </>
-              ) : (
-                "Subscribe"
-              )}
-            </Button>
-          )}
-        </form.Subscribe>
-      </FieldGroup>
-    </form>
+      <Button
+        asChild
+        size="lg"
+        className={cn(
+          "px-12 py-8 text-xl max-sm:px-6 max-sm:py-4 max-sm:text-base",
+          className,
+        )}
+      >
+        <a
+          href={LUMA_SIGNUP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1"
+        >
+          Sign up on Luma
+          <ArrowUpRight />
+        </a>
+      </Button>
+    </motion.div>
   )
 }
 
@@ -632,7 +95,7 @@ export function NewsletterForm({
   }, [variant])
 
   if (variant === "card") {
-    return <NewsletterFormFields className={className} />
+    return <NewsletterCta className={className} />
   }
 
   return (
@@ -686,7 +149,7 @@ export function NewsletterForm({
             </p>
           </div>
 
-          <NewsletterFormFields className={cn("max-w-2xl", className)} />
+          <NewsletterCta className={cn("max-w-2xl", className)} />
         </section>
       </div>
 

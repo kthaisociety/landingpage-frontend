@@ -191,7 +191,6 @@ export type CreateGeneralApplicationInput = {
   availability: ApplicationAvailability;
   contribution: string;
   dataRetentionConsent: boolean;
-  newsletterOptIn: boolean;
 };
 
 export type CreateGeneralApplicationResponse = {

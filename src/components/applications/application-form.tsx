@@ -70,6 +70,8 @@ import {
   selectableOptionBoxClassName,
 } from "@/lib/form-field-utils";
 
+const LUMA_SIGNUP_URL = "https://luma.com/kthais";
+
 const LINKEDIN_HANDLE_PREFIX = "linkedin.com/in/";
 const LINKEDIN_HANDLE_PATTERN = /^[A-Za-z0-9ÅÄÖåäö_-]{3,100}$/;
 
@@ -162,7 +164,6 @@ type ApplicationFormValues = {
   availability: ApplicationAvailability | "";
   contribution: string;
   dataRetentionConsent: boolean;
-  newsletterOptIn: boolean;
 };
 
 function normalizeWebsiteLink(value: string) {
@@ -296,7 +297,6 @@ const applicationBaseSchema = z.object({
       (value) => value,
       "You need to consent to data collection and storage before submitting.",
     ),
-  newsletterOptIn: z.boolean(),
 });
 
 function validateUniversityOther(
@@ -364,7 +364,6 @@ const stepSchemas = [
   }),
   applicationBaseSchema.pick({
     dataRetentionConsent: true,
-    newsletterOptIn: true,
   }),
 ] as const;
 
@@ -391,9 +390,6 @@ const applicationFieldValidators = {
   dataRetentionConsent: {
     onChange: applicationBaseSchema.shape.dataRetentionConsent,
   },
-  newsletterOptIn: {
-    onChange: applicationBaseSchema.shape.newsletterOptIn,
-  },
 };
 
 const defaultApplicationValues: ApplicationFormValues = {
@@ -414,7 +410,6 @@ const defaultApplicationValues: ApplicationFormValues = {
   availability: "",
   contribution: "",
   dataRetentionConsent: false,
-  newsletterOptIn: false,
 };
 
 function ApplicationWizardProgress({
@@ -1003,7 +998,6 @@ export function ApplicationForm() {
           availability: parsed.data.availability,
           contribution: parsed.data.contribution,
           dataRetentionConsent: parsed.data.dataRetentionConsent,
-          newsletterOptIn: parsed.data.newsletterOptIn,
         });
         setSubmitState({
           type: "success",
@@ -1268,33 +1262,23 @@ export function ApplicationForm() {
                     }}
                   </form.Field>
 
-                  <form.Field name="newsletterOptIn">
-                    {(field) => (
-                      <Field>
-                        <label className="flex items-start gap-3 rounded-lg border p-4 text-sm">
-                          <Checkbox
-                            className="mt-0.5"
-                            checked={field.state.value}
-                            onCheckedChange={(value) => {
-                              setSubmitState(null);
-                              field.handleChange(Boolean(value));
-                            }}
-                          />
-                          <span className="space-y-1">
-                            <span className="block font-medium">
-                              Also sign me up for the KTH AI Society
-                              newsletter.
-                            </span>
-                            <span className="block text-muted-foreground">
-                              Optional. We&apos;ll use the details above to
-                              send you relevant updates, and you can
-                              unsubscribe at any time.
-                            </span>
-                          </span>
-                        </label>
-                      </Field>
-                    )}
-                  </form.Field>
+                  <div className="rounded-lg border p-4 text-sm">
+                    <p className="font-medium">
+                      Also want the KTH AI Society newsletter?
+                    </p>
+                    <p className="mt-1 text-muted-foreground">
+                      This application doesn&apos;t sign you up automatically.{" "}
+                      <a
+                        href={LUMA_SIGNUP_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary underline underline-offset-2"
+                      >
+                        Sign up on Luma
+                      </a>{" "}
+                      to get updates and unsubscribe any time.
+                    </p>
+                  </div>
                 </div>
               );
             }}

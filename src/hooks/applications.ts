@@ -50,7 +50,6 @@ async function submitGeneralApplication(
     "dataRetentionConsent",
     input.dataRetentionConsent ? "true" : "false",
   );
-  formData.append("newsletterOptIn", input.newsletterOptIn ? "true" : "false");
   formData.append("resume", input.resume);
 
   const response = await fetch(`${API_URL}/applications/general`, {
