@@ -262,7 +262,7 @@ export function Navigation() {
                 </Link>
               </Button>
               <Link
-                href="/"
+                href="/about"
                 className="block py-3 text-base text-foreground/70 hover:text-foreground"
                 onClick={handleMobileLinkClick}
               >
