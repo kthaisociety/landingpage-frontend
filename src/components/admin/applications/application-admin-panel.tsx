@@ -1635,6 +1635,15 @@ export function ApplicationAdminPanel({
     setMyInterviewingFilter(false);
   }
 
+  // Summary cards report totals across every team, so clicking one must clear
+  // any previously-applied team (or other) filter — otherwise the rows shown
+  // silently stay scoped to whatever team was filtered before, while the
+  // number on the card itself is the all-teams total.
+  function setStatusFilterAllTeams(status: ApplicationStatusFilter) {
+    resetFilters();
+    setStatusFilter(status);
+  }
+
   function exportFilteredApplications() {
     exportApplicationsCsv({
       applications: table.getFilteredRowModel().rows.map((row) => row.original),
@@ -1729,11 +1738,11 @@ export function ApplicationAdminPanel({
           [
             { label: "Unique applicants", value: summary.total, onClick: resetFilters },
             { label: "Total applications", value: summary.totalTeamApplications, onClick: undefined },
-            { label: "Pending team questions", value: summary.pending, onClick: () => setStatusFilter("pending") },
-            { label: "Available", value: summary.available, onClick: () => setStatusFilter("available") },
-            { label: "Interviewing", value: summary.interviewing, onClick: () => setStatusFilter("interviewing") },
-            { label: "Ineligible", value: summary.ineligible, onClick: () => setStatusFilter("ineligible") },
-            { label: "Withdrawn", value: summary.withdrawn, onClick: () => setStatusFilter("withdrawn") },
+            { label: "Pending team questions", value: summary.pending, onClick: () => setStatusFilterAllTeams("pending") },
+            { label: "Available", value: summary.available, onClick: () => setStatusFilterAllTeams("available") },
+            { label: "Interviewing", value: summary.interviewing, onClick: () => setStatusFilterAllTeams("interviewing") },
+            { label: "Ineligible", value: summary.ineligible, onClick: () => setStatusFilterAllTeams("ineligible") },
+            { label: "Withdrawn", value: summary.withdrawn, onClick: () => setStatusFilterAllTeams("withdrawn") },
           ] as const
         ).map(({ label, value, onClick }) => (
           <Card
@@ -1789,7 +1798,6 @@ export function ApplicationAdminPanel({
               Available for {APPLICATION_TEAM_LABELS[effectiveTeam as ApplicationTeam] ?? effectiveTeam}
             </Button>
             <Button
-              variant="outline"
               onClick={() => {
                 resetFilters();
                 setMyInterviewingFilter(true);
