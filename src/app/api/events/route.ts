@@ -62,12 +62,11 @@ export async function GET() {
 
     const data = (await response.json()) as LumaApiResponse;
 
-    // Extract events from entries array
-    // Each entry has { api_id, event: { api_id, name, start_at, cover_url, url } }
-    const events: LumaEvent[] = data.entries.map((entry) => ({
-      ...entry.event,
-      api_id: entry.api_id,
-    }));
+    // Extract events from entries array. Each entry has its own top-level
+    // api_id (the calendar-event listing) distinct from entry.event.api_id
+    // (the actual event resource) — event/get and everything else that takes
+    // an event id needs the latter, not the former.
+    const events: LumaEvent[] = data.entries.map((entry) => entry.event);
 
     return NextResponse.json({ events });
   } catch (error) {

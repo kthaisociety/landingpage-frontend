@@ -71,7 +71,7 @@ export async function GET(
       } catch {
         errorText = await response.text();
       }
-      console.error("LUMA API error:", response.status, errorText);
+      console.error("LUMA API error:", response.status, "eventId:", eventId, errorText);
       return NextResponse.json(
         {
           error: `Failed to fetch event: ${response.status}`,

@@ -42,12 +42,11 @@ export async function GET(request: Request) {
 
     const data = await response.json();
     
-    // Filter events by location name
+    // Filter events by location name. entry.api_id is the calendar-event
+    // listing id, distinct from entry.event.api_id (the actual event
+    // resource) — use the latter, same as /api/events.
     const events: LumaEvent[] = data.entries
-      .map((entry: { api_id: string; event: Record<string, unknown> }) => ({
-        ...entry.event,
-        api_id: entry.api_id,
-      }))
+      .map((entry: { api_id: string; event: LumaEvent }) => entry.event)
       .filter((event: Record<string, unknown> & { location?: { venue_name?: string; name?: string } }) => {
         const eventLocation = event.location?.venue_name || event.location?.name || "";
         return eventLocation.toLowerCase().includes(locationName.toLowerCase());
