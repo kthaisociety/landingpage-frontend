@@ -4,11 +4,13 @@ import { ProjectsPreview } from "./projects-preview"
 import { JobsPreview } from "./jobs-preview"
 import { HistoryTimeline } from "./history-timeline"
 import { NewsletterSignup } from "./newsletter-signup"
+import { CollaboratorsCarousel } from "./collaborators-carousel"
 
 export function Homepage() {
   return (
     <main className="flex min-h-screen flex-col">
       <Hero />
+      <CollaboratorsCarousel />
       <JobsPreview />
       <HistoryTimeline
         title="OUR HISTORY"
