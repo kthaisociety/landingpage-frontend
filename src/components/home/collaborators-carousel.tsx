@@ -55,7 +55,7 @@ export function CollaboratorsCarousel() {
           <Carousel
             className="w-full min-w-0"
             opts={{ loop: true, watchDrag: false }}
-            plugins={[AutoScroll({ playOnInit: true, stopOnInteraction: false })]}
+            plugins={[AutoScroll({ playOnInit: true, stopOnInteraction: false, speed: 1 })]}
           >
             <CarouselContent className="ml-0">
               {collaborators.map((collaborator) => (
