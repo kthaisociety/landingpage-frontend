@@ -34,6 +34,8 @@ const collaborators: Collaborator[] = [
   { id: "antler", name: "Antler", image: "/partners/antler.svg" },
   { id: "gilion", name: "Gilion", image: "/partners/gilion.png" },
   { id: "eqt-ventures", name: "EQT Ventures", image: "/partners/eqt-ventures.png" },
+  { id: "quantumblack", name: "QuantumBlack, AI by McKinsey", image: "/partners/quantumblack.webp" },
+  { id: "y-combinator", name: "Y Combinator", image: "/partners/y-combinator.png" },
 ]
 
 export function CollaboratorsCarousel() {
@@ -51,14 +53,15 @@ export function CollaboratorsCarousel() {
       <div className="pt-10 md:pt-14">
         <div className="relative mx-auto flex items-center justify-center px-4 md:px-6 lg:max-w-5xl">
           <Carousel
-            opts={{ loop: true }}
+            className="w-full min-w-0"
+            opts={{ loop: true, watchDrag: false }}
             plugins={[AutoScroll({ playOnInit: true, stopOnInteraction: false })]}
           >
             <CarouselContent className="ml-0">
               {collaborators.map((collaborator) => (
                 <CarouselItem
                   key={collaborator.id}
-                  className="flex basis-1/2 justify-center pl-4 sm:basis-1/3 md:basis-1/4 lg:basis-1/5"
+                  className="flex basis-1/2 justify-center pl-2 sm:basis-1/3 sm:pl-4 md:basis-1/4 lg:basis-1/5"
                 >
                   <div className="flex h-24 w-full max-w-40 shrink-0 items-center justify-center rounded-xl border bg-white p-4 shadow-sm">
                     <Image
