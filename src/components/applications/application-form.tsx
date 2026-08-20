@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useForm } from "@tanstack/react-form";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   CheckCircle2,
@@ -92,6 +93,10 @@ const MAX_RESUME_BYTES = 10 * 1024 * 1024;
 const RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"] as const;
 const STOCKHOLM_UNIVERSITIES = UNIVERSITIES;
 const GRADUATION_YEAR_OPTIONS = getGraduationYearOptions();
+// getGraduationYearOptions always starts at the current year, so this is the
+// one option that's ambiguous: valid for someone with a course or two left
+// this year, but also what an already-graduated applicant would pick.
+const [CURRENT_GRADUATION_YEAR] = GRADUATION_YEAR_OPTIONS;
 const RESUME_MIME_TYPES = [
   "application/pdf",
   "application/msword",
@@ -1605,6 +1610,28 @@ export function ApplicationForm() {
                           </NativeSelectOption>
                         ))}
                       </NativeSelect>
+                      {field.state.value === CURRENT_GRADUATION_YEAR ? (
+                        <Alert variant="warning">
+                          <AlertTriangle />
+                          <AlertTitle>Already graduated?</AlertTitle>
+                          <AlertDescription>
+                            This option is meant for students with
+                            coursework remaining later in{" "}
+                            {CURRENT_GRADUATION_YEAR}. If you&apos;ve already
+                            completed your degree, join our{" "}
+                            <a
+                              href={LUMA_SIGNUP_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-primary underline underline-offset-2"
+                            >
+                              Luma community
+                            </a>{" "}
+                            instead to stay in the loop for events and future
+                            opportunities.
+                          </AlertDescription>
+                        </Alert>
+                      ) : null}
                       {isInvalid ? (
                         <FieldError errors={field.state.meta.errors} />
                       ) : null}
