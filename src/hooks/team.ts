@@ -3,6 +3,7 @@ import { API_URL } from "@/config";
 
 export interface TeamMember {
   profileId: string;
+  slug: string;
   firstName: string;
   lastName: string;
   profilePicture: string;
@@ -24,6 +25,7 @@ export interface TeamEntry {
 
 export interface PublicProfile {
   id: string;
+  slug: string;
   firstName: string;
   lastName: string;
   profilePicture: string;

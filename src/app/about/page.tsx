@@ -245,7 +245,7 @@ export default function AboutPage() {
                   return (
                     <Link
                       key={member.profileId}
-                      href={`/members/${member.profileId}`}
+                      href={`/members/${member.slug || member.profileId}`}
                       className="group flex flex-col h-full bg-white border border-secondary-light-gray/60 rounded-2xl p-4 hover:shadow-md hover:border-primary/40 transition-all duration-300"
                     >
                       {/* Image & Department Badge(s) */}

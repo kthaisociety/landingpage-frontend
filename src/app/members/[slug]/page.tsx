@@ -11,9 +11,9 @@ import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { usePublicProfile } from "@/hooks/team";
 import { API_URL } from "@/config";
 
-export default function MemberPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { data: profile, isLoading, isError } = usePublicProfile(id);
+export default function MemberPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
+  const { data: profile, isLoading, isError } = usePublicProfile(slug);
   const [textMask, setTextMask] = useState<string | undefined>(undefined);
 
   useEffect(() => {
