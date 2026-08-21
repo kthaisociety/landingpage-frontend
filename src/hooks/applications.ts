@@ -680,13 +680,23 @@ async function fetchTeamQuestionsTemplate(): Promise<TeamQuestionsTemplate> {
 }
 
 async function updateTeamQuestionsTemplate(
-  emailTemplate: string,
+  templates: {
+    emailTemplate: string;
+    emailSubject: string;
+    reminderEmailTemplate: string;
+    reminderEmailSubject: string;
+  },
 ): Promise<TeamQuestionsTemplate> {
   const response = await fetch(`${API_URL}/applications/admin/team-questions/template`, {
     method: "PUT",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email_template: emailTemplate }),
+    body: JSON.stringify({
+      email_template: templates.emailTemplate,
+      email_subject: templates.emailSubject,
+      reminder_email_template: templates.reminderEmailTemplate,
+      reminder_email_subject: templates.reminderEmailSubject,
+    }),
   });
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -716,15 +726,19 @@ export function useUpdateTeamQuestionsTemplate() {
   });
 }
 
-/** Renders the team questions invite email server-side, from the same code path used to send it. */
+/** Renders the team questions invite or reminder email server-side, from the same code path used to send it. */
 async function previewTeamQuestionsTemplate(
-  emailTemplate: string,
+  args: { emailTemplate: string; emailSubject: string; kind?: "invite" | "reminder" },
 ): Promise<InterviewInvitePreview> {
   const response = await fetch(`${API_URL}/applications/admin/team-questions/template/preview`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email_template: emailTemplate }),
+    body: JSON.stringify({
+      email_template: args.emailTemplate,
+      email_subject: args.emailSubject,
+      kind: args.kind,
+    }),
   });
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;

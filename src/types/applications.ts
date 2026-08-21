@@ -171,6 +171,7 @@ export type GeneralApplication = {
   interviewed_by: string[];
   interview_invite_sent_at: string | null;
   team_questions_invite_sent_at: string | null;
+  team_questions_reminder_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -240,6 +241,9 @@ export type TeamQuestionsSubmission =
 
 export type TeamQuestionsTemplate = {
   email_template: string;
+  email_subject: string;
+  reminder_email_template: string;
+  reminder_email_subject: string;
   updated_by_email: string;
   can_edit: boolean;
 };
@@ -251,6 +255,8 @@ export type TeamQuestionsSendBulkResult = {
 
 export type TeamQuestionsSendBulkPreview = {
   count: number;
+  can_send: boolean;
+  next_send_at: string;
 };
 
 export type TeamQuestionsForTeam = {

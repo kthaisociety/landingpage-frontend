@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ChevronDown, Eye, Mail, Send, Settings } from "lucide-react";
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -64,31 +65,57 @@ import { TeamQuestionDefinitionsPanel } from "@/components/admin/applications/te
 const DEFAULT_TEAM_QUESTIONS_TEMPLATE =
   "Thanks for applying to KTH AI Society! To move forward, we need you to answer a few extra questions about the team(s) you applied to.\n\nIt only takes a few minutes.";
 
-// Renders the invite by calling the backend, which builds it with the exact same
-// email.RenderTeamQuestionsInvite used when actually sending — so this can never drift
-// from the real email the way a hand-rolled client-side mockup could.
-function TeamQuestionsPreviewDialog({ emailTemplate }: { emailTemplate: string }) {
+const DEFAULT_TEAM_QUESTIONS_SUBJECT = "{{first_name}}'s application for {{teams}}";
+
+const DEFAULT_TEAM_QUESTIONS_REMINDER_TEMPLATE =
+  "Just a reminder — we still haven't received your answers to the team questions for your KTH AI Society application. Please complete them so we can move your application forward.\n\nYour previous link has expired; use the button below instead.";
+
+const DEFAULT_TEAM_QUESTIONS_REMINDER_SUBJECT =
+  "Reminder: {{first_name}}'s application for {{teams}}";
+
+// Renders the invite/reminder by calling the backend, which builds it with the exact same
+// email.RenderTeamQuestionsInvite / RenderTeamQuestionsReminder used when actually sending —
+// so this can never drift from the real email the way a hand-rolled client-side mockup could.
+function TeamQuestionsPreviewDialog({
+  emailTemplate,
+  emailSubject,
+  kind,
+  label,
+}: {
+  emailTemplate: string;
+  emailSubject: string;
+  kind: "invite" | "reminder";
+  label: string;
+}) {
   const preview = usePreviewTeamQuestionsTemplate();
+  const fallbackTemplate =
+    kind === "reminder" ? DEFAULT_TEAM_QUESTIONS_REMINDER_TEMPLATE : DEFAULT_TEAM_QUESTIONS_TEMPLATE;
+  const fallbackSubject =
+    kind === "reminder" ? DEFAULT_TEAM_QUESTIONS_REMINDER_SUBJECT : DEFAULT_TEAM_QUESTIONS_SUBJECT;
 
   return (
     <Dialog
       onOpenChange={(open) => {
         if (open) {
-          preview.mutate(emailTemplate || DEFAULT_TEAM_QUESTIONS_TEMPLATE);
+          preview.mutate({
+            emailTemplate: emailTemplate || fallbackTemplate,
+            emailSubject: emailSubject || fallbackSubject,
+            kind,
+          });
         } else {
           preview.reset();
         }
       }}
     >
       <DialogTrigger asChild>
-        <Button type="button" size="lg">
+        <Button type="button" size="sm" variant="outline">
           <Eye className="h-4 w-4" />
-          Preview email
+          Preview {label}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Team questions invite preview</DialogTitle>
+          <DialogTitle>{label} preview</DialogTitle>
           <DialogDescription>
             {preview.data
               ? `Subject: ${preview.data.subject}`
@@ -101,7 +128,7 @@ function TeamQuestionsPreviewDialog({ emailTemplate }: { emailTemplate: string }
         )}
         {preview.data && (
           <iframe
-            title="Team questions invite email preview"
+            title={`${label} email preview`}
             srcDoc={preview.data.html}
             sandbox=""
             className="h-[500px] w-full rounded-md border bg-white"
@@ -117,19 +144,37 @@ function TeamQuestionsTemplatePanel() {
   const updateTemplate = useUpdateTeamQuestionsTemplate();
   const [open, setOpen] = useState(false);
   const [emailTemplate, setEmailTemplate] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [reminderEmailTemplate, setReminderEmailTemplate] = useState("");
+  const [reminderEmailSubject, setReminderEmailSubject] = useState("");
   const [initialised, setInitialised] = useState(false);
 
   const savedEmailTemplate = template ? template.email_template || DEFAULT_TEAM_QUESTIONS_TEMPLATE : "";
+  const savedEmailSubject = template ? template.email_subject || DEFAULT_TEAM_QUESTIONS_SUBJECT : "";
+  const savedReminderEmailTemplate = template
+    ? template.reminder_email_template || DEFAULT_TEAM_QUESTIONS_REMINDER_TEMPLATE
+    : "";
+  const savedReminderEmailSubject = template
+    ? template.reminder_email_subject || DEFAULT_TEAM_QUESTIONS_REMINDER_SUBJECT
+    : "";
 
   if (template && !initialised) {
     setEmailTemplate(savedEmailTemplate);
+    setEmailSubject(savedEmailSubject);
+    setReminderEmailTemplate(savedReminderEmailTemplate);
+    setReminderEmailSubject(savedReminderEmailSubject);
     setInitialised(true);
   }
 
-  const isDirty = initialised && emailTemplate !== savedEmailTemplate;
+  const isDirty =
+    initialised &&
+    (emailTemplate !== savedEmailTemplate ||
+      emailSubject !== savedEmailSubject ||
+      reminderEmailTemplate !== savedReminderEmailTemplate ||
+      reminderEmailSubject !== savedReminderEmailSubject);
 
   function handleSave() {
-    updateTemplate.mutate(emailTemplate);
+    updateTemplate.mutate({ emailTemplate, emailSubject, reminderEmailTemplate, reminderEmailSubject });
   }
 
   // Collapsing with unsaved edits discards them — reverting to the last
@@ -138,6 +183,9 @@ function TeamQuestionsTemplatePanel() {
   function handleToggle() {
     if (open && isDirty) {
       setEmailTemplate(savedEmailTemplate);
+      setEmailSubject(savedEmailSubject);
+      setReminderEmailTemplate(savedReminderEmailTemplate);
+      setReminderEmailSubject(savedReminderEmailSubject);
     }
     setOpen((v) => !v);
   }
@@ -148,7 +196,7 @@ function TeamQuestionsTemplatePanel() {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <Settings className="h-4 w-4" />
-            Team questions invite
+            Team questions emails
           </CardTitle>
           <ChevronDown
             className="h-4 w-4 text-muted-foreground transition-transform"
@@ -157,71 +205,144 @@ function TeamQuestionsTemplatePanel() {
         </div>
         {!open && (
           <CardDescription>
-            The message sent to applicants when they&apos;re invited to answer team questions. Shared
-            by all admins, click to view or edit.
+            The invite sent when applicants are asked to answer team questions, and the automatic
+            reminder sent 14 days later if they haven&apos;t. Shared by all admins, click to view or
+            edit.
             {template && !template.can_edit && " Only IT admins can edit it."}
           </CardDescription>
         )}
       </CardHeader>
       {open && (
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {isLoading ? (
             <div className="space-y-3">
+              <Skeleton className="h-32 w-full" />
               <Skeleton className="h-32 w-full" />
             </div>
           ) : (
             <>
-              <CardDescription>
-                This is sent to every applicant once they&apos;ve been screened. The form link is
-                added automatically as a button below your message. Use{" "}
-                <code className="rounded bg-muted px-1 text-xs">{"{{first_name}}"}</code> to
-                address the candidate by name.
-                {template?.updated_by_email && (
-                  <> Last updated by {template.updated_by_email}.</>
-                )}
-              </CardDescription>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="tq-email-template">Message</Label>
+                  <Label htmlFor="tq-email-template">Invite message</Label>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     className="h-auto py-0 text-xs"
-                    onClick={() => setEmailTemplate(DEFAULT_TEAM_QUESTIONS_TEMPLATE)}
+                    onClick={() => {
+                      setEmailTemplate(DEFAULT_TEAM_QUESTIONS_TEMPLATE);
+                      setEmailSubject(DEFAULT_TEAM_QUESTIONS_SUBJECT);
+                    }}
                     disabled={!template?.can_edit}
                   >
                     Reset to default message
                   </Button>
                 </div>
+                <CardDescription>
+                  Sent to every applicant once they&apos;ve been screened. The form link is added
+                  automatically as a button below your message. Use{" "}
+                  <code className="rounded bg-muted px-1 text-xs">{"{{first_name}}"}</code> to
+                  address the candidate by name, and{" "}
+                  <code className="rounded bg-muted px-1 text-xs">{"{{teams}}"}</code> in the
+                  subject for the team(s) they applied to.
+                </CardDescription>
+                <div className="space-y-1">
+                  <Label htmlFor="tq-email-subject" className="text-xs text-muted-foreground">
+                    Subject
+                  </Label>
+                  <Input
+                    id="tq-email-subject"
+                    placeholder={DEFAULT_TEAM_QUESTIONS_SUBJECT}
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    disabled={!template?.can_edit}
+                  />
+                </div>
                 <Textarea
                   id="tq-email-template"
                   placeholder={DEFAULT_TEAM_QUESTIONS_TEMPLATE}
-                  className="min-h-[180px] resize-y font-mono text-sm"
+                  className="min-h-[140px] resize-y font-mono text-sm"
                   value={emailTemplate}
                   onChange={(e) => setEmailTemplate(e.target.value)}
                   disabled={!template?.can_edit}
                 />
+                <TeamQuestionsPreviewDialog
+                  emailTemplate={emailTemplate}
+                  emailSubject={emailSubject}
+                  kind="invite"
+                  label="invite"
+                />
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <TeamQuestionsPreviewDialog emailTemplate={emailTemplate} />
-                {template?.can_edit && (
-                  <>
-                    <Button
-                      variant="outline"
-                      disabled={!isDirty || updateTemplate.isPending}
-                      onClick={handleSave}
-                    >
-                      {updateTemplate.isPending ? "Saving…" : isDirty ? "Save changes" : "Saved"}
-                    </Button>
-                    {isDirty && !updateTemplate.isPending && (
-                      <span className="text-xs text-muted-foreground">
-                        Unsaved - collapsing this without saving will discard your changes.
-                      </span>
-                    )}
-                  </>
-                )}
+
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="tq-reminder-template">Reminder message</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto py-0 text-xs"
+                    onClick={() => {
+                      setReminderEmailTemplate(DEFAULT_TEAM_QUESTIONS_REMINDER_TEMPLATE);
+                      setReminderEmailSubject(DEFAULT_TEAM_QUESTIONS_REMINDER_SUBJECT);
+                    }}
+                    disabled={!template?.can_edit}
+                  >
+                    Reset to default message
+                  </Button>
+                </div>
+                <CardDescription>
+                  Sent automatically, once, to anyone who hasn&apos;t submitted 14 days after their
+                  invite. Also gets a fresh form link — the original one still isn&apos;t reused.
+                </CardDescription>
+                <div className="space-y-1">
+                  <Label htmlFor="tq-reminder-subject" className="text-xs text-muted-foreground">
+                    Subject
+                  </Label>
+                  <Input
+                    id="tq-reminder-subject"
+                    placeholder={DEFAULT_TEAM_QUESTIONS_REMINDER_SUBJECT}
+                    value={reminderEmailSubject}
+                    onChange={(e) => setReminderEmailSubject(e.target.value)}
+                    disabled={!template?.can_edit}
+                  />
+                </div>
+                <Textarea
+                  id="tq-reminder-template"
+                  placeholder={DEFAULT_TEAM_QUESTIONS_REMINDER_TEMPLATE}
+                  className="min-h-[140px] resize-y font-mono text-sm"
+                  value={reminderEmailTemplate}
+                  onChange={(e) => setReminderEmailTemplate(e.target.value)}
+                  disabled={!template?.can_edit}
+                />
+                <TeamQuestionsPreviewDialog
+                  emailTemplate={reminderEmailTemplate}
+                  emailSubject={reminderEmailSubject}
+                  kind="reminder"
+                  label="reminder"
+                />
               </div>
+
+              {template?.updated_by_email && (
+                <CardDescription>Last updated by {template.updated_by_email}.</CardDescription>
+              )}
+
+              {template?.can_edit && (
+                <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+                  <Button
+                    variant="outline"
+                    disabled={!isDirty || updateTemplate.isPending}
+                    onClick={handleSave}
+                  >
+                    {updateTemplate.isPending ? "Saving…" : isDirty ? "Save changes" : "Saved"}
+                  </Button>
+                  {isDirty && !updateTemplate.isPending && (
+                    <span className="text-xs text-muted-foreground">
+                      Unsaved - collapsing this without saving will discard your changes.
+                    </span>
+                  )}
+                </div>
+              )}
             </>
           )}
         </CardContent>
@@ -235,6 +356,9 @@ function TeamQuestionsSendBulkCard() {
   const { data: preview, isLoading: previewLoading } = useSendBulkTeamQuestionsPreview();
   const count = preview?.count ?? 0;
   const nothingToSend = !previewLoading && count === 0;
+  // Absent while the preview is still loading — default to blocked rather
+  // than flashing an enabled button that a moment later turns out gated.
+  const canSend = preview?.can_send ?? false;
 
   return (
     <Card>
@@ -246,12 +370,18 @@ function TeamQuestionsSendBulkCard() {
         <CardDescription>
           Emails every pending applicant who hasn&apos;t been sent this invite yet. Applicants
           who already have an invite (sent or submitted) are untouched. Use Resend for those.
+          {preview?.next_send_at && (
+            <>
+              {" "}Next emails will be sent at{" "}
+              {format(new Date(preview.next_send_at), "EEE, MMM d 'at' HH:mm")}.
+            </>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button disabled={sendBulk.isPending || previewLoading || nothingToSend}>
+            <Button disabled={sendBulk.isPending || previewLoading || nothingToSend || !canSend}>
               <Send className="h-4 w-4" />
               {previewLoading
                 ? "Send to all pending applicants"
@@ -275,6 +405,11 @@ function TeamQuestionsSendBulkCard() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        {!previewLoading && !canSend && (
+          <p className="text-xs text-muted-foreground">
+            Only the head of IT can send this. Ask them, or wait for the automatic send.
+          </p>
+        )}
         {nothingToSend && (
           <p className="text-xs text-muted-foreground">
             There are no pending applicants waiting on this invite right now.
@@ -365,6 +500,11 @@ function TeamQuestionsInviteButton({ application }: { application: GeneralApplic
       {alreadySent && application.team_questions_invite_sent_at && (
         <span className="text-xs text-muted-foreground">
           Sent {formatDistanceToNow(new Date(application.team_questions_invite_sent_at))} ago
+        </span>
+      )}
+      {application.team_questions_reminder_sent_at && (
+        <span className="text-xs text-muted-foreground">
+          Reminded {formatDistanceToNow(new Date(application.team_questions_reminder_sent_at))} ago
         </span>
       )}
     </div>
