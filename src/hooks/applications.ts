@@ -340,6 +340,23 @@ async function updateApplicationSharedNote({
   return response.json();
 }
 
+async function deleteApplicationSharedNote({
+  id,
+  noteId,
+}: {
+  id: string;
+  noteId: string;
+}): Promise<void> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/notes/shared/${noteId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to delete shared note");
+  }
+}
+
 export type InterviewSettings = {
   booking_page_url: string;
   interview_email_template: string;
@@ -545,6 +562,22 @@ export function useUpdateApplicationSharedNote() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to update shared note.");
+    },
+  });
+}
+
+export function useDeleteApplicationSharedNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteApplicationSharedNote,
+    onSuccess: (_, variables) => {
+      queryClient.setQueryData<ApplicationSharedNoteEntry[]>(
+        ["application-shared-notes", variables.id],
+        (old) => (old ?? []).filter((entry) => entry.id !== variables.noteId),
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete shared note.");
     },
   });
 }

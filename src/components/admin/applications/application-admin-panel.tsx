@@ -123,6 +123,7 @@ import {
   useCreateApplicationSharedNote,
   useRestoreApplication,
   useDeleteApplication,
+  useDeleteApplicationSharedNote,
   useInterviewSettings,
   useMarkIneligible,
   usePreviewInterviewSettings,
@@ -147,6 +148,7 @@ import {
 } from "@/types/applications";
 import {
   useAdminAllTeamEntries,
+  useAdminUsers,
   useAdminUserTeamEntries,
   type AdminAllTeamEntryRow,
 } from "@/hooks/admin";
@@ -1145,15 +1147,20 @@ function SharedNoteEntryItem({
   isOwn,
   directory,
   onSave,
+  onDelete,
   isPending,
+  isDeleting,
 }: {
   entry: ApplicationSharedNoteEntry;
   isOwn: boolean;
   directory: AdminAllTeamEntryRow[];
   onSave: (text: string) => void;
+  onDelete: () => void;
   isPending: boolean;
+  isDeleting: boolean;
 }) {
   const [editValue, setEditValue] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const color = colorForAuthor(entry.author_email);
   const isEditing = editValue !== null;
 
@@ -1199,14 +1206,41 @@ function SharedNoteEntryItem({
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
           </span>
-          {isOwn ? (
-            <button
-              type="button"
-              onClick={() => setEditValue(entry.text)}
-              className="text-xs text-muted-foreground opacity-0 underline-offset-2 hover:underline group-hover:opacity-100"
-            >
-              Edit
-            </button>
+          {isOwn && confirmingDelete ? (
+            <span className="flex items-center gap-2 text-xs">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={onDelete}
+                className="font-medium text-destructive underline-offset-2 hover:underline"
+              >
+                {isDeleting ? "Deleting…" : "Confirm delete"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="text-muted-foreground underline-offset-2 hover:underline"
+              >
+                Cancel
+              </button>
+            </span>
+          ) : isOwn ? (
+            <span className="flex items-center gap-2 opacity-0 group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => setEditValue(entry.text)}
+                className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                className="text-xs text-muted-foreground underline-offset-2 hover:underline hover:text-destructive"
+              >
+                Delete
+              </button>
+            </span>
           ) : null}
         </div>
       </div>
@@ -1218,12 +1252,33 @@ function SharedNoteEntryItem({
 function ApplicationSharedNotes({ applicationId }: { applicationId: string }) {
   const { user } = useAuth();
   const { data: entries = [] } = useApplicationSharedNotes(applicationId);
-  const { data: directory = [] } = useAdminAllTeamEntries(!!user?.userId);
+  const { data: rawDirectory = [] } = useAdminAllTeamEntries(!!user?.userId);
+  const { data: adminUsers = [] } = useAdminUsers();
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const autoOpenedRef = useRef(false);
   const createSharedNote = useCreateApplicationSharedNote();
   const updateSharedNote = useUpdateApplicationSharedNote();
+  const deleteSharedNote = useDeleteApplicationSharedNote();
+
+  // team_members (rawDirectory) tracks team history, not current admin
+  // status — someone demoted from admin keeps their rows there. Cross-check
+  // against /admin/users (the actual source of truth for the "admin" role)
+  // so a demoted person drops out of @mentions immediately, and collapse
+  // team_members' one-row-per-team-per-year duplicates down to one entry per
+  // person while we're at it.
+  const directory = useMemo(() => {
+    const currentAdminEmails = new Set(
+      adminUsers.filter((admin) => admin.roles.includes("admin")).map((admin) => admin.email),
+    );
+    const seen = new Set<string>();
+    return rawDirectory.filter((person) => {
+      if (!currentAdminEmails.has(person.email)) return false;
+      if (seen.has(person.email)) return false;
+      seen.add(person.email);
+      return true;
+    });
+  }, [rawDirectory, adminUsers]);
 
   const hasContent = entries.length > 0;
 
@@ -1270,9 +1325,11 @@ function ApplicationSharedNotes({ applicationId }: { applicationId: string }) {
               isOwn={entry.author_id === user?.userId}
               directory={directory}
               isPending={updateSharedNote.isPending}
+              isDeleting={deleteSharedNote.isPending}
               onSave={(text) =>
                 updateSharedNote.mutate({ id: applicationId, noteId: entry.id, text })
               }
+              onDelete={() => deleteSharedNote.mutate({ id: applicationId, noteId: entry.id })}
             />
           ))}
         </div>

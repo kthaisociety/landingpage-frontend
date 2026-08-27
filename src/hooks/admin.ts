@@ -238,6 +238,7 @@ export function useAdminAddTeamEntry() {
     mutationFn: adminAddTeamEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-user-team-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-team-entries"] });
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
       queryClient.invalidateQueries({ queryKey: ["team-years"] });
     },
@@ -258,6 +259,7 @@ export function useAdminRemoveTeamEntry() {
     mutationFn: adminRemoveTeamEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-user-team-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-team-entries"] });
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
       queryClient.invalidateQueries({ queryKey: ["team-years"] });
     },
