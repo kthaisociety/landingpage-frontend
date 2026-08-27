@@ -145,7 +145,11 @@ import {
   type ApplicationTeam,
   type GeneralApplication,
 } from "@/types/applications";
-import { useAdminAllTeamEntries, useAdminUserTeamEntries } from "@/hooks/admin";
+import {
+  useAdminAllTeamEntries,
+  useAdminUserTeamEntries,
+  type AdminAllTeamEntryRow,
+} from "@/hooks/admin";
 import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 
 const SKELETON_ROWS = [
@@ -979,37 +983,189 @@ const SHARED_NOTE_AUTHOR_COLORS = [
   { text: "text-rose-600 dark:text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/30", dot: "bg-rose-500" },
 ];
 
-function colorForAuthor(authorId: string) {
+// Keyed by email rather than author_id: email is the one identifier both a
+// note entry (author_email) and the team directory (used for @mentions)
+// already share, so the same hash drives both an entry's author color and
+// the color a mention of that person gets highlighted with.
+function colorForAuthor(email: string) {
   let hash = 0;
-  for (let i = 0; i < authorId.length; i += 1) {
-    hash = (hash * 31 + authorId.charCodeAt(i)) | 0;
+  for (let i = 0; i < email.length; i += 1) {
+    hash = (hash * 31 + email.charCodeAt(i)) | 0;
   }
   return SHARED_NOTE_AUTHOR_COLORS[Math.abs(hash) % SHARED_NOTE_AUTHOR_COLORS.length];
+}
+
+const MENTION_PATTERN = /@([\p{L}]+)/gu;
+// Matches an "@partial-name" immediately before the cursor, so typing can be
+// distinguished from an "@" that's just part of an email or already-finished
+// mention followed by other text.
+const ACTIVE_MENTION_PATTERN = /@([\p{L}]*)$/u;
+
+function findMentionedAdmin(name: string, directory: AdminAllTeamEntryRow[]) {
+  const lower = name.toLowerCase();
+  return directory.find((person) => person.first_name.toLowerCase() === lower);
+}
+
+function renderTextWithMentions(text: string, directory: AdminAllTeamEntryRow[]) {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  for (const match of text.matchAll(MENTION_PATTERN)) {
+    const index = match.index ?? 0;
+    if (index > lastIndex) {
+      parts.push(text.slice(lastIndex, index));
+    }
+    const person = findMentionedAdmin(match[1], directory);
+    if (person) {
+      const color = colorForAuthor(person.email);
+      parts.push(
+        <span key={`mention-${key}`} className={`rounded px-1 font-medium ${color.bg} ${color.text}`}>
+          {match[0]}
+        </span>,
+      );
+    } else {
+      parts.push(match[0]);
+    }
+    key += 1;
+    lastIndex = index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts;
+}
+
+// A Textarea that shows a "@name" autocomplete dropdown, sourced from the
+// admin team directory, while the user is typing a mention.
+function MentionTextarea({
+  value,
+  onChange,
+  directory,
+  placeholder,
+  className,
+  autoFocus,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  directory: AdminAllTeamEntryRow[];
+  placeholder?: string;
+  className?: string;
+  autoFocus?: boolean;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [query, setQuery] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const suggestions = useMemo(() => {
+    if (query === null) return [];
+    const lower = query.toLowerCase();
+    return directory.filter((person) => person.first_name.toLowerCase().startsWith(lower)).slice(0, 5);
+  }, [query, directory]);
+
+  function syncQueryFromCaret(text: string, caret: number) {
+    const match = ACTIVE_MENTION_PATTERN.exec(text.slice(0, caret));
+    setQuery(match ? match[1] : null);
+    setActiveIndex(0);
+  }
+
+  function insertMention(person: AdminAllTeamEntryRow) {
+    const textarea = textareaRef.current;
+    const caret = textarea?.selectionStart ?? value.length;
+    const match = ACTIVE_MENTION_PATTERN.exec(value.slice(0, caret));
+    if (!match) return;
+
+    const before = value.slice(0, match.index);
+    const after = value.slice(caret);
+    const inserted = `@${person.first_name} `;
+    onChange(`${before}${inserted}${after}`);
+    setQuery(null);
+
+    requestAnimationFrame(() => {
+      const cursor = before.length + inserted.length;
+      textarea?.focus();
+      textarea?.setSelectionRange(cursor, cursor);
+    });
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (query === null || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % suggestions.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => (i - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      insertMention(suggestions[activeIndex]);
+    } else if (e.key === "Escape") {
+      setQuery(null);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <Textarea
+        ref={textareaRef}
+        autoFocus={autoFocus}
+        placeholder={placeholder}
+        className={className}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          syncQueryFromCaret(e.target.value, e.target.selectionStart ?? e.target.value.length);
+        }}
+        onKeyDown={handleKeyDown}
+        onBlur={() => setQuery(null)}
+      />
+      {query !== null && suggestions.length > 0 ? (
+        <div className="absolute z-10 mt-1 w-48 overflow-hidden rounded-md border bg-popover py-1 shadow-md">
+          {suggestions.map((person, index) => (
+            <button
+              key={person.email}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => insertMention(person)}
+              className={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm hover:bg-accent ${
+                index === activeIndex ? "bg-accent" : ""
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${colorForAuthor(person.email).dot}`} />
+              {person.first_name} {person.last_name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function SharedNoteEntryItem({
   entry,
   isOwn,
+  directory,
   onSave,
   isPending,
 }: {
   entry: ApplicationSharedNoteEntry;
   isOwn: boolean;
+  directory: AdminAllTeamEntryRow[];
   onSave: (text: string) => void;
   isPending: boolean;
 }) {
   const [editValue, setEditValue] = useState<string | null>(null);
-  const color = colorForAuthor(entry.author_id);
+  const color = colorForAuthor(entry.author_email);
   const isEditing = editValue !== null;
 
   if (isEditing) {
     return (
       <div className={`space-y-2 rounded-md border p-2 ${color.border} ${color.bg}`}>
-        <Textarea
+        <MentionTextarea
           autoFocus
           className="min-h-[80px] resize-y bg-background text-sm"
           value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
+          onChange={setEditValue}
+          directory={directory}
         />
         <div className="flex items-center gap-2">
           <Button
@@ -1054,7 +1210,7 @@ function SharedNoteEntryItem({
           ) : null}
         </div>
       </div>
-      <p className="whitespace-pre-wrap">{entry.text}</p>
+      <p className="whitespace-pre-wrap">{renderTextWithMentions(entry.text, directory)}</p>
     </div>
   );
 }
@@ -1062,6 +1218,7 @@ function SharedNoteEntryItem({
 function ApplicationSharedNotes({ applicationId }: { applicationId: string }) {
   const { user } = useAuth();
   const { data: entries = [] } = useApplicationSharedNotes(applicationId);
+  const { data: directory = [] } = useAdminAllTeamEntries(!!user?.userId);
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const autoOpenedRef = useRef(false);
@@ -1111,6 +1268,7 @@ function ApplicationSharedNotes({ applicationId }: { applicationId: string }) {
               key={entry.id}
               entry={entry}
               isOwn={entry.author_id === user?.userId}
+              directory={directory}
               isPending={updateSharedNote.isPending}
               onSave={(text) =>
                 updateSharedNote.mutate({ id: applicationId, noteId: entry.id, text })
@@ -1120,11 +1278,12 @@ function ApplicationSharedNotes({ applicationId }: { applicationId: string }) {
         </div>
       ) : null}
 
-      <Textarea
-        placeholder="Add a comment visible to all admins…"
+      <MentionTextarea
+        placeholder="Add a comment visible to all admins… use @name to mention someone"
         className="min-h-[80px] resize-y text-sm"
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={setDraft}
+        directory={directory}
       />
       <Button
         size="sm"
