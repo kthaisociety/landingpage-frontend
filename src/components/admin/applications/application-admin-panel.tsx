@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import {
   flexRender,
@@ -98,7 +98,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { TeamQuestionsAdminPanel } from "@/components/admin/applications/team-questions-admin-panel";
-import { getStatusBadgeStyle } from "@/components/admin/applications/status-badge";
+import {
+  ALREADY_INTERVIEWED_CLASSNAME,
+  getStatusBadgeStyle,
+  INTERVIEWING_BY_YOU_CLASSNAME,
+} from "@/components/admin/applications/status-badge";
 import {
   Table,
   TableBody,
@@ -138,7 +142,7 @@ import {
   type ApplicationTeam,
   type GeneralApplication,
 } from "@/types/applications";
-import { useAdminUserTeamEntries } from "@/hooks/admin";
+import { useAdminAllTeamEntries, useAdminUserTeamEntries } from "@/hooks/admin";
 import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 
 const SKELETON_ROWS = [
@@ -165,7 +169,7 @@ const COLUMN_LABELS: Record<string, string> = {
 };
 
 
-type ApplicationStatusFilter = ApplicationStatus | "all";
+type ApplicationStatusFilter = ApplicationStatus | "all" | "interviewed";
 type ApplicationTeamFilter = ApplicationTeam | "all";
 type ApplicationRankFilter = "all" | "1" | "2" | "3" | "4" | "5";
 type ApplicationAvailabilityFilter = ApplicationAvailability | "all";
@@ -198,6 +202,17 @@ function formatTeamPreferences(application: GeneralApplication) {
   return `Legacy unranked: ${application.teams
     .map((team) => APPLICATION_TEAM_LABELS[team])
     .join("; ")}`;
+}
+
+// Keeps "interviewed_priority" as the leading sort key no matter what the
+// user just clicked, so applicants already interviewed by their team stay
+// grouped at the bottom while whatever column they sorted by still decides
+// order within each group.
+function withInterviewedPriorityFirst(state: SortingState): SortingState {
+  return [
+    { id: "interviewed_priority", desc: false },
+    ...state.filter((sort) => sort.id !== "interviewed_priority"),
+  ];
 }
 
 function getTeamRank(
@@ -459,9 +474,11 @@ function ApplicationRowContextMenu({
 function createApplicationColumns({
   selectedTeam,
   currentAdminEmail,
+  isInterviewedByMyTeam,
 }: {
   selectedTeam: ApplicationTeamFilter;
   currentAdminEmail: string;
+  isInterviewedByMyTeam: (application: GeneralApplication) => boolean;
 }): ColumnDef<GeneralApplication>[] {
   return [
     {
@@ -474,6 +491,7 @@ function createApplicationColumns({
         const badge = getStatusBadgeStyle(app.status, {
           interviewingByEmail: app.interviewing_by_email,
           currentAdminEmail,
+          interviewedByMyTeam: isInterviewedByMyTeam(app),
         });
         return (
           <Badge variant={badge.variant} className={badge.className}>
@@ -482,8 +500,20 @@ function createApplicationColumns({
         );
       },
       filterFn: (row, columnId, filterValue: ApplicationStatusFilter) =>
-        filterValue === "all" || row.getValue(columnId) === filterValue,
+        filterValue === "all" ||
+        (filterValue === "interviewed"
+          ? isInterviewedByMyTeam(row.original)
+          : row.getValue(columnId) === filterValue),
       enableHiding: false,
+    },
+    // Hidden sort-only column: always kept first in the sorting state (see
+    // onSortingChange below) so applicants already interviewed by your team
+    // sink to the bottom no matter which visible column the table is sorted
+    // by, without ever appearing as a column of its own.
+    {
+      id: "interviewed_priority",
+      accessorFn: (application) => (isInterviewedByMyTeam(application) ? 1 : 0),
+      enableColumnFilter: false,
     },
     {
       id: "applicant",
@@ -626,7 +656,7 @@ function DataTableViewOptions({
         <DropdownMenuSeparator />
         {table
           .getAllColumns()
-          .filter((column) => column.getCanHide())
+          .filter((column) => column.getCanHide() && column.id !== "interviewed_priority")
           .map((column) => (
             <DropdownMenuCheckboxItem
               key={column.id}
@@ -963,10 +993,12 @@ function ApplicationSharedNotes({ applicationId }: { applicationId: string }) {
 function ApplicationDetail({
   application,
   currentAdminEmail,
+  interviewedByMyTeam,
   onApplicationUpdated,
 }: {
   application: GeneralApplication;
   currentAdminEmail: string;
+  interviewedByMyTeam: boolean;
   onApplicationUpdated: (app: GeneralApplication) => void;
 }) {
   const sendInvite = useSendInterviewInvite();
@@ -986,6 +1018,7 @@ function ApplicationDetail({
   const statusBadge = getStatusBadgeStyle(application.status, {
     interviewingByEmail: application.interviewing_by_email,
     currentAdminEmail,
+    interviewedByMyTeam,
   });
 
   return (
@@ -1464,18 +1497,40 @@ export function ApplicationAdminPanel({
   // Team entries win; fall back to manual declaration
   const effectiveTeam = teamFromProfile || (declaredTeam ?? "");
 
+  // Every admin/team-member entry across all teams, used to tell whether an
+  // applicant's interviewed_by list overlaps with *this* admin's team.
+  const { data: allTeamEntries = [] } = useAdminAllTeamEntries(!!user?.userId);
+  const teamEmailsForEffectiveTeam = useMemo(() => {
+    const emails = new Set<string>();
+    if (!effectiveTeam || effectiveTeam === "none") return emails;
+    allTeamEntries.forEach((entry) => {
+      if (entry.department === effectiveTeam) {
+        emails.add(entry.email.toLowerCase());
+      }
+    });
+    return emails;
+  }, [allTeamEntries, effectiveTeam]);
+  const isInterviewedByMyTeam = useCallback(
+    (application: GeneralApplication) =>
+      application.interviewed_by.some((email) =>
+        teamEmailsForEffectiveTeam.has(email.toLowerCase()),
+      ),
+    [teamEmailsForEffectiveTeam],
+  );
+
   const [filters, setFilters] = useState<AdminApplicationsFilters>({
     year: 2026,
     status: "all",
     team: "all",
     q: "",
   });
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "created_at", desc: true },
-  ]);
+  const [sorting, setSorting] = useState<SortingState>(() =>
+    withInterviewedPriorityFirst([{ id: "created_at", desc: true }]),
+  );
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     created_at: false,
+    interviewed_priority: false,
   });
   const [globalFilter, setGlobalFilter] = useState("");
   const [rankFilter, setRankFilterState] = useState<ApplicationRankFilter>("all");
@@ -1543,8 +1598,9 @@ export function ApplicationAdminPanel({
       createApplicationColumns({
         selectedTeam: (filters.team ?? "all") as ApplicationTeamFilter,
         currentAdminEmail,
+        isInterviewedByMyTeam,
       }),
-    [filters.team, currentAdminEmail],
+    [filters.team, currentAdminEmail, isInterviewedByMyTeam],
   );
 
   const tableData = useMemo(
@@ -1564,7 +1620,12 @@ export function ApplicationAdminPanel({
       globalFilter,
     },
     globalFilterFn: applicationGlobalFilter,
-    onSortingChange: setSorting,
+    onSortingChange: (updater) =>
+      setSorting((old) =>
+        withInterviewedPriorityFirst(
+          typeof updater === "function" ? updater(old) : updater,
+        ),
+      ),
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
@@ -1590,7 +1651,7 @@ export function ApplicationAdminPanel({
       table.getColumn("selected_team_rank")?.setFilterValue(undefined);
       return;
     }
-    setSorting([{ id: "selected_team_rank", desc: false }]);
+    setSorting(withInterviewedPriorityFirst([{ id: "selected_team_rank", desc: false }]));
   }
 
   function setRankFilter(rank: ApplicationRankFilter) {
@@ -1631,7 +1692,7 @@ export function ApplicationAdminPanel({
     setAvailabilityFilterState("all");
     setPreferenceTypeFilterState("all");
     setGraduationYearFilterState("all");
-    setSorting([{ id: "created_at", desc: true }]);
+    setSorting(withInterviewedPriorityFirst([{ id: "created_at", desc: true }]));
     setMyInterviewingFilter(false);
   }
 
@@ -1789,6 +1850,7 @@ export function ApplicationAdminPanel({
               />
             </div>
             <Button
+              variant="outline"
               onClick={() => {
                 setMyInterviewingFilter(false);
                 setStatusFilter("available");
@@ -1798,12 +1860,24 @@ export function ApplicationAdminPanel({
               Available for {APPLICATION_TEAM_LABELS[effectiveTeam as ApplicationTeam] ?? effectiveTeam}
             </Button>
             <Button
+              variant="outline"
+              className={INTERVIEWING_BY_YOU_CLASSNAME}
               onClick={() => {
                 resetFilters();
                 setMyInterviewingFilter(true);
               }}
             >
               Currently interviewing
+            </Button>
+            <Button
+              variant="outline"
+              className={ALREADY_INTERVIEWED_CLASSNAME}
+              onClick={() => {
+                resetFilters();
+                setStatusFilter("interviewed");
+              }}
+            >
+              Interviewed
             </Button>
             <Button
               type="button"
@@ -1849,6 +1923,7 @@ export function ApplicationAdminPanel({
                     {status}
                   </NativeSelectOption>
                 ))}
+                <NativeSelectOption value="interviewed">interviewed</NativeSelectOption>
               </NativeSelect>
 
               <NativeSelect
@@ -2040,6 +2115,7 @@ export function ApplicationAdminPanel({
               <ApplicationDetail
                 application={displayedApplication}
                 currentAdminEmail={currentAdminEmail}
+                interviewedByMyTeam={isInterviewedByMyTeam(displayedApplication)}
                 onApplicationUpdated={setSelectedApplication}
               />
             </>

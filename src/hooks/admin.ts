@@ -166,7 +166,9 @@ async function fetchAdminUserTeamEntries(
   if (!res.ok) {
     throw new Error("Failed to fetch team entries");
   }
-  return res.json();
+  // Go serializes a nil slice (no rows) as JSON null, not [], so a plain
+  // `?? []` default on the query result wouldn't catch it — normalize here.
+  return (await res.json()) ?? [];
 }
 
 export function useAdminUserTeamEntries(userId: string, enabled: boolean) {
@@ -174,6 +176,38 @@ export function useAdminUserTeamEntries(userId: string, enabled: boolean) {
     queryKey: ["admin-user-team-entries", userId],
     queryFn: () => fetchAdminUserTeamEntries(userId),
     enabled: Boolean(userId) && enabled,
+  });
+}
+
+/** One row from GET /team/admin/members/all — every team member entry, with the profile's email/name joined in. */
+export interface AdminAllTeamEntryRow {
+  id: number;
+  profile_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  department: string;
+  academic_year: string;
+}
+
+async function fetchAdminAllTeamEntries(): Promise<AdminAllTeamEntryRow[]> {
+  const res = await fetch(`${API_URL}/team/admin/members/all`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new Error("Failed to fetch team entries");
+  }
+  // Go serializes a nil slice (no rows) as JSON null, not [], so a plain
+  // `?? []` default on the query result wouldn't catch it — normalize here.
+  return (await res.json()) ?? [];
+}
+
+export function useAdminAllTeamEntries(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["admin-all-team-entries"],
+    queryFn: fetchAdminAllTeamEntries,
+    enabled,
   });
 }
 

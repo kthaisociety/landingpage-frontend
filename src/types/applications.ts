@@ -202,7 +202,9 @@ export type CreateGeneralApplicationResponse = {
 
 export type AdminApplicationsFilters = {
   year?: number;
-  status?: ApplicationStatus | "all";
+  // "interviewed" is a client-side-only pseudo-status: applicants who have
+  // been interviewed at least once, independent of their current status.
+  status?: ApplicationStatus | "all" | "interviewed";
   team?: ApplicationTeam | "all";
   q?: string;
 };
