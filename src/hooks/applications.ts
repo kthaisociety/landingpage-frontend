@@ -279,36 +279,63 @@ async function updateApplicationNotes({ id, note }: { id: string; note: string }
   return data.note;
 }
 
-export type ApplicationSharedNote = {
-  note: string;
-  last_edited_email: string;
-  updated_at: string | null;
+export type ApplicationSharedNoteEntry = {
+  id: string;
+  application_id: string;
+  author_id: string;
+  author_email: string;
+  text: string;
+  created_at: string;
+  updated_at: string;
 };
 
-async function fetchApplicationSharedNotes(id: string): Promise<ApplicationSharedNote> {
+async function fetchApplicationSharedNotes(id: string): Promise<ApplicationSharedNoteEntry[]> {
   const response = await fetch(`${API_URL}/applications/admin/${id}/notes/shared`, {
     credentials: "include",
   });
-  if (!response.ok) return { note: "", last_edited_email: "", updated_at: null };
-  return response.json();
+  if (!response.ok) return [];
+  const data = (await response.json()) as { entries: ApplicationSharedNoteEntry[] };
+  return data.entries;
 }
 
-async function updateApplicationSharedNotes({
+async function createApplicationSharedNote({
   id,
-  note,
+  text,
 }: {
   id: string;
-  note: string;
-}): Promise<ApplicationSharedNote> {
+  text: string;
+}): Promise<ApplicationSharedNoteEntry> {
   const response = await fetch(`${API_URL}/applications/admin/${id}/notes/shared`, {
-    method: "PUT",
+    method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ note }),
+    body: JSON.stringify({ text }),
   });
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(data?.error || "Failed to save shared notes");
+    throw new Error(data?.error || "Failed to save shared note");
+  }
+  return response.json();
+}
+
+async function updateApplicationSharedNote({
+  id,
+  noteId,
+  text,
+}: {
+  id: string;
+  noteId: string;
+  text: string;
+}): Promise<ApplicationSharedNoteEntry> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/notes/shared/${noteId}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to update shared note");
   }
   return response.json();
 }
@@ -490,16 +517,34 @@ export function useApplicationSharedNotes(id: string) {
   });
 }
 
-export function useUpdateApplicationSharedNotes() {
+export function useCreateApplicationSharedNote() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: updateApplicationSharedNotes,
+    mutationFn: createApplicationSharedNote,
     onSuccess: (result, variables) => {
-      toast.success("Shared notes saved.");
-      queryClient.setQueryData(["application-shared-notes", variables.id], result);
+      queryClient.setQueryData<ApplicationSharedNoteEntry[]>(
+        ["application-shared-notes", variables.id],
+        (old) => [...(old ?? []), result],
+      );
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to save shared notes.");
+      toast.error(error.message || "Failed to save shared note.");
+    },
+  });
+}
+
+export function useUpdateApplicationSharedNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateApplicationSharedNote,
+    onSuccess: (result, variables) => {
+      queryClient.setQueryData<ApplicationSharedNoteEntry[]>(
+        ["application-shared-notes", variables.id],
+        (old) => (old ?? []).map((entry) => (entry.id === result.id ? result : entry)),
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update shared note.");
     },
   });
 }

@@ -97,6 +97,7 @@ import {
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TeamQuestionsAdminPanel } from "@/components/admin/applications/team-questions-admin-panel";
 import {
   ALREADY_INTERVIEWED_CLASSNAME,
@@ -119,6 +120,7 @@ import {
   useApplicationTeamQuestions,
   useCancelInterview,
   useClaimApplication,
+  useCreateApplicationSharedNote,
   useRestoreApplication,
   useDeleteApplication,
   useInterviewSettings,
@@ -128,8 +130,9 @@ import {
   useSendInterviewInvite,
   useTeamQuestionDefinitions,
   useUpdateApplicationNotes,
-  useUpdateApplicationSharedNotes,
+  useUpdateApplicationSharedNote,
   useUpdateInterviewSettings,
+  type ApplicationSharedNoteEntry,
 } from "@/hooks/applications";
 import {
   APPLICATION_AVAILABILITY,
@@ -953,40 +956,189 @@ function ApplicationPrivateNotes({ applicationId }: { applicationId: string }) {
   );
 }
 
-function ApplicationSharedNotes({ applicationId }: { applicationId: string }) {
-  const { data } = useApplicationSharedNotes(applicationId);
-  const savedNote = data?.note ?? "";
-  const [draft, setDraft] = useState<string | null>(null);
-  const updateSharedNotes = useUpdateApplicationSharedNotes();
+// Fixed palette so each author gets a stable color across renders and
+// entries, picked by hashing their id — not assigned by first-seen order,
+// which would shift as older entries scroll out or load in a different
+// sequence.
+const SHARED_NOTE_AUTHOR_COLORS = [
+  { text: "text-red-600 dark:text-red-400", bg: "bg-red-500/10", border: "border-red-500/30", dot: "bg-red-500" },
+  { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30", dot: "bg-orange-500" },
+  { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", dot: "bg-amber-500" },
+  { text: "text-lime-600 dark:text-lime-400", bg: "bg-lime-500/10", border: "border-lime-500/30", dot: "bg-lime-500" },
+  { text: "text-green-600 dark:text-green-400", bg: "bg-green-500/10", border: "border-green-500/30", dot: "bg-green-500" },
+  { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", dot: "bg-emerald-500" },
+  { text: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10", border: "border-teal-500/30", dot: "bg-teal-500" },
+  { text: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30", dot: "bg-cyan-500" },
+  { text: "text-sky-600 dark:text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/30", dot: "bg-sky-500" },
+  { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/30", dot: "bg-blue-500" },
+  { text: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/30", dot: "bg-indigo-500" },
+  { text: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/30", dot: "bg-violet-500" },
+  { text: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30", dot: "bg-purple-500" },
+  { text: "text-fuchsia-600 dark:text-fuchsia-400", bg: "bg-fuchsia-500/10", border: "border-fuchsia-500/30", dot: "bg-fuchsia-500" },
+  { text: "text-pink-600 dark:text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/30", dot: "bg-pink-500" },
+  { text: "text-rose-600 dark:text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/30", dot: "bg-rose-500" },
+];
 
-  const value = draft ?? savedNote;
+function colorForAuthor(authorId: string) {
+  let hash = 0;
+  for (let i = 0; i < authorId.length; i += 1) {
+    hash = (hash * 31 + authorId.charCodeAt(i)) | 0;
+  }
+  return SHARED_NOTE_AUTHOR_COLORS[Math.abs(hash) % SHARED_NOTE_AUTHOR_COLORS.length];
+}
 
-  function handleSave() {
-    updateSharedNotes.mutate(
-      { id: applicationId, note: value },
-      { onSuccess: () => setDraft(null) },
+function SharedNoteEntryItem({
+  entry,
+  isOwn,
+  onSave,
+  isPending,
+}: {
+  entry: ApplicationSharedNoteEntry;
+  isOwn: boolean;
+  onSave: (text: string) => void;
+  isPending: boolean;
+}) {
+  const [editValue, setEditValue] = useState<string | null>(null);
+  const color = colorForAuthor(entry.author_id);
+  const isEditing = editValue !== null;
+
+  if (isEditing) {
+    return (
+      <div className={`space-y-2 rounded-md border p-2 ${color.border} ${color.bg}`}>
+        <Textarea
+          autoFocus
+          className="min-h-[80px] resize-y bg-background text-sm"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+        />
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            disabled={isPending || !editValue.trim() || editValue === entry.text}
+            onClick={() => onSave(editValue)}
+          >
+            {isPending ? "Saving…" : "Save"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditValue(null)}>
+            Cancel
+          </Button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <NoteField
-      title="Shared notes (visible to all admins)"
-      placeholder="Add notes visible to all admins here…"
-      value={value}
-      hasContent={savedNote.trim().length > 0}
-      isPending={updateSharedNotes.isPending}
-      canSave={draft !== null && draft !== savedNote}
-      onChange={setDraft}
-      onSave={handleSave}
-      footer={
-        data?.last_edited_email && data.updated_at ? (
-          <p className="text-xs text-muted-foreground">
-            Last edited by {data.last_edited_email},{" "}
-            {formatDistanceToNow(new Date(data.updated_at), { addSuffix: true })}
-          </p>
-        ) : null
-      }
-    />
+    <div className={`group rounded-md border p-2 text-sm ${color.border} ${color.bg}`}>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={`flex items-center gap-1.5 text-xs font-medium ${color.text}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${color.dot}`} />
+              {entry.author_email}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{entry.author_email}</TooltipContent>
+        </Tooltip>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
+          </span>
+          {isOwn ? (
+            <button
+              type="button"
+              onClick={() => setEditValue(entry.text)}
+              className="text-xs text-muted-foreground opacity-0 underline-offset-2 hover:underline group-hover:opacity-100"
+            >
+              Edit
+            </button>
+          ) : null}
+        </div>
+      </div>
+      <p className="whitespace-pre-wrap">{entry.text}</p>
+    </div>
+  );
+}
+
+function ApplicationSharedNotes({ applicationId }: { applicationId: string }) {
+  const { user } = useAuth();
+  const { data: entries = [] } = useApplicationSharedNotes(applicationId);
+  const [isOpen, setIsOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const autoOpenedRef = useRef(false);
+  const createSharedNote = useCreateApplicationSharedNote();
+  const updateSharedNote = useUpdateApplicationSharedNote();
+
+  const hasContent = entries.length > 0;
+
+  useEffect(() => {
+    if (hasContent && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setIsOpen(true);
+    }
+  }, [hasContent]);
+
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="flex w-full items-center justify-between rounded-md border border-dashed px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:border-solid hover:bg-accent/50"
+      >
+        <span className="flex items-center gap-2">
+          {hasContent ? <span className="h-1.5 w-1.5 rounded-full bg-primary" /> : null}
+          Shared notes (visible to all admins)
+        </span>
+        <span className="text-xs">{hasContent ? "View / edit" : "Add note"}</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setIsOpen(false)}
+        className="flex items-center gap-1 text-sm font-semibold"
+      >
+        <ChevronDown className="h-4 w-4" />
+        Shared notes (visible to all admins)
+      </button>
+
+      {entries.length > 0 ? (
+        <div className="space-y-2">
+          {entries.map((entry) => (
+            <SharedNoteEntryItem
+              key={entry.id}
+              entry={entry}
+              isOwn={entry.author_id === user?.userId}
+              isPending={updateSharedNote.isPending}
+              onSave={(text) =>
+                updateSharedNote.mutate({ id: applicationId, noteId: entry.id, text })
+              }
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <Textarea
+        placeholder="Add a comment visible to all admins…"
+        className="min-h-[80px] resize-y text-sm"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+      />
+      <Button
+        size="sm"
+        disabled={createSharedNote.isPending || !draft.trim()}
+        onClick={() =>
+          createSharedNote.mutate(
+            { id: applicationId, text: draft },
+            { onSuccess: () => setDraft("") },
+          )
+        }
+      >
+        {createSharedNote.isPending ? "Saving…" : "Add comment"}
+      </Button>
+    </div>
   );
 }
 
@@ -1147,6 +1299,9 @@ function ApplicationDetail({
         <DetailItem label="Availability" value={application.availability} />
       </div>
 
+      <ApplicationSharedNotes applicationId={application.id} />
+      <ApplicationPrivateNotes applicationId={application.id} />
+
       <TeamPreferencesDetail application={application} />
       <TeamQuestionsAnswers application={application} />
 
@@ -1191,9 +1346,6 @@ function ApplicationDetail({
         <Download className="mr-2 h-4 w-4" />
         Download resume
       </Button>
-
-      <ApplicationSharedNotes applicationId={application.id} />
-      <ApplicationPrivateNotes applicationId={application.id} />
     </div>
   );
 }
