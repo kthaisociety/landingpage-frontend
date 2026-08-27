@@ -206,7 +206,7 @@ function TeamQuestionsTemplatePanel() {
         {!open && (
           <CardDescription>
             The invite sent when applicants are asked to answer team questions, and the automatic
-            reminder sent 14 days later if they haven&apos;t. Shared by all admins, click to view or
+            reminder sent 7 days later if they haven&apos;t. Shared by all admins, click to view or
             edit.
             {template && !template.can_edit && " Only IT admins can edit it."}
           </CardDescription>
@@ -292,7 +292,7 @@ function TeamQuestionsTemplatePanel() {
                   </Button>
                 </div>
                 <CardDescription>
-                  Sent automatically, once, to anyone who hasn&apos;t submitted 14 days after their
+                  Sent automatically, once, to anyone who hasn&apos;t submitted 7 days after their
                   invite. Also gets a fresh form link — the original one still isn&apos;t reused.
                 </CardDescription>
                 <div className="space-y-1">
