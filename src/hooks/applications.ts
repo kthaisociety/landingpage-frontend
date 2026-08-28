@@ -219,6 +219,26 @@ async function restoreApplication(id: string): Promise<GeneralApplication> {
   return response.json();
 }
 
+async function fastTrackApplication({
+  id,
+  reason,
+}: {
+  id: string;
+  reason: string;
+}): Promise<GeneralApplication> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/fast-track`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reason: reason.trim() }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to fast-track application");
+  }
+  return response.json();
+}
+
 async function claimApplication(id: string): Promise<GeneralApplication> {
   const response = await fetch(`${API_URL}/applications/admin/${id}/claim`, {
     method: "POST",
@@ -418,6 +438,20 @@ function patchApplicationInCache(
     (prev) => prev?.map((a) => (a.id === updated.id ? updated : a)),
   );
   void queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+}
+
+export function useFastTrackApplication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fastTrackApplication,
+    onSuccess: (updated) => {
+      toast.success("Application fast-tracked to available.");
+      patchApplicationInCache(queryClient, updated);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to fast-track application.");
+    },
+  });
 }
 
 export function useClaimApplication() {

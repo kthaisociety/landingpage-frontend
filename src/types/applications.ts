@@ -168,6 +168,10 @@ export type GeneralApplication = {
   interview_invite_sent_at: string | null;
   team_questions_invite_sent_at: string | null;
   team_questions_reminder_sent_at: string | null;
+  fast_tracked: boolean;
+  fast_tracked_by_email: string;
+  fast_tracked_at: string | null;
+  fast_track_reason: string;
   created_at: string;
   updated_at: string;
 };

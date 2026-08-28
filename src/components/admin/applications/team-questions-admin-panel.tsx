@@ -561,6 +561,7 @@ export function TeamQuestionsAdminPanel({ currentAdminEmail }: { currentAdminEma
                           const badge = getStatusBadgeStyle(application.status, {
                             interviewingByEmail: application.interviewing_by_email,
                             currentAdminEmail,
+                            fastTracked: application.fast_tracked,
                           });
                           return (
                             <Badge variant={badge.variant} className={badge.className}>

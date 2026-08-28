@@ -32,6 +32,7 @@ import {
   Trash2,
   Unlock,
   XCircle,
+  Zap,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -124,6 +125,7 @@ import {
   useRestoreApplication,
   useDeleteApplication,
   useDeleteApplicationSharedNote,
+  useFastTrackApplication,
   useInterviewSettings,
   useMarkIneligible,
   usePreviewInterviewSettings,
@@ -394,6 +396,7 @@ function ApplicationRowContextMenu({
   onRelease,
   onCancel,
   onIneligible,
+  onFastTrack,
   children,
 }: {
   application: GeneralApplication;
@@ -405,6 +408,7 @@ function ApplicationRowContextMenu({
   onRelease: (application: GeneralApplication) => void;
   onCancel: (application: GeneralApplication) => void;
   onIneligible: (application: GeneralApplication) => void;
+  onFastTrack: (application: GeneralApplication) => void;
   children: React.ReactNode;
 }) {
   const isClaimedByMe =
@@ -454,6 +458,12 @@ function ApplicationRowContextMenu({
             Claimed by {application.interviewing_by_email}
           </ContextMenuItem>
         )}
+        {application.status === "pending" && (
+          <ContextMenuItem onClick={() => onFastTrack(application)}>
+            <Zap className="mr-2 h-4 w-4" />
+            Fast-track (skip Team Questions)
+          </ContextMenuItem>
+        )}
         {application.status !== "ineligible" && (
           <ContextMenuItem
             className="text-destructive focus:text-destructive"
@@ -501,6 +511,7 @@ function createApplicationColumns({
           interviewingByEmail: app.interviewing_by_email,
           currentAdminEmail,
           interviewedByMyTeam: isInterviewedByMyTeam(app),
+          fastTracked: app.fast_tracked,
         });
         return (
           <Badge variant={badge.variant} className={badge.className}>
@@ -1363,11 +1374,13 @@ function ApplicationDetail({
   currentAdminEmail,
   interviewedByMyTeam,
   onApplicationUpdated,
+  onFastTrackRequest,
 }: {
   application: GeneralApplication;
   currentAdminEmail: string;
   interviewedByMyTeam: boolean;
   onApplicationUpdated: (app: GeneralApplication) => void;
+  onFastTrackRequest: (application: GeneralApplication) => void;
 }) {
   const sendInvite = useSendInterviewInvite();
   const claim = useClaimApplication();
@@ -1387,6 +1400,7 @@ function ApplicationDetail({
     interviewingByEmail: application.interviewing_by_email,
     currentAdminEmail,
     interviewedByMyTeam,
+    fastTracked: application.fast_tracked,
   });
 
   return (
@@ -1413,8 +1427,39 @@ function ApplicationDetail({
         )}
       </div>
 
+      {application.fast_tracked && (
+        <div className="space-y-1 rounded-md border border-teal-500/30 bg-teal-500/5 p-3 text-sm">
+          <p className="font-medium text-teal-700 dark:text-teal-400">
+            <Zap className="mr-1 inline h-3.5 w-3.5" />
+            Fast-tracked by {application.fast_tracked_by_email || "unknown"}
+            {application.fast_tracked_at && (
+              <>
+                {" "}
+                ·{" "}
+                {formatDistanceToNow(new Date(application.fast_tracked_at), {
+                  addSuffix: true,
+                })}
+              </>
+            )}
+          </p>
+          {application.fast_track_reason && (
+            <p className="text-muted-foreground">{application.fast_track_reason}</p>
+          )}
+        </div>
+      )}
+
       {/* Interview actions */}
       <div className="flex flex-wrap gap-2">
+        {application.status === "pending" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onFastTrackRequest(application)}
+          >
+            <Zap className="mr-2 h-4 w-4" />
+            Fast-track (skip Team Questions)
+          </Button>
+        )}
         {application.status === "available" && (
           <Button
             size="sm"
@@ -1913,6 +1958,9 @@ export function ApplicationAdminPanel({
     useState<GeneralApplication | null>(null);
   const [applicationToDelete, setApplicationToDelete] =
     useState<GeneralApplication | null>(null);
+  const [applicationToFastTrack, setApplicationToFastTrack] =
+    useState<GeneralApplication | null>(null);
+  const [fastTrackReason, setFastTrackReason] = useState("");
 
   const { data: applications = [], isLoading, isError } =
     useAdminApplications({ year: filters.year });
@@ -1921,6 +1969,7 @@ export function ApplicationAdminPanel({
   const release = useReleaseApplication();
   const cancel = useCancelInterview();
   const markIneligible = useMarkIneligible();
+  const fastTrack = useFastTrackApplication();
 
   // Keep the side panel in sync with the latest server data after mutations.
   const displayedApplication = useMemo(
@@ -2089,6 +2138,16 @@ export function ApplicationAdminPanel({
       current?.id === applicationToDelete.id ? null : current,
     );
     setApplicationToDelete(null);
+  }
+
+  async function confirmFastTrack() {
+    if (!applicationToFastTrack || !fastTrackReason.trim()) return;
+    await fastTrack.mutateAsync({
+      id: applicationToFastTrack.id,
+      reason: fastTrackReason,
+    });
+    setApplicationToFastTrack(null);
+    setFastTrackReason("");
   }
 
   // Wait for both sources to resolve before deciding which screen to show
@@ -2429,6 +2488,7 @@ export function ApplicationAdminPanel({
                       onRelease={(app) => release.mutate(app.id)}
                       onCancel={(app) => cancel.mutate(app.id)}
                       onIneligible={(app) => markIneligible.mutate(app.id)}
+                      onFastTrack={setApplicationToFastTrack}
                     >
                       <TableRow
                         data-state={row.getIsSelected() && "selected"}
@@ -2485,11 +2545,59 @@ export function ApplicationAdminPanel({
                 currentAdminEmail={currentAdminEmail}
                 interviewedByMyTeam={isInterviewedByMyTeam(displayedApplication)}
                 onApplicationUpdated={setSelectedApplication}
+                onFastTrackRequest={setApplicationToFastTrack}
               />
             </>
           ) : null}
         </SheetContent>
       </Sheet>
+
+      <AlertDialog
+        open={Boolean(applicationToFastTrack)}
+        onOpenChange={(open) => {
+          if (!open && !fastTrack.isPending) {
+            setApplicationToFastTrack(null);
+            setFastTrackReason("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Fast-track application?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>
+                {applicationToFastTrack ? applicationName(applicationToFastTrack) : ""}
+              </strong>{" "}
+              will move straight to available without submitting Team
+              Questions, and can then be claimed for an interview like any
+              other available applicant.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="fast-track-reason" className="text-sm font-medium">
+              Reason
+            </label>
+            <Textarea
+              id="fast-track-reason"
+              placeholder="Why is this candidate being fast-tracked?"
+              value={fastTrackReason}
+              onChange={(event) => setFastTrackReason(event.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={fastTrack.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={fastTrack.isPending || !fastTrackReason.trim()}
+              onClick={(event) => {
+                event.preventDefault();
+                void confirmFastTrack();
+              }}
+            >
+              Fast-track
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={Boolean(applicationToDelete)}

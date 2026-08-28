@@ -27,6 +27,8 @@ const INTERVIEWING_BY_OTHER_CLASSNAME =
   "border-violet-500/30 bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400";
 export const ALREADY_INTERVIEWED_CLASSNAME =
   "border-slate-400/40 bg-slate-400/10 text-slate-600 dark:bg-slate-400/10 dark:text-slate-400";
+export const FAST_TRACKED_CLASSNAME =
+  "border-teal-500/30 bg-teal-500/15 text-teal-700 dark:bg-teal-500/20 dark:text-teal-400";
 
 export type StatusBadgeStyle = {
   variant: "default" | "destructive" | "secondary" | "outline";
@@ -47,6 +49,10 @@ export type StatusBadgeStyle = {
  * Pass interviewedByMyTeam when known so an "available" applicant who has
  * already gone through an interview with your team (and cycled back to
  * "available") reads as done-with, not as a fresh, untouched applicant.
+ *
+ * Pass fastTracked when known so an applicant an admin moved straight to
+ * "available" without waiting on Team Questions is visibly flagged — it's
+ * still a normal claimable applicant, just one worth a second look.
  */
 export function getStatusBadgeStyle(
   status: ApplicationStatus,
@@ -54,6 +60,7 @@ export function getStatusBadgeStyle(
     interviewingByEmail?: string;
     currentAdminEmail?: string;
     interviewedByMyTeam?: boolean;
+    fastTracked?: boolean;
   },
 ): StatusBadgeStyle {
   if (status === "interviewing" && context?.currentAdminEmail) {
@@ -62,6 +69,14 @@ export function getStatusBadgeStyle(
       variant: "outline",
       className: isMine ? INTERVIEWING_BY_YOU_CLASSNAME : INTERVIEWING_BY_OTHER_CLASSNAME,
       label: isMine ? "interviewing (you)" : "interviewing (other)",
+    };
+  }
+
+  if (status === "available" && context?.fastTracked) {
+    return {
+      variant: "outline",
+      className: FAST_TRACKED_CLASSNAME,
+      label: "available (fast-tracked)",
     };
   }
 
