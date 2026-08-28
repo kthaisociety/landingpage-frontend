@@ -1507,6 +1507,35 @@ export function ApplicationForm() {
                 }
               </form.Subscribe>
 
+              <form.Subscribe selector={(state) => state.values.university}>
+                {(university) =>
+                  university === OTHER_UNIVERSITY_VALUE ? (
+                    <div className="sm:col-span-2">
+                      <Alert variant="warning">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Not a KTH student?</AlertTitle>
+                        <AlertDescription>
+                          As documented in our statutes, we are only allowed
+                          to recruit active KTH students. While you cannot
+                          join a project group at this time, you should join
+                          our{" "}
+                          <a
+                            href={LUMA_SIGNUP_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-primary underline underline-offset-2"
+                          >
+                            Luma community
+                          </a>{" "}
+                          to stay in the loop for events and future
+                          opportunities.
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  ) : null
+                }
+              </form.Subscribe>
+
               <form.Field
                 name="programme"
                 validators={applicationFieldValidators.programme}
@@ -1612,7 +1641,7 @@ export function ApplicationForm() {
                       </NativeSelect>
                       {field.state.value === CURRENT_GRADUATION_YEAR ? (
                         <Alert variant="warning">
-                          <AlertTriangle />
+                          <AlertTriangle className="h-4 w-4" />
                           <AlertTitle>Already graduated?</AlertTitle>
                           <AlertDescription>
                             This option is meant for students with

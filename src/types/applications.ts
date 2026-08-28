@@ -48,10 +48,6 @@ export const OTHER_PROGRAMME_VALUE = "Other / not listed";
 export const OTHER_UNIVERSITY_VALUE = "Other";
 export const UNIVERSITIES = [
   "KTH Royal Institute of Technology",
-  "Stockholm University",
-  "Stockholm School of Economics",
-  "Karolinska Institutet",
-  "Södertörn University",
   OTHER_UNIVERSITY_VALUE,
 ] as const;
 
