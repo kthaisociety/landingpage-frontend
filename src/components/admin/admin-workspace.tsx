@@ -82,7 +82,7 @@ const APPLICATIONS_TAB_COPY = {
   },
   "recruitment-period": {
     title: "Settings",
-    description: "Set when applications close for the year, and preview the closed page.",
+    description: "Deadline, closed-page copy, and recruitment decisions.",
   },
 } as const;
 
@@ -109,7 +109,7 @@ export function AdminWorkspace() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* The one place any admin page's title is rendered — pages never
             carry their own duplicate title, they just supply the text. */}
-        <div>
+        <div className="max-w-md">
           <h2 className="text-2xl font-semibold">{title}</h2>
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>

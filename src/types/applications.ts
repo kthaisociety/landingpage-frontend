@@ -41,6 +41,8 @@ export const APPLICATION_STATUSES = [
   "interviewing",
   "ineligible",
   "withdrawn",
+  "accepted",
+  "rejected",
 ] as const;
 
 // Shared with the newsletter signup form so both flows offer the same options.
@@ -172,9 +174,31 @@ export type GeneralApplication = {
   fast_tracked_by_email: string;
   fast_tracked_at: string | null;
   fast_track_reason: string;
+  // Set only via the finalize recruitment phase (see FinalizeRecruitmentPhase
+  // below) — assigned_team is always the deciding admin's own team, never
+  // client-chosen.
+  assigned_team: string;
+  finalized_by_email: string;
+  finalized_at: string | null;
   created_at: string;
   updated_at: string;
 };
+
+export type FinalizeDecision = "accepted" | "rejected";
+
+// Mirrors backend/internal/models/finalize_recruitment_phase.go. A singleton:
+// there's one recruitment "day of reckoning" phase, not one per year.
+export type FinalizeRecruitmentPhase = {
+  opened_by_email: string;
+  opened_at: string | null;
+  closed_by_email: string;
+  closed_at: string | null;
+};
+
+// Mirrors FinalizeRecruitmentPhase.IsOpen() on the backend.
+export function isFinalizePhaseOpen(phase?: FinalizeRecruitmentPhase): boolean {
+  return !!phase?.opened_at && !phase.closed_at;
+}
 
 export type CreateGeneralApplicationInput = {
   firstName: string;

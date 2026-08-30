@@ -8,6 +8,8 @@ import type {
   ApplicationStatus,
   CreateGeneralApplicationInput,
   CreateGeneralApplicationResponse,
+  FinalizeDecision,
+  FinalizeRecruitmentPhase,
   GeneralApplication,
   TeamQuestion,
   TeamQuestionsByTeam,
@@ -1106,6 +1108,120 @@ export function useUpdateApplicationSettings() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to save the application settings.");
+    },
+  });
+}
+
+async function fetchFinalizePhaseStatus(): Promise<FinalizeRecruitmentPhase> {
+  const response = await fetch(`${API_URL}/applications/admin/finalize/phase`, {
+    credentials: "include",
+  });
+  if (!response.ok) throw new Error("Failed to check the finalize phase");
+  return response.json();
+}
+
+// Any admin may check this — everyone needs to know whether they can act.
+// Polled while mounted since the phase is shared across every admin in the
+// room; someone else opening or closing it should show up without a manual
+// refresh.
+export function useFinalizePhaseStatus() {
+  return useQuery({
+    queryKey: ["finalize-phase"],
+    queryFn: fetchFinalizePhaseStatus,
+    refetchInterval: 20_000,
+  });
+}
+
+async function openFinalizePhase(confirm: string): Promise<FinalizeRecruitmentPhase> {
+  const response = await fetch(`${API_URL}/applications/admin/finalize/phase/open`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirm }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to open the finalize phase");
+  }
+  return response.json();
+}
+
+export function useOpenFinalizePhase() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: openFinalizePhase,
+    onSuccess: (data) => {
+      toast.success("Finalize phase is open.");
+      queryClient.setQueryData(["finalize-phase"], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to open the finalize phase.");
+    },
+  });
+}
+
+async function closeFinalizePhase(confirm: string): Promise<FinalizeRecruitmentPhase> {
+  const response = await fetch(`${API_URL}/applications/admin/finalize/phase/close`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirm }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to close the finalize phase");
+  }
+  return response.json();
+}
+
+export function useCloseFinalizePhase() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: closeFinalizePhase,
+    onSuccess: (data) => {
+      toast.success("Finalize phase closed.");
+      queryClient.setQueryData(["finalize-phase"], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to close the finalize phase.");
+    },
+  });
+}
+
+async function finalizeDecision({
+  id,
+  decision,
+}: {
+  id: string;
+  decision: FinalizeDecision;
+}): Promise<GeneralApplication> {
+  const response = await fetch(`${API_URL}/applications/admin/${id}/finalize`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ decision }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to save the finalize decision");
+  }
+  return response.json();
+}
+
+export function useFinalizeDecision() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: finalizeDecision,
+    onSuccess: (data) => {
+      toast.success(
+        data.status === "accepted"
+          ? `Accepted onto ${data.assigned_team} — acceptance email sent.`
+          : "Rejected — notice email sent.",
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save the finalize decision.");
     },
   });
 }

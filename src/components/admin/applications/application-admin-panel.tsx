@@ -101,6 +101,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TeamQuestionsAdminPanel } from "@/components/admin/applications/team-questions-admin-panel";
 import { RecruitmentPeriodPanel } from "@/components/admin/applications/recruitment-period-panel";
+import { FinalizeRecruitmentPanel } from "@/components/admin/applications/finalize-recruitment-panel";
 import {
   ALREADY_INTERVIEWED_CLASSNAME,
   getStatusBadgeStyle,
@@ -2224,8 +2225,13 @@ export function ApplicationAdminPanel({
         <TeamQuestionsAdminPanel currentAdminEmail={currentAdminEmail} />
       </TabsContent>
 
-      <TabsContent value="recruitment-period">
+      <TabsContent value="recruitment-period" className="space-y-6">
         <RecruitmentPeriodPanel />
+        <FinalizeRecruitmentPanel
+          isITAdmin={effectiveTeam === "IT"}
+          isHeadOfIT={declaredTeam === "IT"}
+          myTeam={effectiveTeam}
+        />
       </TabsContent>
 
       <TabsContent value="general" className="space-y-6">

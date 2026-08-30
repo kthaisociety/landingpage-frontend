@@ -9,6 +9,8 @@ export const STATUS_BADGE_VARIANT: Record<
   interviewing: "default",
   ineligible: "destructive",
   withdrawn: "secondary",
+  accepted: "outline",
+  rejected: "secondary",
 };
 
 // Plain "secondary" reads as a dead/disabled grey, which is the wrong signal for
@@ -17,6 +19,8 @@ export const STATUS_BADGE_VARIANT: Record<
 export const STATUS_BADGE_CLASSNAME: Partial<Record<ApplicationStatus, string>> = {
   pending:
     "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400",
+  accepted:
+    "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
 };
 
 // Exported so other UI (e.g. the toolbar's quick-filter buttons) can match
