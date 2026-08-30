@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
-import { ChevronDown, Eye, Mail, Send, Settings } from "lucide-react";
+import { ChevronDown, Eye, Mail, Search, Send, Settings } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -511,23 +511,54 @@ function TeamQuestionsInviteButton({ application }: { application: GeneralApplic
   );
 }
 
-export function TeamQuestionsAdminPanel({ currentAdminEmail }: { currentAdminEmail: string }) {
+function matchesApplicantSearch(application: GeneralApplication, query: string) {
+  const haystack = `${ApplicantName(application)} ${application.email}`.toLowerCase();
+  return haystack.includes(query.trim().toLowerCase());
+}
+
+function ApplicantsCard({ currentAdminEmail }: { currentAdminEmail: string }) {
   const { data: applications = [], isLoading } = useAdminApplications({ year: 2026 });
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const visibleApplications = applications.filter(
+    (application) => application.status !== "ineligible",
+  );
+  const filteredApplications = search.trim()
+    ? visibleApplications.filter((application) => matchesApplicantSearch(application, search))
+    : visibleApplications;
 
   return (
-    <section className="space-y-6">
-      <TeamQuestionsSendBulkCard />
-      <TeamQuestionsTemplatePanel />
-      <TeamQuestionDefinitionsPanel />
-
-      <Card>
-        <CardHeader>
+    <Card>
+      <CardHeader className="cursor-pointer select-none" onClick={() => setOpen((v) => !v)}>
+        <div className="flex items-center justify-between">
           <CardTitle>Applicants</CardTitle>
+          <ChevronDown
+            className="h-4 w-4 text-muted-foreground transition-transform"
+            style={{ transform: open ? "rotate(180deg)" : undefined }}
+          />
+        </div>
+        {!open && (
           <CardDescription>
-            Resend the invite to stragglers, or review what an applicant submitted.
+            {isLoading ? "Loading…" : `${visibleApplications.length} applicant${visibleApplications.length === 1 ? "" : "s"}`}
+            . Click to search and manage &mdash; resend the invite to stragglers, or review what
+            an applicant submitted.
           </CardDescription>
-        </CardHeader>
-        <CardContent>
+        )}
+      </CardHeader>
+      {open && (
+        <CardContent className="space-y-4">
+          <div className="relative max-w-sm">
+            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+              autoFocus
+            />
+          </div>
+
           <Table>
             <TableHeader>
               <TableRow>
@@ -546,42 +577,58 @@ export function TeamQuestionsAdminPanel({ currentAdminEmail }: { currentAdminEma
                     </TableCell>
                   </TableRow>
                 ))}
+              {!isLoading && filteredApplications.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                    No applicants match &quot;{search}&quot;.
+                  </TableCell>
+                </TableRow>
+              )}
               {!isLoading &&
-                applications
-                  .filter((application) => application.status !== "ineligible")
-                  .map((application) => (
-                    <TableRow key={application.id}>
-                      <TableCell>
-                        <div className="font-medium">{ApplicantName(application)}</div>
-                        <div className="text-sm text-muted-foreground">{application.email}</div>
-                      </TableCell>
-                      <TableCell>{application.teams.join(", ")}</TableCell>
-                      <TableCell>
-                        {(() => {
-                          const badge = getStatusBadgeStyle(application.status, {
-                            interviewingByEmail: application.interviewing_by_email,
-                            currentAdminEmail,
-                            fastTracked: application.fast_tracked,
-                          });
-                          return (
-                            <Badge variant={badge.variant} className={badge.className}>
-                              {badge.label}
-                            </Badge>
-                          );
-                        })()}
-                      </TableCell>
-                      <TableCell className="flex justify-end gap-2">
-                        {application.status === "pending" && (
-                          <TeamQuestionsInviteButton application={application} />
-                        )}
-                        <SubmissionDialog application={application} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                filteredApplications.map((application) => (
+                  <TableRow key={application.id}>
+                    <TableCell>
+                      <div className="font-medium">{ApplicantName(application)}</div>
+                      <div className="text-sm text-muted-foreground">{application.email}</div>
+                    </TableCell>
+                    <TableCell>{application.teams.join(", ")}</TableCell>
+                    <TableCell>
+                      {(() => {
+                        const badge = getStatusBadgeStyle(application.status, {
+                          interviewingByEmail: application.interviewing_by_email,
+                          currentAdminEmail,
+                          fastTracked: application.fast_tracked,
+                        });
+                        return (
+                          <Badge variant={badge.variant} className={badge.className}>
+                            {badge.label}
+                          </Badge>
+                        );
+                      })()}
+                    </TableCell>
+                    <TableCell className="flex justify-end gap-2">
+                      {application.status === "pending" && (
+                        <TeamQuestionsInviteButton application={application} />
+                      )}
+                      <SubmissionDialog application={application} />
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+      )}
+    </Card>
+  );
+}
+
+export function TeamQuestionsAdminPanel({ currentAdminEmail }: { currentAdminEmail: string }) {
+  return (
+    <section className="space-y-6">
+      <TeamQuestionsSendBulkCard />
+      <TeamQuestionsTemplatePanel />
+      <TeamQuestionDefinitionsPanel />
+      <ApplicantsCard currentAdminEmail={currentAdminEmail} />
     </section>
   );
 }
