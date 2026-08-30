@@ -100,6 +100,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TeamQuestionsAdminPanel } from "@/components/admin/applications/team-questions-admin-panel";
+import { RecruitmentPeriodPanel } from "@/components/admin/applications/recruitment-period-panel";
 import {
   ALREADY_INTERVIEWED_CLASSNAME,
   getStatusBadgeStyle,
@@ -1885,8 +1886,8 @@ export function ApplicationAdminPanel({
   activeTab,
   onActiveTabChange,
 }: {
-  activeTab: "general" | "team-questions";
-  onActiveTabChange: (tab: "general" | "team-questions") => void;
+  activeTab: "general" | "team-questions" | "recruitment-period";
+  onActiveTabChange: (tab: "general" | "team-questions" | "recruitment-period") => void;
 }) {
   const { user } = useAuth();
   const currentAdminEmail = user?.email ?? "";
@@ -2208,16 +2209,23 @@ export function ApplicationAdminPanel({
   return (
     <Tabs
       value={activeTab}
-      onValueChange={(value) => onActiveTabChange(value as "general" | "team-questions")}
+      onValueChange={(value) =>
+        onActiveTabChange(value as "general" | "team-questions" | "recruitment-period")
+      }
       className="space-y-6"
     >
       <TabsList>
         <TabsTrigger value="general">General Information</TabsTrigger>
         <TabsTrigger value="team-questions">Team Questions</TabsTrigger>
+        <TabsTrigger value="recruitment-period">Settings</TabsTrigger>
       </TabsList>
 
       <TabsContent value="team-questions">
         <TeamQuestionsAdminPanel currentAdminEmail={currentAdminEmail} />
+      </TabsContent>
+
+      <TabsContent value="recruitment-period">
+        <RecruitmentPeriodPanel />
       </TabsContent>
 
       <TabsContent value="general" className="space-y-6">

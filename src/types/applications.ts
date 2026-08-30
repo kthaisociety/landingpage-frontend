@@ -255,6 +255,22 @@ export type TeamQuestionsSendBulkResult = {
   failed: string[];
 };
 
+export type ApplicationSettings = {
+  submission_deadline: string;
+  closed_heading: string;
+  closed_message: string;
+};
+
+export type AdminApplicationSettings = ApplicationSettings & {
+  updated_by_email: string;
+};
+
+export type UpdateApplicationSettingsInput = {
+  submissionDeadlineIso: string;
+  closedHeading: string;
+  closedMessage: string;
+};
+
 export type TeamQuestionsSendBulkPreview = {
   count: number;
   can_send: boolean;

@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { API_URL } from "@/config";
 import type {
+  AdminApplicationSettings,
   AdminApplicationsFilters,
+  ApplicationSettings,
   ApplicationStatus,
   CreateGeneralApplicationInput,
   CreateGeneralApplicationResponse,
@@ -16,6 +18,7 @@ import type {
   TeamQuestionsSubmitInput,
   TeamQuestionsSubmitResponse,
   TeamQuestionsTemplate,
+  UpdateApplicationSettingsInput,
 } from "@/types/applications";
 
 function appendTrimmed(formData: FormData, key: string, value: string) {
@@ -1037,4 +1040,72 @@ export async function downloadApplicationResume(
       error instanceof Error ? error.message : "Failed to download resume",
     );
   }
+}
+
+async function fetchApplicationSettings(): Promise<ApplicationSettings> {
+  const response = await fetch(`${API_URL}/applications/settings`);
+  if (!response.ok) throw new Error("Failed to fetch application settings");
+  return response.json();
+}
+
+/** Public — the submission deadline that drives the /apply page's banner and closed screen. */
+export function useApplicationSettings() {
+  return useQuery({
+    queryKey: ["application-settings"],
+    queryFn: fetchApplicationSettings,
+  });
+}
+
+async function fetchAdminApplicationSettings(): Promise<AdminApplicationSettings> {
+  const response = await fetch(`${API_URL}/applications/admin/settings`, {
+    credentials: "include",
+  });
+  if (!response.ok) throw new Error("Failed to fetch application settings");
+  return response.json();
+}
+
+export function useAdminApplicationSettings() {
+  return useQuery({
+    queryKey: ["admin-application-settings"],
+    queryFn: fetchAdminApplicationSettings,
+  });
+}
+
+async function updateApplicationSettings(
+  input: UpdateApplicationSettingsInput,
+): Promise<AdminApplicationSettings> {
+  const response = await fetch(`${API_URL}/applications/admin/settings`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      submission_deadline: input.submissionDeadlineIso,
+      closed_heading: input.closedHeading,
+      closed_message: input.closedMessage,
+    }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to save the application settings");
+  }
+  return response.json();
+}
+
+export function useUpdateApplicationSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateApplicationSettings,
+    onSuccess: (data) => {
+      toast.success("Application settings saved.");
+      queryClient.setQueryData(["admin-application-settings"], data);
+      queryClient.setQueryData<ApplicationSettings>(["application-settings"], {
+        submission_deadline: data.submission_deadline,
+        closed_heading: data.closed_heading,
+        closed_message: data.closed_message,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save the application settings.");
+    },
+  });
 }

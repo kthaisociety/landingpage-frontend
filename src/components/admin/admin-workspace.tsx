@@ -80,13 +80,17 @@ const APPLICATIONS_TAB_COPY = {
     title: "Team Questions",
     description: "Send, track, and review team-specific follow-up answers.",
   },
+  "recruitment-period": {
+    title: "Settings",
+    description: "Set when applications close for the year, and preview the closed page.",
+  },
 } as const;
 
 export function AdminWorkspace() {
   const [activeSectionId, setActiveSectionId] =
     useState<AdminSection["id"]>("users"); // Defaulting to the new users tab
   const [applicationsTab, setApplicationsTab] =
-    useState<"general" | "team-questions">("general");
+    useState<"general" | "team-questions" | "recruitment-period">("general");
 
   const activeSection = useMemo(() => {
     return (
