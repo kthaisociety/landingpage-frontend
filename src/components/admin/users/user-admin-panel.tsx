@@ -32,6 +32,7 @@ import { AdminUserProfileForm } from "@/components/admin/users/admin-user-profil
 
 export function UserAdminPanel() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [adminsOnly, setAdminsOnly] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
 
@@ -40,9 +41,9 @@ export function UserAdminPanel() {
   const demoteMutation = useDemoteAdmin();
   const deleteMutation = useDeleteUser();
 
-  const filteredUsers = users.filter((user) =>
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const filteredUsers = users
+    .filter((user) => user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((user) => !adminsOnly || user.roles.includes("admin"));
 
   const handlePromote = async (userId: string, email: string) => {
     try {
@@ -77,12 +78,22 @@ export function UserAdminPanel() {
 
   return (
     <div className="space-y-4">
-      <Input
-        placeholder="Search by email..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="max-w-md"
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Search by email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-md"
+        />
+        <Button
+          variant={adminsOnly ? "secondary" : "outline"}
+          size="sm"
+          aria-pressed={adminsOnly}
+          onClick={() => setAdminsOnly((prev) => !prev)}
+        >
+          Admins only
+        </Button>
+      </div>
 
       <div className="max-h-[min(70vh,720px)] space-y-3 overflow-y-auto pr-2">
         {filteredUsers.length === 0 ? (
