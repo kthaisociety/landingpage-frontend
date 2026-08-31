@@ -102,6 +102,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { TeamQuestionsAdminPanel } from "@/components/admin/applications/team-questions-admin-panel";
 import { RecruitmentPeriodPanel } from "@/components/admin/applications/recruitment-period-panel";
 import { FinalizeRecruitmentPanel } from "@/components/admin/applications/finalize-recruitment-panel";
+import { ApplicationAnalyticsPanel } from "@/components/admin/applications/analytics-panel";
 import {
   ALREADY_INTERVIEWED_CLASSNAME,
   getStatusBadgeStyle,
@@ -1887,8 +1888,10 @@ export function ApplicationAdminPanel({
   activeTab,
   onActiveTabChange,
 }: {
-  activeTab: "general" | "team-questions" | "recruitment-period";
-  onActiveTabChange: (tab: "general" | "team-questions" | "recruitment-period") => void;
+  activeTab: "general" | "team-questions" | "analytics" | "recruitment-period";
+  onActiveTabChange: (
+    tab: "general" | "team-questions" | "analytics" | "recruitment-period",
+  ) => void;
 }) {
   const { user } = useAuth();
   const currentAdminEmail = user?.email ?? "";
@@ -2211,18 +2214,25 @@ export function ApplicationAdminPanel({
     <Tabs
       value={activeTab}
       onValueChange={(value) =>
-        onActiveTabChange(value as "general" | "team-questions" | "recruitment-period")
+        onActiveTabChange(
+          value as "general" | "team-questions" | "analytics" | "recruitment-period",
+        )
       }
       className="space-y-6"
     >
       <TabsList>
         <TabsTrigger value="general">General Information</TabsTrigger>
         <TabsTrigger value="team-questions">Team Questions</TabsTrigger>
+        <TabsTrigger value="analytics">Analytics</TabsTrigger>
         <TabsTrigger value="recruitment-period">Settings</TabsTrigger>
       </TabsList>
 
       <TabsContent value="team-questions">
         <TeamQuestionsAdminPanel currentAdminEmail={currentAdminEmail} />
+      </TabsContent>
+
+      <TabsContent value="analytics">
+        <ApplicationAnalyticsPanel applications={applications} isLoading={isLoading} />
       </TabsContent>
 
       <TabsContent value="recruitment-period" className="space-y-6">
