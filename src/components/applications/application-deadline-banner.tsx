@@ -53,7 +53,7 @@ export function ApplicationDeadlineBanner({ deadlineMs }: { deadlineMs: number }
   return (
     <div
       role="status"
-      className="fixed inset-x-0 top-24 z-40 flex h-11 items-center justify-center gap-2 bg-primary px-4 text-center text-xs font-medium text-primary-foreground sm:text-sm"
+      className="fixed inset-x-0 top-24 z-[51] flex h-11 items-center justify-center gap-2 bg-primary px-4 text-center text-xs font-medium text-primary-foreground sm:text-sm"
     >
       <Timer className="size-4 shrink-0" aria-hidden="true" />
       {content}
