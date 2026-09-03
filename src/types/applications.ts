@@ -226,9 +226,11 @@ export type CreateGeneralApplicationResponse = {
 
 export type AdminApplicationsFilters = {
   year?: number;
-  // "interviewed" is a client-side-only pseudo-status: applicants who have
-  // been interviewed at least once, independent of their current status.
-  status?: ApplicationStatus | "all" | "interviewed";
+  // "interviewed" and "interviewed_by_anyone" are client-side-only
+  // pseudo-statuses: applicants who have been interviewed at least once,
+  // independent of their current status. "interviewed" is scoped to the
+  // current admin's team; "interviewed_by_anyone" is unscoped.
+  status?: ApplicationStatus | "all" | "interviewed" | "interviewed_by_anyone";
   team?: ApplicationTeam | "all";
   q?: string;
 };

@@ -183,7 +183,11 @@ const COLUMN_LABELS: Record<string, string> = {
 };
 
 
-type ApplicationStatusFilter = ApplicationStatus | "all" | "interviewed";
+type ApplicationStatusFilter =
+  | ApplicationStatus
+  | "all"
+  | "interviewed"
+  | "interviewed_by_anyone";
 type ApplicationTeamFilter = ApplicationTeam | "all";
 type ApplicationRankFilter = "all" | "1" | "2" | "3" | "4" | "5";
 type ApplicationAvailabilityFilter = ApplicationAvailability | "all";
@@ -522,11 +526,13 @@ function createApplicationColumns({
           </Badge>
         );
       },
-      filterFn: (row, columnId, filterValue: ApplicationStatusFilter) =>
-        filterValue === "all" ||
-        (filterValue === "interviewed"
-          ? isInterviewedByMyTeam(row.original)
-          : row.getValue(columnId) === filterValue),
+      filterFn: (row, columnId, filterValue: ApplicationStatusFilter) => {
+        if (filterValue === "all") return true;
+        if (filterValue === "interviewed") return isInterviewedByMyTeam(row.original);
+        if (filterValue === "interviewed_by_anyone")
+          return row.original.interviewed_by.length > 0;
+        return row.getValue(columnId) === filterValue;
+      },
       enableHiding: false,
     },
     // Hidden sort-only column: always kept first in the sorting state (see
@@ -2328,7 +2334,7 @@ export function ApplicationAdminPanel({
                 setStatusFilter("interviewed");
               }}
             >
-              Interviewed
+              Interviewed by me / my team
             </Button>
             <Button
               type="button"
@@ -2374,7 +2380,7 @@ export function ApplicationAdminPanel({
                     {status}
                   </NativeSelectOption>
                 ))}
-                <NativeSelectOption value="interviewed">interviewed</NativeSelectOption>
+                <NativeSelectOption value="interviewed_by_anyone">interviewed</NativeSelectOption>
               </NativeSelect>
 
               <NativeSelect
