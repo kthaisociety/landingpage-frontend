@@ -518,6 +518,7 @@ function createApplicationColumns({
           interviewingByEmail: app.interviewing_by_email,
           currentAdminEmail,
           interviewedByMyTeam: isInterviewedByMyTeam(app),
+          interviewedByAnyone: app.interviewed_by.length > 0,
           fastTracked: app.fast_tracked,
         });
         return (
@@ -1409,6 +1410,7 @@ function ApplicationDetail({
     interviewingByEmail: application.interviewing_by_email,
     currentAdminEmail,
     interviewedByMyTeam,
+    interviewedByAnyone: application.interviewed_by.length > 0,
     fastTracked: application.fast_tracked,
   });
 

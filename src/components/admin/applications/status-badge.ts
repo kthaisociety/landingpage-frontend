@@ -54,6 +54,12 @@ export type StatusBadgeStyle = {
  * already gone through an interview with your team (and cycled back to
  * "available") reads as done-with, not as a fresh, untouched applicant.
  *
+ * Pass interviewedByAnyone when known (interviewed_by non-empty, no team
+ * scoping) so an applicant interviewed by a *different* team still reads as
+ * touched rather than looking indistinguishable from a fresh applicant —
+ * this matters wherever a view can surface interviews across all teams, not
+ * just the current admin's own.
+ *
  * Pass fastTracked when known so an applicant an admin moved straight to
  * "available" without waiting on Team Questions is visibly flagged — it's
  * still a normal claimable applicant, just one worth a second look.
@@ -64,6 +70,7 @@ export function getStatusBadgeStyle(
     interviewingByEmail?: string;
     currentAdminEmail?: string;
     interviewedByMyTeam?: boolean;
+    interviewedByAnyone?: boolean;
     fastTracked?: boolean;
   },
 ): StatusBadgeStyle {
@@ -89,6 +96,14 @@ export function getStatusBadgeStyle(
       variant: "outline",
       className: ALREADY_INTERVIEWED_CLASSNAME,
       label: "available (interviewed)",
+    };
+  }
+
+  if (status === "available" && context?.interviewedByAnyone) {
+    return {
+      variant: "outline",
+      className: ALREADY_INTERVIEWED_CLASSNAME,
+      label: "available (interviewed by other team)",
     };
   }
 

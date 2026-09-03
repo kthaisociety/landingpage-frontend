@@ -365,7 +365,7 @@ export function FinalizeRecruitmentPanel({
               <TableBody>
                 {candidates.map((application) => {
                   const statusBadge = getStatusBadgeStyle(application.status, {
-                    interviewedByMyTeam: application.interviewed_by.length > 0,
+                    interviewedByAnyone: application.interviewed_by.length > 0,
                   });
                   const isPending =
                     finalizeDecision.isPending && pendingId === application.id;
