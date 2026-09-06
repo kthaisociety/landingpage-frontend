@@ -799,29 +799,39 @@ async function fetchTeamQuestionsTemplate(): Promise<TeamQuestionsTemplate> {
   return response.json();
 }
 
-async function updateTeamQuestionsTemplate(
-  templates: {
-    emailTemplate: string;
-    emailSubject: string;
-    reminderEmailTemplate: string;
-    reminderEmailSubject: string;
-    // Omit (or pass null) to reset to the backend default.
-    finalCallStartOverride?: string | null;
-    submissionCutoffOverride?: string | null;
-  },
-): Promise<TeamQuestionsTemplate> {
+// Every field is optional and, crucially, an *omitted* field is not the
+// same as an explicit `null`: the backend treats a present key as "set this
+// field" (a deadline field set to null resets it to the default) and an
+// absent key as "leave whatever is already saved alone". The email
+// templates and the deadlines are edited from two separate admin panels, so
+// sending the full shape on every save (even carrying through the other
+// panel's currently-fetched values) would let whichever save lands second
+// silently revert the other panel's more recent change.
+type TeamQuestionsTemplateUpdate = {
+  emailTemplate?: string;
+  emailSubject?: string;
+  reminderEmailTemplate?: string;
+  reminderEmailSubject?: string;
+  finalCallStartOverride?: string | null;
+  submissionCutoffOverride?: string | null;
+};
+
+async function updateTeamQuestionsTemplate(fields: TeamQuestionsTemplateUpdate): Promise<TeamQuestionsTemplate> {
+  const body: Record<string, unknown> = {};
+  if (fields.emailTemplate !== undefined) body.email_template = fields.emailTemplate;
+  if (fields.emailSubject !== undefined) body.email_subject = fields.emailSubject;
+  if (fields.reminderEmailTemplate !== undefined) body.reminder_email_template = fields.reminderEmailTemplate;
+  if (fields.reminderEmailSubject !== undefined) body.reminder_email_subject = fields.reminderEmailSubject;
+  if (fields.finalCallStartOverride !== undefined) body.final_call_start_override = fields.finalCallStartOverride;
+  if (fields.submissionCutoffOverride !== undefined) {
+    body.submission_cutoff_override = fields.submissionCutoffOverride;
+  }
+
   const response = await fetch(`${API_URL}/applications/admin/team-questions/template`, {
     method: "PUT",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email_template: templates.emailTemplate,
-      email_subject: templates.emailSubject,
-      reminder_email_template: templates.reminderEmailTemplate,
-      reminder_email_subject: templates.reminderEmailSubject,
-      final_call_start_override: templates.finalCallStartOverride ?? null,
-      submission_cutoff_override: templates.submissionCutoffOverride ?? null,
-    }),
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;

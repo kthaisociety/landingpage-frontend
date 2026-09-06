@@ -175,17 +175,16 @@ function TeamQuestionsTemplatePanel() {
       reminderEmailSubject !== savedReminderEmailSubject);
 
   // Deadline overrides live on this same backend settings row but are edited
-  // from the Settings tab's Deadlines card (recruitment-period-panel.tsx),
-  // alongside the general application deadline — pass the currently-saved
-  // values through unchanged here rather than clearing them.
+  // from the Settings tab's Deadlines card (recruitment-period-panel.tsx) —
+  // this save omits both fields entirely (a partial update) rather than
+  // sending the currently-fetched values through, so it can never revert a
+  // deadline change saved from that other panel in the meantime.
   function handleSave() {
     updateTemplate.mutate({
       emailTemplate,
       emailSubject,
       reminderEmailTemplate,
       reminderEmailSubject,
-      finalCallStartOverride: template?.final_call_start_override ?? null,
-      submissionCutoffOverride: template?.submission_cutoff_override ?? null,
     });
   }
 

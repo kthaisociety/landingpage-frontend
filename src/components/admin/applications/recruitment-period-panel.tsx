@@ -102,12 +102,12 @@ export function RecruitmentPeriodPanel() {
         closedMessage: messageDraft,
       });
     }
-    if (isTqDirty && template) {
+    if (isTqDirty) {
+      // Omits the four email-template fields entirely (a partial update)
+      // rather than sending the currently-fetched template through, so this
+      // can never revert an email edit saved from the Team Questions tab in
+      // the meantime.
       updateTemplate.mutate({
-        emailTemplate: template.email_template,
-        emailSubject: template.email_subject,
-        reminderEmailTemplate: template.reminder_email_template,
-        reminderEmailSubject: template.reminder_email_subject,
         finalCallStartOverride: tqFinalCallStartDraft ? new Date(tqFinalCallStartDraft).toISOString() : null,
         submissionCutoffOverride: tqSubmissionCutoffDraft
           ? new Date(tqSubmissionCutoffDraft).toISOString()

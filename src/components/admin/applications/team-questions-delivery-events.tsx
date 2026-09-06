@@ -53,7 +53,7 @@ function outcomeExplanation(outcome: TeamQuestionsDeliveryOutcome): string | nul
 
 export function TeamQuestionsDeliveryActivityCard() {
   const [open, setOpen] = useState(false);
-  const { data: events = [], isLoading } = useTeamQuestionsDeliveryEvents();
+  const { data: events = [], isLoading, isError, error } = useTeamQuestionsDeliveryEvents();
   const { data: applications = [] } = useAdminApplications({ year: 2026 });
 
   const applicantNameById = new Map(
@@ -95,6 +95,12 @@ export function TeamQuestionsDeliveryActivityCard() {
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
+          ) : isError ? (
+            <CardDescription className="text-destructive">
+              Failed to load delivery activity{error instanceof Error ? `: ${error.message}` : ""}. This
+              may be hiding failed sends or entries that need manual review — reload the page to try
+              again.
+            </CardDescription>
           ) : events.length === 0 ? (
             <CardDescription>No sends recorded yet.</CardDescription>
           ) : (
