@@ -507,6 +507,11 @@ function TeamQuestionsInviteButton({ application }: { application: GeneralApplic
           Reminded {formatDistanceToNow(new Date(application.team_questions_reminder_sent_at))} ago
         </span>
       )}
+      {application.team_questions_final_call_sent_at && (
+        <span className="text-xs text-muted-foreground">
+          Final call sent {formatDistanceToNow(new Date(application.team_questions_final_call_sent_at))} ago
+        </span>
+      )}
     </div>
   );
 }
