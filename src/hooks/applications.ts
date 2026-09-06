@@ -13,6 +13,7 @@ import type {
   GeneralApplication,
   TeamQuestion,
   TeamQuestionsByTeam,
+  TeamQuestionsDeliveryEvent,
   TeamQuestionsForm,
   TeamQuestionsSendBulkPreview,
   TeamQuestionsSendBulkResult,
@@ -750,6 +751,7 @@ export function useSendBulkTeamQuestions() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
       queryClient.invalidateQueries({ queryKey: ["team-questions-send-bulk-preview"] });
+      queryClient.invalidateQueries({ queryKey: ["team-questions-delivery-events"] });
       toast.success(
         result.failed.length > 0
           ? `Sent ${result.sent} invites, ${result.failed.length} failed.`
@@ -781,6 +783,7 @@ export function useResendTeamQuestions() {
     onSuccess: (updated) => {
       toast.success("Team questions invite sent.");
       patchApplicationInCache(queryClient, updated);
+      queryClient.invalidateQueries({ queryKey: ["team-questions-delivery-events"] });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to resend team questions invite.");
@@ -802,6 +805,9 @@ async function updateTeamQuestionsTemplate(
     emailSubject: string;
     reminderEmailTemplate: string;
     reminderEmailSubject: string;
+    // Omit (or pass null) to reset to the backend default.
+    finalCallStartOverride?: string | null;
+    submissionCutoffOverride?: string | null;
   },
 ): Promise<TeamQuestionsTemplate> {
   const response = await fetch(`${API_URL}/applications/admin/team-questions/template`, {
@@ -813,6 +819,8 @@ async function updateTeamQuestionsTemplate(
       email_subject: templates.emailSubject,
       reminder_email_template: templates.reminderEmailTemplate,
       reminder_email_subject: templates.reminderEmailSubject,
+      final_call_start_override: templates.finalCallStartOverride ?? null,
+      submission_cutoff_override: templates.submissionCutoffOverride ?? null,
     }),
   });
   if (!response.ok) {
@@ -836,10 +844,28 @@ export function useUpdateTeamQuestionsTemplate() {
     onSuccess: (data) => {
       toast.success("Team questions template saved.");
       queryClient.setQueryData(["team-questions-template"], data);
+      queryClient.invalidateQueries({ queryKey: ["team-questions-send-bulk-preview"] });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to save team questions template.");
     },
+  });
+}
+
+async function fetchTeamQuestionsDeliveryEvents(): Promise<TeamQuestionsDeliveryEvent[]> {
+  const response = await fetch(`${API_URL}/applications/admin/team-questions/delivery-events`, {
+    credentials: "include",
+  });
+  if (!response.ok) throw new Error("Failed to fetch team questions delivery events");
+  const data = (await response.json()) as { events: TeamQuestionsDeliveryEvent[] };
+  return data.events;
+}
+
+/** Recent Team Questions send outcomes — sent/failed/superseded/needs-reconciliation — for the admin activity feed. */
+export function useTeamQuestionsDeliveryEvents() {
+  return useQuery({
+    queryKey: ["team-questions-delivery-events"],
+    queryFn: fetchTeamQuestionsDeliveryEvents,
   });
 }
 

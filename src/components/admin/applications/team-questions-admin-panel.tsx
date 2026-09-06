@@ -61,6 +61,7 @@ import {
 } from "@/types/applications";
 import { getStatusBadgeStyle } from "@/components/admin/applications/status-badge";
 import { TeamQuestionDefinitionsPanel } from "@/components/admin/applications/team-question-definitions-panel";
+import { TeamQuestionsDeliveryActivityCard } from "@/components/admin/applications/team-questions-delivery-events";
 
 const DEFAULT_TEAM_QUESTIONS_TEMPLATE =
   "Thanks for applying to KTH AI Society! To move forward, we need you to answer a few extra questions about the team(s) you applied to.\n\nIt only takes a few minutes.";
@@ -139,6 +140,16 @@ function TeamQuestionsPreviewDialog({
   );
 }
 
+// datetime-local inputs work in the browser's local timezone, not the
+// backend's Europe/Stockholm — an admin viewing/editing in a different
+// timezone sees (and sets) the equivalent local wall-clock instant, which
+// new Date(...).toISOString() below converts back correctly regardless.
+function toDatetimeLocalValue(iso: string): string {
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function TeamQuestionsTemplatePanel() {
   const { data: template, isLoading } = useTeamQuestionsTemplate();
   const updateTemplate = useUpdateTeamQuestionsTemplate();
@@ -147,6 +158,8 @@ function TeamQuestionsTemplatePanel() {
   const [emailSubject, setEmailSubject] = useState("");
   const [reminderEmailTemplate, setReminderEmailTemplate] = useState("");
   const [reminderEmailSubject, setReminderEmailSubject] = useState("");
+  const [finalCallStartOverride, setFinalCallStartOverride] = useState("");
+  const [submissionCutoffOverride, setSubmissionCutoffOverride] = useState("");
   const [initialised, setInitialised] = useState(false);
 
   const savedEmailTemplate = template ? template.email_template || DEFAULT_TEAM_QUESTIONS_TEMPLATE : "";
@@ -157,12 +170,20 @@ function TeamQuestionsTemplatePanel() {
   const savedReminderEmailSubject = template
     ? template.reminder_email_subject || DEFAULT_TEAM_QUESTIONS_REMINDER_SUBJECT
     : "";
+  const savedFinalCallStartOverride = template?.final_call_start_override
+    ? toDatetimeLocalValue(template.final_call_start_override)
+    : "";
+  const savedSubmissionCutoffOverride = template?.submission_cutoff_override
+    ? toDatetimeLocalValue(template.submission_cutoff_override)
+    : "";
 
   if (template && !initialised) {
     setEmailTemplate(savedEmailTemplate);
     setEmailSubject(savedEmailSubject);
     setReminderEmailTemplate(savedReminderEmailTemplate);
     setReminderEmailSubject(savedReminderEmailSubject);
+    setFinalCallStartOverride(savedFinalCallStartOverride);
+    setSubmissionCutoffOverride(savedSubmissionCutoffOverride);
     setInitialised(true);
   }
 
@@ -171,10 +192,21 @@ function TeamQuestionsTemplatePanel() {
     (emailTemplate !== savedEmailTemplate ||
       emailSubject !== savedEmailSubject ||
       reminderEmailTemplate !== savedReminderEmailTemplate ||
-      reminderEmailSubject !== savedReminderEmailSubject);
+      reminderEmailSubject !== savedReminderEmailSubject ||
+      finalCallStartOverride !== savedFinalCallStartOverride ||
+      submissionCutoffOverride !== savedSubmissionCutoffOverride);
 
   function handleSave() {
-    updateTemplate.mutate({ emailTemplate, emailSubject, reminderEmailTemplate, reminderEmailSubject });
+    updateTemplate.mutate({
+      emailTemplate,
+      emailSubject,
+      reminderEmailTemplate,
+      reminderEmailSubject,
+      finalCallStartOverride: finalCallStartOverride ? new Date(finalCallStartOverride).toISOString() : null,
+      submissionCutoffOverride: submissionCutoffOverride
+        ? new Date(submissionCutoffOverride).toISOString()
+        : null,
+    });
   }
 
   // Collapsing with unsaved edits discards them — reverting to the last
@@ -186,6 +218,8 @@ function TeamQuestionsTemplatePanel() {
       setEmailSubject(savedEmailSubject);
       setReminderEmailTemplate(savedReminderEmailTemplate);
       setReminderEmailSubject(savedReminderEmailSubject);
+      setFinalCallStartOverride(savedFinalCallStartOverride);
+      setSubmissionCutoffOverride(savedSubmissionCutoffOverride);
     }
     setOpen((v) => !v);
   }
@@ -321,6 +355,65 @@ function TeamQuestionsTemplatePanel() {
                   kind="reminder"
                   label="reminder"
                 />
+              </div>
+
+              <div className="space-y-3 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <Label>Deadlines</Label>
+                  {(finalCallStartOverride || submissionCutoffOverride) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto py-0 text-xs"
+                      onClick={() => {
+                        setFinalCallStartOverride("");
+                        setSubmissionCutoffOverride("");
+                      }}
+                      disabled={!template?.can_edit}
+                    >
+                      Reset to defaults
+                    </Button>
+                  )}
+                </div>
+                <CardDescription>
+                  When automatic final-call emails start going out, and when Team Questions
+                  closes entirely — after that, every link is invalidated and the form shows a
+                  closed message instead. Leave blank to use the built-in default. Shown in your
+                  browser&apos;s local timezone.
+                </CardDescription>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="tq-final-call-start" className="text-xs text-muted-foreground">
+                      Final call starts
+                      {!finalCallStartOverride && template && (
+                        <> (default: {format(new Date(template.final_call_start), "MMM d, HH:mm")})</>
+                      )}
+                    </Label>
+                    <Input
+                      id="tq-final-call-start"
+                      type="datetime-local"
+                      value={finalCallStartOverride}
+                      onChange={(e) => setFinalCallStartOverride(e.target.value)}
+                      disabled={!template?.can_edit}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="tq-submission-cutoff" className="text-xs text-muted-foreground">
+                      Team questions close
+                      {!submissionCutoffOverride && template && (
+                        <> (default: {format(new Date(template.submission_cutoff), "MMM d, HH:mm")})</>
+                      )}
+                    </Label>
+                    <Input
+                      id="tq-submission-cutoff"
+                      type="datetime-local"
+                      value={submissionCutoffOverride}
+                      onChange={(e) => setSubmissionCutoffOverride(e.target.value)}
+                      disabled={!template?.can_edit}
+                    />
+                  </div>
+                </div>
               </div>
 
               {template?.updated_by_email && (
@@ -631,6 +724,7 @@ export function TeamQuestionsAdminPanel({ currentAdminEmail }: { currentAdminEma
   return (
     <section className="space-y-6">
       <TeamQuestionsSendBulkCard />
+      <TeamQuestionsDeliveryActivityCard />
       <TeamQuestionsTemplatePanel />
       <TeamQuestionDefinitionsPanel />
       <ApplicantsCard currentAdminEmail={currentAdminEmail} />
