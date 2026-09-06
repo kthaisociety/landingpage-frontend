@@ -25,7 +25,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useAdminApplicationSettings,
+  useTeamQuestionsTemplate,
   useUpdateApplicationSettings,
+  useUpdateTeamQuestionsTemplate,
 } from "@/hooks/applications";
 import { ApplicationClosed } from "@/components/applications/application-closed";
 
@@ -46,11 +48,17 @@ function toDatetimeLocalValue(iso: string) {
 export function RecruitmentPeriodPanel() {
   const { data: settings, isLoading } = useAdminApplicationSettings();
   const updateSettings = useUpdateApplicationSettings();
+  const { data: template, isLoading: templateLoading } = useTeamQuestionsTemplate();
+  const updateTemplate = useUpdateTeamQuestionsTemplate();
 
   const [deadlineDraft, setDeadlineDraft] = useState("");
   const [headingDraft, setHeadingDraft] = useState("");
   const [messageDraft, setMessageDraft] = useState("");
   const [initialised, setInitialised] = useState(false);
+
+  const [tqFinalCallStartDraft, setTqFinalCallStartDraft] = useState("");
+  const [tqSubmissionCutoffDraft, setTqSubmissionCutoffDraft] = useState("");
+  const [tqInitialised, setTqInitialised] = useState(false);
 
   const savedDeadline = settings ? toDatetimeLocalValue(settings.submission_deadline) : "";
   const savedHeading = settings?.closed_heading ?? "";
@@ -63,32 +71,64 @@ export function RecruitmentPeriodPanel() {
     setInitialised(true);
   }
 
+  const savedTqFinalCallStart = template?.final_call_start_override
+    ? toDatetimeLocalValue(template.final_call_start_override)
+    : "";
+  const savedTqSubmissionCutoff = template?.submission_cutoff_override
+    ? toDatetimeLocalValue(template.submission_cutoff_override)
+    : "";
+
+  if (template && !tqInitialised) {
+    setTqFinalCallStartDraft(savedTqFinalCallStart);
+    setTqSubmissionCutoffDraft(savedTqSubmissionCutoff);
+    setTqInitialised(true);
+  }
+
   const isDirty =
     initialised &&
     (deadlineDraft !== savedDeadline ||
       headingDraft !== savedHeading ||
       messageDraft !== savedMessage);
+  const isTqDirty =
+    tqInitialised &&
+    (tqFinalCallStartDraft !== savedTqFinalCallStart ||
+      tqSubmissionCutoffDraft !== savedTqSubmissionCutoff);
 
   function handleSave() {
-    if (!deadlineDraft) return;
-    updateSettings.mutate({
-      submissionDeadlineIso: new Date(deadlineDraft).toISOString(),
-      closedHeading: headingDraft,
-      closedMessage: messageDraft,
-    });
+    if (isDirty && deadlineDraft) {
+      updateSettings.mutate({
+        submissionDeadlineIso: new Date(deadlineDraft).toISOString(),
+        closedHeading: headingDraft,
+        closedMessage: messageDraft,
+      });
+    }
+    if (isTqDirty) {
+      // Omits the four email-template fields entirely (a partial update)
+      // rather than sending the currently-fetched template through, so this
+      // can never revert an email edit saved from the Team Questions tab in
+      // the meantime.
+      updateTemplate.mutate({
+        finalCallStartOverride: tqFinalCallStartDraft ? new Date(tqFinalCallStartDraft).toISOString() : null,
+        submissionCutoffOverride: tqSubmissionCutoffDraft
+          ? new Date(tqSubmissionCutoffDraft).toISOString()
+          : null,
+      });
+    }
   }
+
+  const saving = updateSettings.isPending || updateTemplate.isPending;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <CalendarClock className="h-4 w-4" />
-          Recruitment period
+          Deadlines
         </CardTitle>
         <CardDescription>
-          When applications close, and what applicants see at /apply once
-          they do. Submissions are rejected server-side past the deadline too
-          &mdash; no deploy needed to change any of this.
+          When applications close, when Team Questions final calls go out and close entirely, and
+          what applicants see at /apply once the application deadline passes. All enforced
+          server-side too &mdash; no deploy needed to change any of this.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -100,7 +140,7 @@ export function RecruitmentPeriodPanel() {
         ) : (
           <>
             <div className="space-y-2">
-              <Label htmlFor="recruitment-deadline">Closes at (your local time)</Label>
+              <Label htmlFor="recruitment-deadline">Applications close at (your local time)</Label>
               <Input
                 id="recruitment-deadline"
                 type="datetime-local"
@@ -115,6 +155,66 @@ export function RecruitmentPeriodPanel() {
                     ? `Last updated by ${settings.updated_by_email}.`
                     : "Not yet customised — this is the default."}
                 </CardDescription>
+              )}
+            </div>
+
+            <div className="space-y-3 border-t pt-6">
+              <Label>Team questions</Label>
+              <CardDescription>
+                When automatic final-call emails start going out, and when Team Questions closes
+                entirely &mdash; after that, every link is invalidated and the form shows a closed
+                message instead. Leave blank to use the built-in default.
+                {template && !template.can_edit && " Only IT admins can edit these."}
+              </CardDescription>
+              {templateLoading ? (
+                <Skeleton className="h-10 w-full max-w-md" />
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 sm:max-w-md">
+                  <div className="space-y-1">
+                    <Label htmlFor="tq-final-call-start" className="text-xs text-muted-foreground">
+                      Final call starts
+                      {!tqFinalCallStartDraft && template && (
+                        <> (default: {format(new Date(template.final_call_start), "MMM d, HH:mm")})</>
+                      )}
+                    </Label>
+                    <Input
+                      id="tq-final-call-start"
+                      type="datetime-local"
+                      value={tqFinalCallStartDraft}
+                      onChange={(e) => setTqFinalCallStartDraft(e.target.value)}
+                      disabled={!template?.can_edit}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="tq-submission-cutoff" className="text-xs text-muted-foreground">
+                      Closes entirely
+                      {!tqSubmissionCutoffDraft && template && (
+                        <> (default: {format(new Date(template.submission_cutoff), "MMM d, HH:mm")})</>
+                      )}
+                    </Label>
+                    <Input
+                      id="tq-submission-cutoff"
+                      type="datetime-local"
+                      value={tqSubmissionCutoffDraft}
+                      onChange={(e) => setTqSubmissionCutoffDraft(e.target.value)}
+                      disabled={!template?.can_edit}
+                    />
+                  </div>
+                </div>
+              )}
+              {(tqFinalCallStartDraft || tqSubmissionCutoffDraft) && template?.can_edit && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto py-0 text-xs"
+                  onClick={() => {
+                    setTqFinalCallStartDraft("");
+                    setTqSubmissionCutoffDraft("");
+                  }}
+                >
+                  Reset to defaults
+                </Button>
               )}
             </div>
 
@@ -188,8 +288,8 @@ export function RecruitmentPeriodPanel() {
             </div>
 
             <div className="flex items-center gap-2 border-t pt-4">
-              <Button disabled={!isDirty || updateSettings.isPending} onClick={handleSave}>
-                {updateSettings.isPending ? "Saving…" : isDirty ? "Save changes" : "Saved"}
+              <Button disabled={(!isDirty && !isTqDirty) || saving} onClick={handleSave}>
+                {saving ? "Saving…" : isDirty || isTqDirty ? "Save changes" : "Saved"}
               </Button>
             </div>
           </>

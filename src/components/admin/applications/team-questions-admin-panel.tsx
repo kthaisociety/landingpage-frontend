@@ -61,6 +61,7 @@ import {
 } from "@/types/applications";
 import { getStatusBadgeStyle } from "@/components/admin/applications/status-badge";
 import { TeamQuestionDefinitionsPanel } from "@/components/admin/applications/team-question-definitions-panel";
+import { TeamQuestionsDeliveryActivityCard } from "@/components/admin/applications/team-questions-delivery-events";
 
 const DEFAULT_TEAM_QUESTIONS_TEMPLATE =
   "Thanks for applying to KTH AI Society! To move forward, we need you to answer a few extra questions about the team(s) you applied to.\n\nIt only takes a few minutes.";
@@ -173,8 +174,18 @@ function TeamQuestionsTemplatePanel() {
       reminderEmailTemplate !== savedReminderEmailTemplate ||
       reminderEmailSubject !== savedReminderEmailSubject);
 
+  // Deadline overrides live on this same backend settings row but are edited
+  // from the Settings tab's Deadlines card (recruitment-period-panel.tsx) —
+  // this save omits both fields entirely (a partial update) rather than
+  // sending the currently-fetched values through, so it can never revert a
+  // deadline change saved from that other panel in the meantime.
   function handleSave() {
-    updateTemplate.mutate({ emailTemplate, emailSubject, reminderEmailTemplate, reminderEmailSubject });
+    updateTemplate.mutate({
+      emailTemplate,
+      emailSubject,
+      reminderEmailTemplate,
+      reminderEmailSubject,
+    });
   }
 
   // Collapsing with unsaved edits discards them — reverting to the last
@@ -208,7 +219,8 @@ function TeamQuestionsTemplatePanel() {
             The invite sent when applicants are asked to answer team questions, and the automatic
             reminder sent 7 days later if they haven&apos;t. Shared by all admins, click to view or
             edit.
-            {template && !template.can_edit && " Only IT admins can edit it."}
+            {template && !template.can_edit && " Only IT admins can edit it."} Deadlines are set
+            under the Settings tab.
           </CardDescription>
         )}
       </CardHeader>
@@ -507,6 +519,11 @@ function TeamQuestionsInviteButton({ application }: { application: GeneralApplic
           Reminded {formatDistanceToNow(new Date(application.team_questions_reminder_sent_at))} ago
         </span>
       )}
+      {application.team_questions_final_call_sent_at && (
+        <span className="text-xs text-muted-foreground">
+          Final call sent {formatDistanceToNow(new Date(application.team_questions_final_call_sent_at))} ago
+        </span>
+      )}
     </div>
   );
 }
@@ -626,6 +643,7 @@ export function TeamQuestionsAdminPanel({ currentAdminEmail }: { currentAdminEma
   return (
     <section className="space-y-6">
       <TeamQuestionsSendBulkCard />
+      <TeamQuestionsDeliveryActivityCard />
       <TeamQuestionsTemplatePanel />
       <TeamQuestionDefinitionsPanel />
       <ApplicantsCard currentAdminEmail={currentAdminEmail} />

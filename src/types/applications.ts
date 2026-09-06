@@ -170,6 +170,7 @@ export type GeneralApplication = {
   interview_invite_sent_at: string | null;
   team_questions_invite_sent_at: string | null;
   team_questions_reminder_sent_at: string | null;
+  team_questions_final_call_sent_at: string | null;
   fast_tracked: boolean;
   fast_tracked_by_email: string;
   fast_tracked_at: string | null;
@@ -272,6 +273,13 @@ export type TeamQuestionsTemplate = {
   email_subject: string;
   reminder_email_template: string;
   reminder_email_subject: string;
+  // Resolved (effective) deadlines: the override below if set, else the
+  // backend's hardcoded default.
+  final_call_start: string;
+  submission_cutoff: string;
+  // Raw overrides — null means "using the default", not "unset but zero".
+  final_call_start_override: string | null;
+  submission_cutoff_override: string | null;
   updated_by_email: string;
   can_edit: boolean;
 };
@@ -279,6 +287,27 @@ export type TeamQuestionsTemplate = {
 export type TeamQuestionsSendBulkResult = {
   sent: number;
   failed: string[];
+};
+
+export type TeamQuestionsDeliveryEventKind = "invite" | "reminder" | "final_call";
+export type TeamQuestionsDeliveryOutcome =
+  | "sent"
+  | "failed"
+  | "superseded"
+  | "delivered_not_recorded";
+
+// Mirrors backend/internal/models/team_questions_delivery_event.go. ID and
+// CreatedAt come from gorm.Model, which has no json tags of its own, so they
+// serialize with their Go field names — everything else uses the explicit
+// snake_case tag declared on TeamQuestionsDeliveryEvent.
+export type TeamQuestionsDeliveryEvent = {
+  ID: number;
+  CreatedAt: string;
+  application_id: string;
+  kind: TeamQuestionsDeliveryEventKind;
+  outcome: TeamQuestionsDeliveryOutcome;
+  automatic: boolean;
+  detail: string;
 };
 
 export type ApplicationSettings = {
