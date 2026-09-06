@@ -115,7 +115,9 @@ export function TeamQuestionsDeliveryActivityCard() {
                     return (
                       <TableRow key={event.ID}>
                         <TableCell className="font-medium">
-                          {applicantNameById.get(event.application_id) ?? event.application_id}
+                          {applicantNameById.get(event.application_id) ?? (
+                            <span className="italic text-muted-foreground">Deleted applicant</span>
+                          )}
                         </TableCell>
                         <TableCell>{KIND_LABELS[event.kind]}</TableCell>
                         <TableCell>
