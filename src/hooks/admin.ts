@@ -143,6 +143,11 @@ export function useDeleteAccount() {
       // so the Members list needs to actually drop this row rather than
       // keep showing it until an unrelated refetch happens to occur.
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      // onboarding-service also best-effort marks any matching
+      // OnboardingRecord as offboarded (see its own OffboardingHandler.Delete)
+      // — refetch so the onboarding list stops offering Deactivate/Delete on
+      // a record whose account is now actually gone.
+      queryClient.invalidateQueries({ queryKey: ["onboarding-records"] });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to delete the account.");

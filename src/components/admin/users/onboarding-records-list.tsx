@@ -35,10 +35,15 @@ import {
   useCancelOnboarding,
   useRestartOnboarding,
   useDeleteOnboardingRecord,
+  useDeactivateAccount,
+  useDeleteAccount,
   type OnboardingRecord,
 } from "@/hooks/admin";
+import { useInterviewSettings } from "@/hooks/applications";
+import { ConfirmPhraseDialog } from "@/components/admin/confirm-phrase-dialog";
 
 const STALE_AFTER_DAYS = 7;
+const DELETE_ACCOUNT_CONFIRM_PHRASE = "DELETE THIS ACCOUNT";
 
 const STATE_LABELS: Record<OnboardingRecord["state"], string> = {
   notified: "Notified",
@@ -72,19 +77,24 @@ function StateBadge({ state }: { state: OnboardingRecord["state"] }) {
 // set from a context-menu item, rendered by the single shared AlertDialog
 // below (same lifted-state pattern as the applications table's delete
 // confirmation), rather than nesting a dialog inside each menu.
-type PendingAction = { kind: "restart" | "cancel" | "delete"; record: OnboardingRecord };
+type PendingAction = {
+  kind: "restart" | "cancel" | "delete-record" | "deactivate-account" | "delete-account";
+  record: OnboardingRecord;
+};
 
 function OnboardingRowContextMenu({
   record,
   onRetry,
   onRequestConfirm,
   isActionPending,
+  isHeadOfIT,
   children,
 }: {
   record: OnboardingRecord;
   onRetry: (record: OnboardingRecord) => void;
   onRequestConfirm: (action: PendingAction) => void;
   isActionPending: boolean;
+  isHeadOfIT: boolean;
   children: React.ReactNode;
 }) {
   const canRetry = record.state === "failed" || record.state === "kth_email_confirmed";
@@ -106,9 +116,22 @@ function OnboardingRowContextMenu({
     record.state === "cancelled" ||
     record.state === "offboarded" ||
     record.state === "failed";
+  // kthais_email is only ever set once provisioning actually created the
+  // real Google Workspace/Mattermost account — independent of most state,
+  // since that account exists (and needs an offboarding path) whether the
+  // record is still "complete", already "failed" downstream, or anything
+  // else. Deliberately not restricted to signed-in members: this is exactly
+  // the "provisioned but never logged into the site" case the Members
+  // tab's own Deactivate/Delete account actions can't reach, since that
+  // list only shows real signed-in Users. "offboarded" is the one
+  // exception: onboarding-service's own Delete handler best-effort marks
+  // the record offboarded once the real account is actually gone, so at
+  // that point there's nothing left here to deactivate or delete again.
+  const canOffboardAccount =
+    isHeadOfIT && Boolean(record.kthais_email) && record.state !== "offboarded";
   const name = `${record.first_name} ${record.last_name}`;
 
-  if (!canRetry && !canRestart && !canCancel && !canDelete) {
+  if (!canRetry && !canRestart && !canCancel && !canDelete && !canOffboardAccount) {
     return children;
   }
 
@@ -147,9 +170,27 @@ function OnboardingRowContextMenu({
             <ContextMenuItem
               disabled={isActionPending}
               className="text-destructive focus:text-destructive"
-              onClick={() => onRequestConfirm({ kind: "delete", record })}
+              onClick={() => onRequestConfirm({ kind: "delete-record", record })}
             >
               Delete record
+            </ContextMenuItem>
+          </>
+        )}
+        {canOffboardAccount && (
+          <>
+            {(canRetry || canRestart || canCancel || canDelete) && <ContextMenuSeparator />}
+            <ContextMenuItem
+              disabled={isActionPending}
+              onClick={() => onRequestConfirm({ kind: "deactivate-account", record })}
+            >
+              Deactivate account
+            </ContextMenuItem>
+            <ContextMenuItem
+              disabled={isActionPending}
+              className="text-destructive focus:text-destructive"
+              onClick={() => onRequestConfirm({ kind: "delete-account", record })}
+            >
+              Delete account
             </ContextMenuItem>
           </>
         )}
@@ -160,13 +201,23 @@ function OnboardingRowContextMenu({
 
 export function OnboardingRecordsList() {
   const { data: records = [], isLoading, isError } = useOnboardingRecords();
+  const { data: interviewSettings } = useInterviewSettings();
+  const isHeadOfIT = interviewSettings?.is_head_of_it === true;
   const { mutate: retryOnboarding, isPending: isRetrying } = useRetryOnboarding();
   const { mutate: cancelOnboarding, isPending: isCancelling } = useCancelOnboarding();
   const { mutate: restartOnboarding, isPending: isRestarting } = useRestartOnboarding();
   const { mutate: deleteRecord, isPending: isDeleting } = useDeleteOnboardingRecord();
+  const deactivateAccount = useDeactivateAccount();
+  const deleteAccount = useDeleteAccount();
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
-  const isActionPending = isRetrying || isCancelling || isRestarting || isDeleting;
+  const isActionPending =
+    isRetrying ||
+    isCancelling ||
+    isRestarting ||
+    isDeleting ||
+    deactivateAccount.isPending ||
+    deleteAccount.isPending;
 
   if (isLoading) {
     return (
@@ -229,6 +280,7 @@ export function OnboardingRecordsList() {
                   onRetry={(r) => retryOnboarding(r.ID)}
                   onRequestConfirm={setPendingAction}
                   isActionPending={isActionPending}
+                  isHeadOfIT={isHeadOfIT}
                 >
                   <TableRow
                     tabIndex={0}
@@ -272,7 +324,10 @@ export function OnboardingRecordsList() {
         </Table>
       </div>
 
-      <AlertDialog open={pendingAction !== null} onOpenChange={(open) => !open && setPendingAction(null)}>
+      <AlertDialog
+        open={pendingAction !== null && pendingAction.kind !== "delete-account"}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+      >
         <AlertDialogContent>
           {pendingAction?.kind === "restart" && (
             <>
@@ -322,7 +377,7 @@ export function OnboardingRecordsList() {
               </AlertDialogFooter>
             </>
           )}
-          {pendingAction?.kind === "delete" && (
+          {pendingAction?.kind === "delete-record" && (
             <>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete this onboarding record for {pendingName}?</AlertDialogTitle>
@@ -347,8 +402,56 @@ export function OnboardingRecordsList() {
               </AlertDialogFooter>
             </>
           )}
+          {pendingAction?.kind === "deactivate-account" && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Deactivate {pendingAction.record.kthais_email}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Suspends their Google Workspace account and deactivates their Mattermost
+                  account. Reversible any time from each system&apos;s own admin console.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={isActionPending}
+                  onClick={() => {
+                    deactivateAccount.mutate(pendingAction.record.kthais_email);
+                    setPendingAction(null);
+                  }}
+                >
+                  Yes, deactivate
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
         </AlertDialogContent>
       </AlertDialog>
+
+      <ConfirmPhraseDialog
+        open={pendingAction?.kind === "delete-account"}
+        onOpenChange={(open) => { if (!open) setPendingAction(null); }}
+        title={`Permanently delete ${pendingAction?.record.kthais_email}?`}
+        description={
+          <>
+            Permanently deletes their Google Workspace account, attempts to permanently
+            delete their Mattermost account, and removes their local record (if any) from
+            this site. This cannot be undone. Type{" "}
+            <span className="font-mono font-semibold">{DELETE_ACCOUNT_CONFIRM_PHRASE}</span>{" "}
+            exactly to confirm.
+          </>
+        }
+        phrase={DELETE_ACCOUNT_CONFIRM_PHRASE}
+        isPending={deleteAccount.isPending}
+        onConfirm={() => {
+          if (pendingAction) {
+            deleteAccount.mutate({
+              email: pendingAction.record.kthais_email,
+              confirm: DELETE_ACCOUNT_CONFIRM_PHRASE,
+            });
+          }
+        }}
+      />
     </div>
   );
 }
