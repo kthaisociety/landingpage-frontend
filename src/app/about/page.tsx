@@ -44,17 +44,37 @@ const DEPARTMENTS = [
   "Alumni",
 ];
 
-type GroupedMember = TeamMember & { departments: string[]; roles: string[] };
+type GroupedMember = TeamMember & { departments: string[]; roles: string[]; boardRank: number };
+
+// The 5 team heads, ordered to match DEPARTMENTS above (excluding Board/Alumni).
+const HEAD_DEPARTMENTS = ["Research", "IT", "Development", "Business", "Growth"];
+
+const NOT_BOARD_RANK = 100;
+
+// Lower = higher priority: chairperson, then vice chairperson, then the 5
+// team heads (in HEAD_DEPARTMENTS order), then everyone else.
+function boardEntryRank(department: string, role: string): number {
+  const r = role.toLowerCase();
+  const isChairRole = r.includes("chair");
+  const isViceRole = r.includes("vice");
+  if (isChairRole && !isViceRole) return 0;
+  if (isChairRole && isViceRole) return 1;
+  const headIndex = HEAD_DEPARTMENTS.indexOf(department);
+  if (headIndex !== -1 && r.includes("head")) return 2 + headIndex;
+  return NOT_BOARD_RANK;
+}
 
 function groupTeamMembersByProfile(rows: TeamMember[]): GroupedMember[] {
   const grouped = new Map<string, GroupedMember>();
   for (const member of rows) {
+    const rank = boardEntryRank(member.department, member.role);
     const existing = grouped.get(member.profileId);
     if (!existing) {
       grouped.set(member.profileId, {
         ...member,
         departments: member.department ? [member.department] : [],
         roles: member.role ? [member.role] : [],
+        boardRank: rank,
       });
     } else {
       if (member.department && !existing.departments.includes(member.department)) {
@@ -63,6 +83,7 @@ function groupTeamMembersByProfile(rows: TeamMember[]): GroupedMember[] {
       if (member.role && !existing.roles.includes(member.role)) {
         existing.roles.push(member.role);
       }
+      existing.boardRank = Math.min(existing.boardRank, rank);
     }
   }
   return Array.from(grouped.values());
@@ -70,6 +91,17 @@ function groupTeamMembersByProfile(rows: TeamMember[]): GroupedMember[] {
 
 function alumniTagScore(m: GroupedMember): number {
   return m.departments.length + m.roles.length;
+}
+
+function memberDisplayName(m: GroupedMember): string {
+  return `${m.firstName} ${m.lastName}`.toLowerCase();
+}
+
+// Board first (chairperson, vice chairperson, the 5 team heads), then
+// everyone else alphabetically by name.
+function compareMembersBoardFirst(a: GroupedMember, b: GroupedMember): number {
+  if (a.boardRank !== b.boardRank) return a.boardRank - b.boardRank;
+  return memberDisplayName(a).localeCompare(memberDisplayName(b));
 }
 
 export default function AboutPage() {
@@ -95,8 +127,11 @@ export default function AboutPage() {
     if (isAlumni) {
       return [...grouped].sort((a, b) => alumniTagScore(b) - alumniTagScore(a));
     }
+    if (activeDepartment === "All") {
+      return [...grouped].sort(compareMembersBoardFirst);
+    }
     return grouped;
-  }, [rawMembers, isAlumni]);
+  }, [rawMembers, isAlumni, activeDepartment]);
 
   // AsciiGrid text mask
   useEffect(() => {
