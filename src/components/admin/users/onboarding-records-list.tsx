@@ -117,14 +117,18 @@ function OnboardingRowContextMenu({
     record.state === "offboarded" ||
     record.state === "failed";
   // kthais_email is only ever set once provisioning actually created the
-  // real Google Workspace/Mattermost account — independent of state, since
-  // that account exists (and needs an offboarding path) whether the record
-  // is still "complete", already "failed" downstream, or anything else.
-  // Deliberately not restricted to signed-in members: this is exactly the
-  // "provisioned but never logged into the site" case the Members tab's
-  // own Deactivate/Delete account actions can't reach, since that list only
-  // shows real signed-in Users.
-  const canOffboardAccount = isHeadOfIT && Boolean(record.kthais_email);
+  // real Google Workspace/Mattermost account — independent of most state,
+  // since that account exists (and needs an offboarding path) whether the
+  // record is still "complete", already "failed" downstream, or anything
+  // else. Deliberately not restricted to signed-in members: this is exactly
+  // the "provisioned but never logged into the site" case the Members
+  // tab's own Deactivate/Delete account actions can't reach, since that
+  // list only shows real signed-in Users. "offboarded" is the one
+  // exception: onboarding-service's own Delete handler best-effort marks
+  // the record offboarded once the real account is actually gone, so at
+  // that point there's nothing left here to deactivate or delete again.
+  const canOffboardAccount =
+    isHeadOfIT && Boolean(record.kthais_email) && record.state !== "offboarded";
   const name = `${record.first_name} ${record.last_name}`;
 
   if (!canRetry && !canRestart && !canCancel && !canDelete && !canOffboardAccount) {
