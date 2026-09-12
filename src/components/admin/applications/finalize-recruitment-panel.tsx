@@ -155,9 +155,15 @@ function RejectButton({
 // reasoning as TeamQuestionsSendBulkCard.
 function SendRejectionsBulkCard() {
   const sendBulk = useSendRejectionsBulk();
-  const { data: preview, isLoading: previewLoading } = useSendRejectionsBulkPreview();
+  const {
+    data: preview,
+    isLoading: previewLoading,
+    isError: previewFailed,
+    refetch: retryPreview,
+    isFetching: previewRetrying,
+  } = useSendRejectionsBulkPreview();
   const count = preview?.count ?? 0;
-  const nothingToSend = !previewLoading && count === 0;
+  const nothingToSend = !previewLoading && !previewFailed && count === 0;
   const canSend = preview?.can_send ?? false;
 
   return (
@@ -171,36 +177,57 @@ function SendRejectionsBulkCard() {
         been sent this notice — including anyone never interviewed or marked ineligible, not just
         applicants an admin individually rejected. Withdrawn applicants are left alone.
       </p>
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button disabled={sendBulk.isPending || previewLoading || nothingToSend || !canSend}>
-            <Mail className="h-4 w-4" />
-            {previewLoading ? "Send rejection emails" : `Send rejection emails (${count})`}
+      {previewFailed ? (
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-destructive">
+            Couldn&apos;t check how many applicants this would email.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={previewRetrying}
+            onClick={() => retryPreview()}
+          >
+            {previewRetrying ? "Retrying…" : "Try again"}
           </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send {count} rejection email{count === 1 ? "" : "s"}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will email {count} applicant{count === 1 ? "" : "s"} who{" "}
-              {count === 1 ? "wasn't" : "weren't"} accepted this cycle and{" "}
-              {count === 1 ? "hasn't" : "haven't"} already received this notice. This cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => sendBulk.mutate()}>
-              Send rejection emails
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      {!previewLoading && !canSend && (
-        <p className="text-xs text-muted-foreground">Only the head of IT can send this.</p>
-      )}
-      {nothingToSend && (
-        <p className="text-xs text-muted-foreground">Nothing left to send — everyone&apos;s been emailed.</p>
+        </div>
+      ) : (
+        <>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button disabled={sendBulk.isPending || previewLoading || nothingToSend || !canSend}>
+                <Mail className="h-4 w-4" />
+                {previewLoading ? "Send rejection emails" : `Send rejection emails (${count})`}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Send {count} rejection email{count === 1 ? "" : "s"}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will email {count} applicant{count === 1 ? "" : "s"} who{" "}
+                  {count === 1 ? "wasn't" : "weren't"} accepted this cycle and{" "}
+                  {count === 1 ? "hasn't" : "haven't"} already received this notice. This cannot
+                  be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => sendBulk.mutate()}>
+                  Send rejection emails
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          {!previewLoading && !canSend && (
+            <p className="text-xs text-muted-foreground">Only the head of IT can send this.</p>
+          )}
+          {nothingToSend && (
+            <p className="text-xs text-muted-foreground">
+              Nothing left to send — everyone&apos;s been emailed.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
