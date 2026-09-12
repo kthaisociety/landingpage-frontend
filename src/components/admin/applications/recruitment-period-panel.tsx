@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   useAdminApplicationSettings,
+  usePreviewRejectionEmail,
   useTeamQuestionsTemplate,
   useUpdateApplicationSettings,
   useUpdateTeamQuestionsTemplate,
@@ -38,6 +39,61 @@ import { ApplicationClosed } from "@/components/applications/application-closed"
 const DEFAULT_CLOSED_HEADING = "Applications are now closed";
 const DEFAULT_CLOSED_MESSAGE =
   "Thank you to everyone who applied to KTH AI Society this year. We're reviewing every application and will follow up by email with next steps by September 22, 2026. In the meantime, join our Luma community to stay in the loop on events and future opportunities.";
+
+// Mirrors defaultRejectionIntroText in general_application_handler.go.
+const DEFAULT_REJECTION_INTRO_TEXT =
+  "Thank you for applying to KTH AI Society for {{year}}.\n\n" +
+  "After careful consideration, we're not able to offer you a place this time. There are a variety of reasons this can happen — you may not have been eligible for the team(s) you applied to, or you may simply not have made our top candidate list this year, when we had far more strong applicants than spots. Either way, this isn't a reflection of your potential.\n\n" +
+  "We recruit new members throughout the year, so we'd love to keep you around: follow KTH AI Society on Luma, come to our events, and stay connected with our members — we'd be glad to see you apply again.";
+
+// Renders by calling the backend, which builds the rejection email the exact
+// same way a real send does — so this can never drift from the real email
+// the way a hand-rolled client-side mockup could. Mirrors
+// OnboardingEmailPreviewDialog's approach in onboarding-email-settings.tsx.
+function RejectionEmailPreviewDialog({ introText }: { introText: string }) {
+  const preview = usePreviewRejectionEmail();
+
+  return (
+    <Dialog
+      onOpenChange={(open) => {
+        if (open) {
+          preview.mutate(introText);
+        } else {
+          preview.reset();
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button type="button" variant="outline" size="sm">
+          <Eye className="h-4 w-4" />
+          Preview rejection email
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Rejection email</DialogTitle>
+          <DialogDescription>
+            {preview.data
+              ? `Subject: ${preview.data.subject}`
+              : "Rendered server-side by the same code that sends the real email."}
+          </DialogDescription>
+        </DialogHeader>
+        {preview.isPending && <Skeleton className="h-[500px] w-full" />}
+        {preview.isError && (
+          <p className="text-sm text-destructive">Couldn&apos;t render the preview. Try again.</p>
+        )}
+        {preview.data && (
+          <iframe
+            title="Rejection email preview"
+            srcDoc={preview.data.html}
+            sandbox=""
+            className="h-[500px] w-full rounded-md border bg-white"
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /** "2026-09-06T23:59", in the viewer's own local time zone, for a datetime-local input. */
 function toDatetimeLocalValue(iso: string) {
@@ -56,6 +112,7 @@ export function RecruitmentPeriodPanel() {
   const [deadlineDraft, setDeadlineDraft] = useState("");
   const [headingDraft, setHeadingDraft] = useState("");
   const [messageDraft, setMessageDraft] = useState("");
+  const [rejectionIntroDraft, setRejectionIntroDraft] = useState("");
   const [initialised, setInitialised] = useState(false);
 
   const [tqFinalCallStartDraft, setTqFinalCallStartDraft] = useState("");
@@ -66,12 +123,14 @@ export function RecruitmentPeriodPanel() {
   const savedDeadline = settings ? toDatetimeLocalValue(settings.submission_deadline) : "";
   const savedHeading = settings?.closed_heading ?? "";
   const savedMessage = settings?.closed_message ?? "";
+  const savedRejectionIntro = settings?.rejection_intro_text ?? "";
 
   if (settings && !initialised) {
     setOpensAtDraft(savedOpensAt);
     setDeadlineDraft(savedDeadline);
     setHeadingDraft(savedHeading);
     setMessageDraft(savedMessage);
+    setRejectionIntroDraft(savedRejectionIntro);
     setInitialised(true);
   }
 
@@ -93,7 +152,8 @@ export function RecruitmentPeriodPanel() {
     (opensAtDraft !== savedOpensAt ||
       deadlineDraft !== savedDeadline ||
       headingDraft !== savedHeading ||
-      messageDraft !== savedMessage);
+      messageDraft !== savedMessage ||
+      rejectionIntroDraft !== savedRejectionIntro);
   const isTqDirty =
     tqInitialised &&
     (tqFinalCallStartDraft !== savedTqFinalCallStart ||
@@ -106,6 +166,7 @@ export function RecruitmentPeriodPanel() {
         submissionDeadlineIso: new Date(deadlineDraft).toISOString(),
         closedHeading: headingDraft,
         closedMessage: messageDraft,
+        rejectionIntroText: rejectionIntroDraft,
       });
     }
     if (isTqDirty) {
@@ -326,6 +387,36 @@ export function RecruitmentPeriodPanel() {
                   </div>
                 </DialogContent>
               </Dialog>
+            </div>
+
+            <div className="space-y-4 border-t pt-6">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="rejection-intro">Rejection email</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto py-0 text-xs"
+                  onClick={() => setRejectionIntroDraft(DEFAULT_REJECTION_INTRO_TEXT)}
+                >
+                  Reset to default
+                </Button>
+              </div>
+              <CardDescription>
+                Sent to every applicant who wasn&apos;t accepted — either one at a time when an
+                admin rejects them during finalize recruitment, or in bulk once the phase closes
+                (see the Finalize recruitment panel). Use{" "}
+                <code className="rounded bg-muted px-1 text-xs">{"{{year}}"}</code> for the
+                recruitment year.
+              </CardDescription>
+              <Textarea
+                id="rejection-intro"
+                placeholder={DEFAULT_REJECTION_INTRO_TEXT}
+                className="min-h-40 resize-y"
+                value={rejectionIntroDraft}
+                onChange={(e) => setRejectionIntroDraft(e.target.value)}
+              />
+              <RejectionEmailPreviewDialog introText={rejectionIntroDraft} />
             </div>
 
             <div className="flex items-center gap-2 border-t pt-4">

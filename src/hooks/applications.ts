@@ -11,6 +11,8 @@ import type {
   FinalizeDecision,
   FinalizeRecruitmentPhase,
   GeneralApplication,
+  RejectionsBulkPreview,
+  RejectionsBulkResult,
   TeamQuestion,
   TeamQuestionsByTeam,
   TeamQuestionsDeliveryEvent,
@@ -1158,6 +1160,7 @@ async function updateApplicationSettings(
       submission_deadline: input.submissionDeadlineIso,
       closed_heading: input.closedHeading,
       closed_message: input.closedMessage,
+      rejection_intro_text: input.rejectionIntroText,
     }),
   });
   if (!response.ok) {
@@ -1298,6 +1301,71 @@ export function useFinalizeDecision() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to save the finalize decision.");
+    },
+  });
+}
+
+async function previewRejectionEmail(introText: string): Promise<{ subject: string; html: string }> {
+  const response = await fetch(`${API_URL}/applications/admin/settings/rejection-email/preview`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rejection_intro_text: introText }),
+  });
+  if (!response.ok) throw new Error("Failed to render preview");
+  return response.json();
+}
+
+/** Renders the rejection email exactly as it would send, for the settings panel's preview dialog. */
+export function usePreviewRejectionEmail() {
+  return useMutation({ mutationFn: previewRejectionEmail });
+}
+
+async function fetchSendRejectionsBulkPreview(): Promise<RejectionsBulkPreview> {
+  const response = await fetch(`${API_URL}/applications/admin/finalize/rejections/preview`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to check how many applicants would be emailed");
+  }
+  return response.json();
+}
+
+/** How many applicants the next bulk rejection send would actually email — same query the send itself uses. */
+export function useSendRejectionsBulkPreview() {
+  return useQuery({
+    queryKey: ["rejections-send-bulk-preview"],
+    queryFn: fetchSendRejectionsBulkPreview,
+  });
+}
+
+async function sendRejectionsBulk(): Promise<RejectionsBulkResult> {
+  const response = await fetch(`${API_URL}/applications/admin/finalize/rejections/send`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to send rejection emails");
+  }
+  return response.json();
+}
+
+export function useSendRejectionsBulk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: sendRejectionsBulk,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["rejections-send-bulk-preview"] });
+      toast.success(
+        result.failed.length > 0
+          ? `Sent ${result.sent} rejection emails, ${result.failed.length} failed.`
+          : `Sent ${result.sent} rejection emails.`,
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to send rejection emails.");
     },
   });
 }

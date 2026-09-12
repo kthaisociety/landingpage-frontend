@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Lock, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Lock, Mail, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +41,8 @@ import {
   useFinalizeDecision,
   useFinalizePhaseStatus,
   useOpenFinalizePhase,
+  useSendRejectionsBulk,
+  useSendRejectionsBulkPreview,
 } from "@/hooks/applications";
 import {
   APPLICATION_TEAM_LABELS,
@@ -141,6 +143,66 @@ function RejectButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+// SendRejectionsBulkCard is the end-of-cycle sweep: once the finalize phase
+// has been closed and new members are being onboarded, this reaches every
+// applicant who wasn't accepted and hasn't already been emailed — including
+// applicants AdminFinalizeDecision itself never could (never interviewed, or
+// marked ineligible), since those never went through an individual
+// accept/reject decision at all. Restricted to the head of IT, same
+// reasoning as TeamQuestionsSendBulkCard.
+function SendRejectionsBulkCard() {
+  const sendBulk = useSendRejectionsBulk();
+  const { data: preview, isLoading: previewLoading } = useSendRejectionsBulkPreview();
+  const count = preview?.count ?? 0;
+  const nothingToSend = !previewLoading && count === 0;
+  const canSend = preview?.can_send ?? false;
+
+  return (
+    <div className="space-y-2 rounded-md border p-3">
+      <div className="flex items-center gap-2">
+        <Mail className="h-4 w-4" />
+        <span className="text-sm font-medium">Send rejection emails to everyone else</span>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Emails every applicant from this cycle who wasn&apos;t accepted and hasn&apos;t already
+        been sent this notice — including anyone never interviewed or marked ineligible, not just
+        applicants an admin individually rejected. Withdrawn applicants are left alone.
+      </p>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button disabled={sendBulk.isPending || previewLoading || nothingToSend || !canSend}>
+            <Mail className="h-4 w-4" />
+            {previewLoading ? "Send rejection emails" : `Send rejection emails (${count})`}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send {count} rejection email{count === 1 ? "" : "s"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will email {count} applicant{count === 1 ? "" : "s"} who{" "}
+              {count === 1 ? "wasn't" : "weren't"} accepted this cycle and{" "}
+              {count === 1 ? "hasn't" : "haven't"} already received this notice. This cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => sendBulk.mutate()}>
+              Send rejection emails
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {!previewLoading && !canSend && (
+        <p className="text-xs text-muted-foreground">Only the head of IT can send this.</p>
+      )}
+      {nothingToSend && (
+        <p className="text-xs text-muted-foreground">Nothing left to send — everyone&apos;s been emailed.</p>
+      )}
+    </div>
   );
 }
 
@@ -282,6 +344,8 @@ export function FinalizeRecruitmentPanel({
             </>
           )}
         </div>
+
+        {!isOpen && phase?.closed_at && <SendRejectionsBulkCard />}
 
         {isLoading ? (
           <Skeleton className="h-40 w-full" />

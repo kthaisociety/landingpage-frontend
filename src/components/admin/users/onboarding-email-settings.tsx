@@ -29,7 +29,8 @@ import {
   type OnboardingEmailSettings,
 } from "@/hooks/admin";
 
-const DEFAULT_START_INTRO = "Congratulations on being accepted to KTH AI Society!";
+const DEFAULT_START_INTRO =
+  "Congratulations on being accepted to KTH AI Society! You've been placed on the {{team}} team.";
 const DEFAULT_CONFIRM_INTRO =
   "Please confirm this is your KTH email address to continue setting up your KTH AI Society account.";
 const DEFAULT_MATTERMOST_INTRO =
@@ -258,7 +259,15 @@ export function OnboardingEmailSettingsPanel() {
                     <CardDescription>
                       {section.description} Use{" "}
                       <code className="rounded bg-muted px-1 text-xs">{"{{first_name}}"}</code> to
-                      address the new member by name.
+                      address the new member by name
+                      {section.kind === "start" ? (
+                        <>
+                          {" "}
+                          and <code className="rounded bg-muted px-1 text-xs">{"{{team}}"}</code>{" "}
+                          for the team they were assigned to
+                        </>
+                      ) : null}
+                      .
                     </CardDescription>
                     <Textarea
                       id={`onboarding-${section.kind}-intro`}
