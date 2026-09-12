@@ -323,6 +323,10 @@ export type ApplicationSettings = {
 
 export type AdminApplicationSettings = ApplicationSettings & {
   updated_by_email: string;
+  // The "not selected" email's admin-editable body — see
+  // email.RenderGeneralApplicationRejection. Not on the public
+  // ApplicationSettings type; only admins ever see this.
+  rejection_intro_text: string;
 };
 
 export type UpdateApplicationSettingsInput = {
@@ -331,6 +335,20 @@ export type UpdateApplicationSettingsInput = {
   submissionDeadlineIso: string;
   closedHeading: string;
   closedMessage: string;
+  rejectionIntroText: string;
+};
+
+export type RejectionsBulkPreview = {
+  count: number;
+  can_send: boolean;
+  // False until the finalize phase has been closed at least once — the
+  // bulk send refuses to run before that (see AdminSendRejectionsBulk).
+  phase_closed: boolean;
+};
+
+export type RejectionsBulkResult = {
+  sent: number;
+  failed: string[];
 };
 
 export type TeamQuestionsSendBulkPreview = {
