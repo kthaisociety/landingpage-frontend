@@ -2,7 +2,8 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { Github, Linkedin, Loader2, ChevronRight } from "lucide-react";
+import { Loader2, ChevronRight } from "lucide-react";
+import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -223,7 +224,7 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                 {profile.githubLink && (
                   <Button variant="outline" asChild className="w-full">
                     <Link href={profile.githubLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                      <Github className="h-4 w-4" />
+                      <FaGithub className="h-4 w-4" />
                       GitHub
                     </Link>
                   </Button>
@@ -231,7 +232,7 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                 {profile.linkedinLink && (
                   <Button variant="outline" asChild className="w-full">
                     <Link href={profile.linkedinLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                      <Linkedin className="h-4 w-4" />
+                      <FaLinkedin className="h-4 w-4" />
                       LinkedIn
                     </Link>
                   </Button>

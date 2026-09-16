@@ -920,7 +920,7 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
                                 },
                               }))
                             }
-                            initialFocus
+                            autoFocus
                           />
                         </PopoverContent>
                       </Popover>
