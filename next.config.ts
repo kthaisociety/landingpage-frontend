@@ -23,6 +23,22 @@ const nextConfig: NextConfig = {
     ],
   },
   output: "standalone",
+  async headers() {
+    if (process.env.NODE_ENV !== "production") {
+      return [];
+    }
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
+          },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     if (process.env.NODE_ENV !== "development") {
       return { beforeFiles: [] };
