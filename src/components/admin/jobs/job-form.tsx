@@ -441,7 +441,7 @@ export function JobForm({
                         startdate: date ? date.toISOString() : "",
                       }))
                     }
-                    initialFocus
+                    autoFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -480,7 +480,7 @@ export function JobForm({
                         enddate: date ? date.toISOString() : "",
                       }))
                     }
-                    initialFocus
+                    autoFocus
                   />
                 </PopoverContent>
               </Popover>
