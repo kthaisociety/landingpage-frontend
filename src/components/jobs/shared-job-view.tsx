@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/ui/markdown";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
-import { useCompany } from "@/hooks/admin";
+import { useCompany, trackJobApplyClick } from "@/hooks/admin";
 import { API_URL } from "@/config";
 import { normalizeExternalHref } from "@/lib/utils";
 import type { JobPostInput, FullJobListing, ContactDTO } from "@/hooks/admin";
@@ -29,6 +29,7 @@ export function SharedJobView({
 }) {
   const companyId = (job as Partial<JobPostInput>).companyId || (job as Partial<FullJobListing>).company;
   const appUrl = getJobApplyUrl(job);
+  const jobId = (job as Partial<FullJobListing>).id;
 
   let location = { place: "", tag: "" };
   try {
@@ -161,6 +162,7 @@ export function SharedJobView({
                         href={appUrl}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => jobId && trackJobApplyClick(jobId)}
                       >
                         <ExternalLink className="mr-2 h-4 w-4" /> Apply Here
                       </a>
