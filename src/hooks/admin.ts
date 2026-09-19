@@ -119,6 +119,37 @@ export function useDeactivateAccount() {
   });
 }
 
+// Add-to-Luma — any admin (not head-of-IT-gated, unlike offboarding above):
+// additive and reversible from Luma's own dashboard, not destructive.
+
+async function addToLuma(email: string): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/luma/add-member`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to add member to Luma");
+  }
+}
+
+export function useAddToLuma() {
+  return useMutation({
+    mutationFn: addToLuma,
+    // Named per-call (not just "Added to Luma Members.") since multiple adds
+    // can be in flight at once and resolve out of order — without the
+    // email, an admin can't tell which one just succeeded.
+    onSuccess: (_data, email) => {
+      toast.success(`Added ${email} to Luma Members.`);
+    },
+    onError: (error: Error, email) => {
+      toast.error(error.message || `Failed to add ${email} to Luma.`);
+    },
+  });
+}
+
 async function deleteAccount(input: { email: string; confirm: string }): Promise<void> {
   const response = await fetch(`${API_URL}/admin/offboarding/delete`, {
     method: "POST",
