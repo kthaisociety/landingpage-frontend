@@ -2246,7 +2246,7 @@ export function ApplicationAdminPanel({
       <TabsContent value="recruitment-period" className="space-y-6">
         <RecruitmentPeriodPanel />
         <FinalizeRecruitmentPanel
-          isITAdmin={effectiveTeam === "IT"}
+          canOpenFinalizePhase={declaredTeam === "IT" || interviewSettings?.is_head_of_it === true}
           canCloseFinalizePhase={declaredTeam === "IT" || interviewSettings?.is_head_of_it === true}
           myTeam={effectiveTeam}
         />
