@@ -234,15 +234,18 @@ function SendRejectionsBulkCard() {
 }
 
 export function FinalizeRecruitmentPanel({
-  isITAdmin,
+  canOpenFinalizePhase,
   canCloseFinalizePhase,
   myTeam,
 }: {
-  isITAdmin: boolean;
   // Mirrors the backend's requesterIsHeadOfTeam(db, userID, "IT"): true for
   // a self-declared admin_team === "IT" OR a verified is_head_of_it grant
   // (see user-admin-panel.tsx) — either is sufficient, so compute this as
-  // an OR of both, not just the self-declared field alone.
+  // an OR of both, not just the self-declared field alone. Opening is at
+  // least as high-stakes as closing (it unlocks every admin's accept/reject
+  // power), so it gets the same head-of-IT gate, not the broader "any IT
+  // admin" check used elsewhere in this file (e.g. delete-application).
+  canOpenFinalizePhase: boolean;
   canCloseFinalizePhase: boolean;
   myTeam: string;
 }) {
@@ -342,7 +345,7 @@ export function FinalizeRecruitmentPanel({
                   <> Last closed by {phase.closed_by_email}.</>
                 )}
               </span>
-              {isITAdmin ? (
+              {canOpenFinalizePhase ? (
                 <ConfirmPhraseDialog
                   trigger={
                     <Button variant="destructive" className="ml-auto">
@@ -365,7 +368,7 @@ export function FinalizeRecruitmentPanel({
                 />
               ) : (
                 <span className="ml-auto text-xs text-muted-foreground">
-                  Only IT admins can open it.
+                  Only the head of IT can open it.
                 </span>
               )}
             </>
