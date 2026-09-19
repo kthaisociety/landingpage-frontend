@@ -138,11 +138,14 @@ async function addToLuma(email: string): Promise<void> {
 export function useAddToLuma() {
   return useMutation({
     mutationFn: addToLuma,
-    onSuccess: () => {
-      toast.success("Added to Luma Members.");
+    // Named per-call (not just "Added to Luma Members.") since multiple adds
+    // can be in flight at once and resolve out of order — without the
+    // email, an admin can't tell which one just succeeded.
+    onSuccess: (_data, email) => {
+      toast.success(`Added ${email} to Luma Members.`);
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to add member to Luma.");
+    onError: (error: Error, email) => {
+      toast.error(error.message || `Failed to add ${email} to Luma.`);
     },
   });
 }
