@@ -46,6 +46,7 @@ import {
   useHeadsOfIT,
   useGrantHeadOfIT,
   useRevokeHeadOfIT,
+  useAddToLuma,
 } from "@/hooks/admin";
 import { useInterviewSettings } from "@/hooks/applications";
 import { ConfirmPhraseDialog } from "@/components/admin/confirm-phrase-dialog";
@@ -92,6 +93,7 @@ export function UserAdminPanel({
   const revokeHeadOfIT = useRevokeHeadOfIT();
   const deactivate = useDeactivateAccount();
   const deleteAccount = useDeleteAccount();
+  const addToLuma = useAddToLuma();
 
   const clearPendingAction = () => setPendingAction(null);
 
@@ -250,6 +252,16 @@ export function UserAdminPanel({
                           ? handleDemote(user.user_id, user.email)
                           : handlePromote(user.user_id, user.email),
                     },
+                    ...(canOffboard
+                      ? [
+                          {
+                            key: "add-to-luma",
+                            label: "Add to Luma Members",
+                            separatorBefore: true,
+                            onSelect: () => addToLuma.mutate(user.email),
+                          },
+                        ]
+                      : []),
                     ...(isHeadOfIT && isAdmin
                       ? [
                           {
