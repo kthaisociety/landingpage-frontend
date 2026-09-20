@@ -152,6 +152,60 @@ export function useAddToLuma() {
   });
 }
 
+export type LumaSyncAllResult = {
+  added: number;
+  failed: number;
+  errors: { email: string; error: string }[];
+};
+
+// Bulk counterpart to addToLuma above: every non-deactivated
+// @kthais.com member, submitted unconditionally (no check for who's
+// already on the tier — resubmitting an existing member is not treated as
+// a failure). A per-member failure doesn't stop the rest — the backend
+// always returns 200 with a summary, never a one-shot error, so this never
+// rejects on partial failure.
+async function syncAllToLuma(): Promise<LumaSyncAllResult> {
+  const response = await fetch(`${API_URL}/admin/luma/sync-all`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to sync members to Luma");
+  }
+  return response.json();
+}
+
+// How many failed emails to list directly in the toast before falling
+// back to "and N more" — enough to be useful without the toast growing
+// unreadably tall for a large partial failure.
+const SYNC_ALL_TOAST_ERROR_LIMIT = 5;
+
+export function useSyncAllToLuma() {
+  return useMutation({
+    mutationFn: syncAllToLuma,
+    onSuccess: (result) => {
+      if (result.failed === 0) {
+        toast.success(`Synced ${result.added} member(s) to Luma.`);
+        return;
+      }
+      // Full detail always goes to the console (for copy/paste into an
+      // issue, filtering, etc.); the toast itself lists enough to act on
+      // without needing devtools — see Greptile's review on PR #156.
+      console.error("Luma sync-all failures:", result.errors);
+      const shown = result.errors.slice(0, SYNC_ALL_TOAST_ERROR_LIMIT).map((e) => e.email);
+      const remaining = result.errors.length - shown.length;
+      toast.error(`Synced ${result.added} member(s) to Luma — ${result.failed} failed.`, {
+        description:
+          shown.join(", ") + (remaining > 0 ? `, and ${remaining} more (see console).` : "."),
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to sync members to Luma.");
+    },
+  });
+}
+
 async function deleteAccount(input: { email: string; confirm: string }): Promise<void> {
   const response = await fetch(`${API_URL}/admin/offboarding/delete`, {
     method: "POST",

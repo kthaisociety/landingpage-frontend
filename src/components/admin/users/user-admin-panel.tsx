@@ -78,6 +78,7 @@ import {
   useDeactivateAccount,
   useDeleteAccount,
   useAddToLuma,
+  useSyncAllToLuma,
   useBoardRoleHolders,
   useTransferBoardRole,
   useAddBoardAdvisor,
@@ -746,6 +747,7 @@ export function UserAdminPanel({
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [transferringRole, setTransferringRole] = useState<BoardRole | null>(null);
   const [backfillConfirmOpen, setBackfillConfirmOpen] = useState(false);
+  const [syncAllConfirmOpen, setSyncAllConfirmOpen] = useState(false);
 
   const { user: authUser } = useAuth();
   const currentAdminEmail = authUser?.email ?? "";
@@ -757,6 +759,7 @@ export function UserAdminPanel({
   const deactivate = useDeactivateAccount();
   const deleteAccount = useDeleteAccount();
   const backfillTeams = useBackfillMemberTeams();
+  const syncAllToLuma = useSyncAllToLuma();
 
   const clearPendingAction = () => setPendingAction(null);
 
@@ -937,6 +940,19 @@ export function UserAdminPanel({
               </div>
             )}
 
+            <div className="flex items-center justify-between gap-3 rounded-md border border-dashed px-4 py-3 text-sm">
+              <span className="text-muted-foreground">
+                Submit every active member to Luma&apos;s Members tier, including anyone already there.
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSyncAllConfirmOpen(true)}
+              >
+                Sync All to Luma
+              </Button>
+            </div>
+
             <Card>
               <CardHeader>
                 <CardTitle>Board</CardTitle>
@@ -1045,6 +1061,32 @@ export function UserAdminPanel({
                 }}
               >
                 Yes, backfill
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={syncAllConfirmOpen} onOpenChange={setSyncAllConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Sync all members to Luma?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Submits every active (non-deactivated) @kthais.com member to Luma&apos;s
+                Members tier — including anyone already there, since this doesn&apos;t
+                check first. This can take a moment for a large member list — each
+                member is submitted one at a time.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={syncAllToLuma.isPending}
+                onClick={() => {
+                  syncAllToLuma.mutate();
+                  setSyncAllConfirmOpen(false);
+                }}
+              >
+                Yes, sync all
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
