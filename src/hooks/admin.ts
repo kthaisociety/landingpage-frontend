@@ -4,6 +4,8 @@ import type {
   AdminProfileData,
   UpdateAdminUserProfileData,
   AdminUser,
+  BoardRole,
+  BoardRoleHolders,
 } from "@/types/admin";
 import { API_URL } from "@/config";
 
@@ -186,28 +188,61 @@ export function useDeleteAccount() {
   });
 }
 
-// Who holds the Head of IT flag — see backend Profile.IsHeadOfIT's doc
-// comment: any number of admins can hold it at once (granting is
-// unrestricted; revoking is refused if it would leave zero), so this is a
-// set of emails, not a single "the" head of IT.
-async function fetchHeadsOfIT(): Promise<string[]> {
-  const response = await fetch(`${API_URL}/admin/head-of-it`, {
+// Board roles — see Profile.BoardRole's backend doc comment. Eight of the
+// nine values are held by exactly one person at a time and only change
+// hands via TransferBoardRole (self-service — the requester must already
+// hold the role); "board_advisor" is the one multi-holder exception,
+// managed by plain admin add/remove instead. Grant/Revoke Head of IT no
+// longer exist server-side; a transfer replaces them.
+
+async function fetchBoardRoleHolders(): Promise<BoardRoleHolders> {
+  const response = await fetch(`${API_URL}/admin/board-role`, {
     credentials: "include",
   });
-  if (!response.ok) throw new Error("Failed to fetch heads of IT");
-  const data = (await response.json()) as { emails: string[] };
-  return data.emails;
+  if (!response.ok) throw new Error("Failed to fetch board role holders");
+  return response.json();
 }
 
-export function useHeadsOfIT() {
-  return useQuery({
-    queryKey: ["heads-of-it"],
-    queryFn: fetchHeadsOfIT,
+export function useBoardRoleHolders() {
+  return useQuery<BoardRoleHolders>({
+    queryKey: ["board-role-holders"],
+    queryFn: fetchBoardRoleHolders,
   });
 }
 
-async function grantHeadOfIT(email: string): Promise<void> {
-  const response = await fetch(`${API_URL}/admin/head-of-it/grant`, {
+async function transferBoardRole(input: { role: BoardRole; toEmail: string }): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/board-role/transfer`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role: input.role, to_email: input.toEmail }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to transfer the role");
+  }
+}
+
+export function useTransferBoardRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: transferBoardRole,
+    onSuccess: (_data, input) => {
+      toast.success(`Transferred to ${input.toEmail}.`);
+      queryClient.invalidateQueries({ queryKey: ["board-role-holders"] });
+      // A transfer can change the requester's own Head-of-IT status (if
+      // they held it and just gave it away), which this gates on.
+      queryClient.invalidateQueries({ queryKey: ["interview-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to transfer the role.");
+    },
+  });
+}
+
+async function addBoardAdvisor(email: string): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/board-role/board-advisor/add`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -215,27 +250,27 @@ async function grantHeadOfIT(email: string): Promise<void> {
   });
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(data?.error || "Failed to grant head of IT");
+    throw new Error(data?.error || "Failed to add board advisor");
   }
 }
 
-export function useGrantHeadOfIT() {
+export function useAddBoardAdvisor() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: grantHeadOfIT,
+    mutationFn: addBoardAdvisor,
     onSuccess: (_data, email) => {
-      toast.success(`${email} is now a head of IT.`);
-      queryClient.invalidateQueries({ queryKey: ["heads-of-it"] });
-      queryClient.invalidateQueries({ queryKey: ["interview-settings"] });
+      toast.success(`${email} is now a board advisor.`);
+      queryClient.invalidateQueries({ queryKey: ["board-role-holders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to grant head of IT.");
+      toast.error(error.message || "Failed to add board advisor.");
     },
   });
 }
 
-async function revokeHeadOfIT(email: string): Promise<void> {
-  const response = await fetch(`${API_URL}/admin/head-of-it/revoke`, {
+async function removeBoardAdvisor(email: string): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/board-role/board-advisor/remove`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -243,21 +278,86 @@ async function revokeHeadOfIT(email: string): Promise<void> {
   });
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(data?.error || "Failed to revoke head of IT");
+    throw new Error(data?.error || "Failed to remove board advisor");
   }
 }
 
-export function useRevokeHeadOfIT() {
+export function useRemoveBoardAdvisor() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: revokeHeadOfIT,
+    mutationFn: removeBoardAdvisor,
     onSuccess: (_data, email) => {
-      toast.success(`${email} is no longer a head of IT.`);
-      queryClient.invalidateQueries({ queryKey: ["heads-of-it"] });
-      queryClient.invalidateQueries({ queryKey: ["interview-settings"] });
+      toast.success(`${email} is no longer a board advisor.`);
+      queryClient.invalidateQueries({ queryKey: ["board-role-holders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to revoke head of IT.");
+      toast.error(error.message || "Failed to remove board advisor.");
+    },
+  });
+}
+
+// Team — freely admin-settable, unlike board roles: it gates nothing and
+// many people can share one.
+async function setMemberTeam(input: { email: string; team: string }): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/team/set`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: input.email, team: input.team }),
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to set team");
+  }
+}
+
+export function useSetMemberTeam() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setMemberTeam,
+    onSuccess: (_data, input) => {
+      toast.success(`Set ${input.email}'s team to ${input.team || "Unassigned"}.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to set team.");
+    },
+  });
+}
+
+type BackfillMemberTeamsResult = { checked: number; updated: number };
+
+// One-time-ish bulk fix for members whose Profile predates Team, or predates
+// it being auto-populated at profile-creation time — see the backend's
+// resolveTeamFromAcceptedApplication. Idempotent: safe to run more than
+// once, since the backend only ever touches members with no team set.
+async function backfillMemberTeams(): Promise<BackfillMemberTeamsResult> {
+  const response = await fetch(`${API_URL}/admin/team/backfill`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to backfill teams");
+  }
+  return response.json();
+}
+
+export function useBackfillMemberTeams() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: backfillMemberTeams,
+    onSuccess: (data) => {
+      toast.success(
+        data.updated > 0
+          ? `Backfilled ${data.updated} of ${data.checked} member(s) with no team.`
+          : "No members needed backfilling.",
+      );
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to backfill teams.");
     },
   });
 }
