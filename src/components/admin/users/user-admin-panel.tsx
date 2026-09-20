@@ -282,7 +282,10 @@ function TransferBoardRoleDialog({
   const candidates = useMemo(
     () =>
       users.filter(
-        (user) => user.email !== currentAdminEmail && user.roles.includes("admin"),
+        (user) =>
+          user.email !== currentAdminEmail &&
+          user.roles.includes("admin") &&
+          !user.deactivated_at,
       ),
     [users, currentAdminEmail],
   );
@@ -342,7 +345,14 @@ function createMemberColumns(): ColumnDef<AdminUser>[] {
       ),
       cell: ({ row }) => (
         <div className="min-w-44">
-          <p className="font-medium">{memberName(row.original) || row.original.email}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium">{memberName(row.original) || row.original.email}</p>
+            {row.original.deactivated_at && (
+              <Badge variant="outline" className="text-muted-foreground">
+                Deactivated
+              </Badge>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">{row.original.email}</p>
         </div>
       ),
@@ -419,15 +429,26 @@ function MembersTable({
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const filteredData = useMemo(() => {
+    let list: AdminUser[];
     switch (filter.kind) {
       case "admins":
-        return users.filter((user) => user.roles.includes("admin"));
+        list = users.filter((user) => user.roles.includes("admin"));
+        break;
       case "team":
-        return users.filter((user) => (user.team || "") === filter.team && !user.board_role);
+        list = users.filter((user) => (user.team || "") === filter.team && !user.board_role);
+        break;
       default:
-        return users;
+        list = users;
     }
-  }, [users, filter]);
+    // Deactivated members are excluded from every default view, same as
+    // the dashboard stats — but a typed search should still be able to
+    // find one (e.g. to finish permanently deleting them), so only filter
+    // them out while the search box is empty.
+    if (!searchQuery.trim()) {
+      list = list.filter((user) => !user.deactivated_at);
+    }
+    return list;
+  }, [users, filter, searchQuery]);
 
   const columns = useMemo(() => createMemberColumns(), []);
 
@@ -570,6 +591,7 @@ function MemberDetailSheet({
   const canOffboard = canOffboardMember(user);
   const isBoardAdvisor = user.board_role === "board_advisor";
   const holdsOtherBoardRole = user.board_role !== "" && !isBoardAdvisor;
+  const isDeactivated = Boolean(user.deactivated_at);
 
   async function handlePromote() {
     try {
@@ -708,14 +730,21 @@ function MemberDetailSheet({
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Offboarding
             </p>
+            {isDeactivated && (
+              <p className="text-sm text-muted-foreground">
+                Already deactivated. Permanently deleting is still available below.
+              </p>
+            )}
             <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onDeactivateRequest(user.email)}
-              >
-                Deactivate Account
-              </Button>
+              {!isDeactivated && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onDeactivateRequest(user.email)}
+                >
+                  Deactivate Account
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="destructive"
@@ -780,17 +809,21 @@ export function UserAdminPanel({
   }
 
   const stats = useMemo(() => {
+    // A deactivated member isn't a current member for headcount purposes
+    // — see AdminUser.deactivated_at's doc comment for why they're still
+    // present in `users` at all (so they stay findable elsewhere).
+    const activeUsers = users.filter((user) => !user.deactivated_at);
     const teamCounts: Record<string, number> = {};
     for (const team of TEAM_TILE_KEYS) teamCounts[team] = 0;
-    for (const user of users) {
+    for (const user of activeUsers) {
       if (!user.board_role) {
         const key = (user.team || "Unassigned") as (typeof TEAM_TILE_KEYS)[number];
         teamCounts[key] = (teamCounts[key] ?? 0) + 1;
       }
     }
     return {
-      total: users.length,
-      admins: users.filter((user) => user.roles.includes("admin")).length,
+      total: activeUsers.length,
+      admins: activeUsers.filter((user) => user.roles.includes("admin")).length,
       teamCounts,
     };
   }, [users]);
