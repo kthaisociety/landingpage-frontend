@@ -268,7 +268,10 @@ function TransferBoardRoleDialog({
   const transfer = useTransferBoardRole();
 
   const candidates = useMemo(
-    () => users.filter((user) => user.email !== currentAdminEmail),
+    () =>
+      users.filter(
+        (user) => user.email !== currentAdminEmail && user.roles.includes("admin"),
+      ),
     [users, currentAdminEmail],
   );
 
@@ -287,8 +290,7 @@ function TransferBoardRoleDialog({
           <DialogDescription>
             You&apos;ll immediately lose this role yourself — there&apos;s no
             way to hold it alongside the recipient, and no way to undo this
-            except a transfer back.
-            {role === "head_of_it" && " The recipient must already be an admin."}
+            except a transfer back. The recipient must already be an admin.
           </DialogDescription>
         </DialogHeader>
         <MemberEmailCombobox
