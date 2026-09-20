@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
 import {
   flexRender,
@@ -136,6 +136,18 @@ function formatJoinedDate(value: string) {
 // universally.
 function canOffboardMember(user: AdminUser) {
   return user.email.toLowerCase().endsWith("@kthais.com");
+}
+
+// Lets a clickable-but-not-natively-interactive element (a Card or
+// TableRow standing in for a button) respond to Enter/Space, matching
+// resume-upload-field.tsx's keyboard-activation convention.
+function onActivateKeyDown(handler: () => void) {
+  return (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handler();
+    }
+  };
 }
 
 // A member's dashboard label: a board role (if any) supersedes Team the
@@ -476,8 +488,12 @@ function MembersTable({
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View ${memberName(row.original)}`}
                     className="cursor-pointer"
                     onClick={() => onSelectUser(row.original)}
+                    onKeyDown={onActivateKeyDown(() => onSelectUser(row.original))}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -856,8 +872,12 @@ export function UserAdminPanel({
           <>
             <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
               <Card
+                role="button"
+                tabIndex={0}
+                aria-label="Total Members"
                 className="cursor-pointer transition-colors hover:bg-muted/50"
                 onClick={() => openSearch({ kind: "all" })}
+                onKeyDown={onActivateKeyDown(() => openSearch({ kind: "all" }))}
               >
                 <CardHeader className="pb-2">
                   <CardDescription>Total Members</CardDescription>
@@ -865,8 +885,12 @@ export function UserAdminPanel({
                 </CardHeader>
               </Card>
               <Card
+                role="button"
+                tabIndex={0}
+                aria-label="Admins"
                 className="cursor-pointer transition-colors hover:bg-muted/50"
                 onClick={() => openSearch({ kind: "admins" })}
+                onKeyDown={onActivateKeyDown(() => openSearch({ kind: "admins" }))}
               >
                 <CardHeader className="pb-2">
                   <CardDescription>Admins</CardDescription>
@@ -876,8 +900,14 @@ export function UserAdminPanel({
               {TEAM_TILE_KEYS.map((team) => (
                 <Card
                   key={team}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={team === "Unassigned" ? team : APPLICATION_TEAM_LABELS[team]}
                   className="cursor-pointer transition-colors hover:bg-muted/50"
                   onClick={() => openSearch({ kind: "team", team: team === "Unassigned" ? "" : team })}
+                  onKeyDown={onActivateKeyDown(() =>
+                    openSearch({ kind: "team", team: team === "Unassigned" ? "" : team }),
+                  )}
                 >
                   <CardHeader className="pb-2">
                     <CardDescription>
