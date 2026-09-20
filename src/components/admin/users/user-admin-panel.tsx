@@ -942,7 +942,7 @@ export function UserAdminPanel({
 
             <div className="flex items-center justify-between gap-3 rounded-md border border-dashed px-4 py-3 text-sm">
               <span className="text-muted-foreground">
-                Add every active member to Luma&apos;s Members tier who isn&apos;t there yet.
+                Submit every active member to Luma&apos;s Members tier, including anyone already there.
               </span>
               <Button
                 size="sm"
@@ -1071,10 +1071,10 @@ export function UserAdminPanel({
             <AlertDialogHeader>
               <AlertDialogTitle>Sync all members to Luma?</AlertDialogTitle>
               <AlertDialogDescription>
-                Adds every active (non-deactivated) @kthais.com member to Luma&apos;s
-                Members tier who isn&apos;t already on it. A member who&apos;s already
-                there is left alone. This can take a moment for a large member list —
-                each member is added one at a time.
+                Submits every active (non-deactivated) @kthais.com member to Luma&apos;s
+                Members tier — including anyone already there, since this doesn&apos;t
+                check first. This can take a moment for a large member list — each
+                member is submitted one at a time.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
