@@ -152,6 +152,47 @@ export function useAddToLuma() {
   });
 }
 
+export type LumaSyncAllResult = {
+  added: number;
+  failed: number;
+  errors: { email: string; error: string }[];
+};
+
+// Bulk counterpart to addToLuma above: every non-deactivated member the
+// backend hasn't already synced. A per-member failure doesn't stop the
+// rest — the backend always returns 200 with a summary, never a one-shot
+// error, so this never rejects on partial failure.
+async function syncAllToLuma(): Promise<LumaSyncAllResult> {
+  const response = await fetch(`${API_URL}/admin/luma/sync-all`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "Failed to sync members to Luma");
+  }
+  return response.json();
+}
+
+export function useSyncAllToLuma() {
+  return useMutation({
+    mutationFn: syncAllToLuma,
+    onSuccess: (result) => {
+      if (result.failed === 0) {
+        toast.success(`Synced ${result.added} member(s) to Luma.`);
+      } else {
+        toast.error(
+          `Synced ${result.added} member(s) to Luma — ${result.failed} failed. Check the console for details.`,
+        );
+        console.error("Luma sync-all failures:", result.errors);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to sync members to Luma.");
+    },
+  });
+}
+
 async function deleteAccount(input: { email: string; confirm: string }): Promise<void> {
   const response = await fetch(`${API_URL}/admin/offboarding/delete`, {
     method: "POST",
