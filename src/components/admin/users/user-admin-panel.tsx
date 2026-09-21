@@ -84,7 +84,6 @@ import {
   useAddBoardAdvisor,
   useRemoveBoardAdvisor,
   useSetMemberTeam,
-  useBackfillMemberTeams,
 } from "@/hooks/admin";
 import { useInterviewSettings } from "@/hooks/applications";
 import {
@@ -776,7 +775,6 @@ export function UserAdminPanel({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [transferringRole, setTransferringRole] = useState<BoardRole | null>(null);
-  const [backfillConfirmOpen, setBackfillConfirmOpen] = useState(false);
   const [syncAllConfirmOpen, setSyncAllConfirmOpen] = useState(false);
 
   const { user: authUser } = useAuth();
@@ -788,7 +786,6 @@ export function UserAdminPanel({
   const { data: boardRoleHolders } = useBoardRoleHolders();
   const deactivate = useDeactivateAccount();
   const deleteAccount = useDeleteAccount();
-  const backfillTeams = useBackfillMemberTeams();
   const syncAllToLuma = useSyncAllToLuma();
 
   const clearPendingAction = () => setPendingAction(null);
@@ -958,22 +955,6 @@ export function UserAdminPanel({
               ))}
             </div>
 
-            {stats.teamCounts.Unassigned > 0 && (
-              <div className="flex items-center justify-between gap-3 rounded-md border border-dashed px-4 py-3 text-sm">
-                <span className="text-muted-foreground">
-                  {stats.teamCounts.Unassigned} member{stats.teamCounts.Unassigned === 1 ? "" : "s"} with
-                  no team set.
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setBackfillConfirmOpen(true)}
-                >
-                  Backfill Teams
-                </Button>
-              </div>
-            )}
-
             <div className="flex items-center justify-between gap-3 rounded-md border border-dashed px-4 py-3 text-sm">
               <span className="text-muted-foreground">
                 Submit every active member to Luma&apos;s Members tier, including anyone already there.
@@ -1072,33 +1053,6 @@ export function UserAdminPanel({
           currentAdminEmail={currentAdminEmail}
           users={users}
         />
-
-        <AlertDialog open={backfillConfirmOpen} onOpenChange={setBackfillConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Backfill teams from applications?</AlertDialogTitle>
-              <AlertDialogDescription>
-                For every member with no team set, looks up their most recent accepted
-                application by their @kthais.com email and fills in the team they were
-                accepted into. Members with no matching application are left as
-                Unassigned. Never overwrites a team that&apos;s already set, and skips
-                anyone holding a board role — board members aren&apos;t team members.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                disabled={backfillTeams.isPending}
-                onClick={() => {
-                  backfillTeams.mutate();
-                  setBackfillConfirmOpen(false);
-                }}
-              >
-                Yes, backfill
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
 
         <AlertDialog open={syncAllConfirmOpen} onOpenChange={setSyncAllConfirmOpen}>
           <AlertDialogContent>

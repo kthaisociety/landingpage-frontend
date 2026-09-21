@@ -386,41 +386,6 @@ export function useSetMemberTeam() {
   });
 }
 
-type BackfillMemberTeamsResult = { checked: number; updated: number };
-
-// One-time-ish bulk fix for members whose Profile predates Team, or predates
-// it being auto-populated at profile-creation time — see the backend's
-// resolveTeamFromAcceptedApplication. Idempotent: safe to run more than
-// once, since the backend only ever touches members with no team set.
-async function backfillMemberTeams(): Promise<BackfillMemberTeamsResult> {
-  const response = await fetch(`${API_URL}/admin/team/backfill`, {
-    method: "POST",
-    credentials: "include",
-  });
-  if (!response.ok) {
-    const data = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(data?.error || "Failed to backfill teams");
-  }
-  return response.json();
-}
-
-export function useBackfillMemberTeams() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: backfillMemberTeams,
-    onSuccess: (data) => {
-      toast.success(
-        data.updated > 0
-          ? `Backfilled ${data.updated} of ${data.checked} member(s) with no team.`
-          : "No members needed backfilling.",
-      );
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to backfill teams.");
-    },
-  });
-}
 
 export type ManualOnboardingInput = {
   firstName: string;
