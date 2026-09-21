@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, Eye, Settings } from "lucide-react";
+import { useRef, useState } from "react";
+import { ChevronDown, Eye, Settings, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,6 +26,8 @@ import {
   useOnboardingEmailSettings,
   useUpdateOnboardingEmailSettings,
   usePreviewOnboardingEmailSettings,
+  useOnboardingContractTemplate,
+  useUploadOnboardingContractTemplate,
   type OnboardingEmailKind,
   type OnboardingEmailSettings,
 } from "@/hooks/admin";
@@ -35,6 +38,8 @@ const DEFAULT_CONFIRM_INTRO =
   "Please confirm this is your KTH email address to continue setting up your KTH AI Society account.";
 const DEFAULT_MATTERMOST_INTRO =
   "You've been invited to the KTH AI Society Mattermost workspace — check your new @kthais.com inbox for an invite link to get started.";
+const DEFAULT_CONTRACT_INTRO =
+  "Ahead of our kick-off event, take a moment to read through your KTH AI Society membership contract below — you'll sign it in person there. You can also find our bylaws and the kick-off event details below.";
 
 // Renders by calling the backend, which builds it the exact same way the
 // real email is built — so this can never drift from the real email the
@@ -145,6 +150,19 @@ const SECTIONS: EmailSection[] = [
     placeholder: DEFAULT_MATTERMOST_INTRO,
     defaultValue: DEFAULT_MATTERMOST_INTRO,
   },
+  {
+    kind: "contract",
+    label: "Membership contract email",
+    description: (
+      <>
+        Sent right after the Mattermost email. Links to the uploaded contract (below), the club
+        bylaws, and this season&apos;s kick-off event are added automatically — just write the
+        paragraph in between.
+      </>
+    ),
+    placeholder: DEFAULT_CONTRACT_INTRO,
+    defaultValue: DEFAULT_CONTRACT_INTRO,
+  },
 ];
 
 const FIELD_BY_KIND: Record<OnboardingEmailKind, keyof OnboardingEmailSettings> = {
@@ -152,7 +170,63 @@ const FIELD_BY_KIND: Record<OnboardingEmailKind, keyof OnboardingEmailSettings> 
   confirm: "confirm_intro_text",
   account: "account_intro_text",
   mattermost: "mattermost_intro_text",
+  contract: "contract_intro_text",
 };
+
+// Renders the current contract-template upload status plus a file picker to
+// replace it — lives inside the contract email's own section, right below
+// its intro text, since the file is as much a part of that email as the
+// paragraph above it.
+function ContractTemplateUpload() {
+  const { data: template, isLoading } = useOnboardingContractTemplate();
+  const upload = useUploadOnboardingContractTemplate();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      upload.mutate(file);
+    }
+    // Reset so choosing the same file again still fires onChange.
+    e.target.value = "";
+  }
+
+  return (
+    <div className="space-y-2 rounded-md border p-3">
+      <Label>Contract template file</Label>
+      {isLoading ? (
+        <Skeleton className="h-5 w-48" />
+      ) : template?.uploaded ? (
+        <p className="text-sm text-muted-foreground">
+          Current file: <span className="font-medium text-foreground">{template.file_name}</span>
+          {template.updated_by_email ? ` — uploaded by ${template.updated_by_email}` : null}
+        </p>
+      ) : (
+        <p className="text-sm text-destructive">
+          No contract has been uploaded yet — the email&apos;s button will fail to download until
+          one is.
+        </p>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+        disabled={upload.isPending}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={upload.isPending}
+        onClick={() => inputRef.current?.click()}
+      >
+        <Upload className="h-4 w-4" />
+        {upload.isPending ? "Uploading…" : template?.uploaded ? "Replace file" : "Upload file"}
+      </Button>
+    </div>
+  );
+}
 
 export function OnboardingEmailSettingsPanel() {
   const { data: settings, isLoading, isError, refetch, isRefetching } = useOnboardingEmailSettings();
@@ -163,6 +237,9 @@ export function OnboardingEmailSettingsPanel() {
     confirm_intro_text: "",
     account_intro_text: "",
     mattermost_intro_text: "",
+    contract_intro_text: "",
+    bylaws_url: "",
+    luma_kickoff_url: "",
   });
   const [initialised, setInitialised] = useState(false);
 
@@ -171,6 +248,9 @@ export function OnboardingEmailSettingsPanel() {
     confirm_intro_text: "",
     account_intro_text: "",
     mattermost_intro_text: "",
+    contract_intro_text: "",
+    bylaws_url: "",
+    luma_kickoff_url: "",
   };
 
   if (settings && !initialised) {
@@ -183,7 +263,10 @@ export function OnboardingEmailSettingsPanel() {
     (drafts.start_intro_text !== saved.start_intro_text ||
       drafts.confirm_intro_text !== saved.confirm_intro_text ||
       drafts.account_intro_text !== saved.account_intro_text ||
-      drafts.mattermost_intro_text !== saved.mattermost_intro_text);
+      drafts.mattermost_intro_text !== saved.mattermost_intro_text ||
+      drafts.contract_intro_text !== saved.contract_intro_text ||
+      drafts.bylaws_url !== saved.bylaws_url ||
+      drafts.luma_kickoff_url !== saved.luma_kickoff_url);
 
   function setField(field: keyof OnboardingEmailSettings, value: string) {
     setDrafts((prev) => ({ ...prev, [field]: value }));
@@ -218,7 +301,7 @@ export function OnboardingEmailSettingsPanel() {
         </div>
         {!open && (
           <CardDescription>
-            The four emails sent over the course of an onboarding. Click to view or edit.
+            The five emails sent over the course of an onboarding. Click to view or edit.
           </CardDescription>
         )}
       </CardHeader>
@@ -276,7 +359,32 @@ export function OnboardingEmailSettingsPanel() {
                       value={value}
                       onChange={(e) => setField(field, e.target.value)}
                     />
+                    {section.kind === "contract" && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="onboarding-contract-bylaws-url">Bylaws link</Label>
+                          <Input
+                            id="onboarding-contract-bylaws-url"
+                            type="url"
+                            placeholder="https://kthais.com/bylaws.pdf"
+                            value={drafts.bylaws_url}
+                            onChange={(e) => setField("bylaws_url", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="onboarding-contract-luma-url">Kick-off event link (Luma)</Label>
+                          <Input
+                            id="onboarding-contract-luma-url"
+                            type="url"
+                            placeholder="https://lu.ma/..."
+                            value={drafts.luma_kickoff_url}
+                            onChange={(e) => setField("luma_kickoff_url", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
                     <OnboardingEmailPreviewDialog kind={section.kind} title={section.label} introText={value} />
+                    {section.kind === "contract" && <ContractTemplateUpload />}
                   </div>
                 );
               })}
