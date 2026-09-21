@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ChevronDown, Eye, Settings, Upload } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Eye, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,8 +26,6 @@ import {
   useOnboardingEmailSettings,
   useUpdateOnboardingEmailSettings,
   usePreviewOnboardingEmailSettings,
-  useOnboardingContractTemplate,
-  useUploadOnboardingContractTemplate,
   type OnboardingEmailKind,
   type OnboardingEmailSettings,
 } from "@/hooks/admin";
@@ -155,8 +153,8 @@ const SECTIONS: EmailSection[] = [
     label: "Membership contract email",
     description: (
       <>
-        Sent right after the Mattermost email. Links to the uploaded contract (below), the club
-        bylaws, and this season&apos;s kick-off event are added automatically — just write the
+        Sent right after the Mattermost email. Links to the contract, the club bylaws, and this
+        season&apos;s kick-off event (all below) are added automatically — just write the
         paragraph in between.
       </>
     ),
@@ -173,61 +171,6 @@ const FIELD_BY_KIND: Record<OnboardingEmailKind, keyof OnboardingEmailSettings> 
   contract: "contract_intro_text",
 };
 
-// Renders the current contract-template upload status plus a file picker to
-// replace it — lives inside the contract email's own section, right below
-// its intro text, since the file is as much a part of that email as the
-// paragraph above it.
-function ContractTemplateUpload() {
-  const { data: template, isLoading } = useOnboardingContractTemplate();
-  const upload = useUploadOnboardingContractTemplate();
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      upload.mutate(file);
-    }
-    // Reset so choosing the same file again still fires onChange.
-    e.target.value = "";
-  }
-
-  return (
-    <div className="space-y-2 rounded-md border p-3">
-      <Label>Contract template file</Label>
-      {isLoading ? (
-        <Skeleton className="h-5 w-48" />
-      ) : template?.uploaded ? (
-        <p className="text-sm text-muted-foreground">
-          Current file: <span className="font-medium text-foreground">{template.file_name}</span>
-          {template.updated_by_email ? ` — uploaded by ${template.updated_by_email}` : null}
-        </p>
-      ) : (
-        <p className="text-sm text-destructive">
-          No contract has been uploaded yet — the email&apos;s button will fail to download until
-          one is.
-        </p>
-      )}
-      <input
-        ref={inputRef}
-        type="file"
-        className="hidden"
-        onChange={handleFileChange}
-        disabled={upload.isPending}
-      />
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={upload.isPending}
-        onClick={() => inputRef.current?.click()}
-      >
-        <Upload className="h-4 w-4" />
-        {upload.isPending ? "Uploading…" : template?.uploaded ? "Replace file" : "Upload file"}
-      </Button>
-    </div>
-  );
-}
-
 export function OnboardingEmailSettingsPanel() {
   const { data: settings, isLoading, isError, refetch, isRefetching } = useOnboardingEmailSettings();
   const updateSettings = useUpdateOnboardingEmailSettings();
@@ -238,6 +181,7 @@ export function OnboardingEmailSettingsPanel() {
     account_intro_text: "",
     mattermost_intro_text: "",
     contract_intro_text: "",
+    contract_url: "",
     bylaws_url: "",
     luma_kickoff_url: "",
   });
@@ -249,6 +193,7 @@ export function OnboardingEmailSettingsPanel() {
     account_intro_text: "",
     mattermost_intro_text: "",
     contract_intro_text: "",
+    contract_url: "",
     bylaws_url: "",
     luma_kickoff_url: "",
   };
@@ -265,6 +210,7 @@ export function OnboardingEmailSettingsPanel() {
       drafts.account_intro_text !== saved.account_intro_text ||
       drafts.mattermost_intro_text !== saved.mattermost_intro_text ||
       drafts.contract_intro_text !== saved.contract_intro_text ||
+      drafts.contract_url !== saved.contract_url ||
       drafts.bylaws_url !== saved.bylaws_url ||
       drafts.luma_kickoff_url !== saved.luma_kickoff_url);
 
@@ -360,7 +306,22 @@ export function OnboardingEmailSettingsPanel() {
                       onChange={(e) => setField(field, e.target.value)}
                     />
                     {section.kind === "contract" && (
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="onboarding-contract-url">Contract link</Label>
+                          <Input
+                            id="onboarding-contract-url"
+                            type="url"
+                            placeholder="https://drive.google.com/..."
+                            value={drafts.contract_url}
+                            onChange={(e) => setField("contract_url", e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            A Google Drive link shared within the kthais.com org — being signed
+                            into their @kthais.com account is what keeps this private, so there&apos;s
+                            no file to upload here.
+                          </p>
+                        </div>
                         <div className="space-y-1">
                           <Label htmlFor="onboarding-contract-bylaws-url">Bylaws link</Label>
                           <Input
@@ -384,7 +345,6 @@ export function OnboardingEmailSettingsPanel() {
                       </div>
                     )}
                     <OnboardingEmailPreviewDialog kind={section.kind} title={section.label} introText={value} />
-                    {section.kind === "contract" && <ContractTemplateUpload />}
                   </div>
                 );
               })}

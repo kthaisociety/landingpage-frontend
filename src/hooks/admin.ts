@@ -585,6 +585,7 @@ export type OnboardingEmailSettings = {
   account_intro_text: string;
   mattermost_intro_text: string;
   contract_intro_text: string;
+  contract_url: string;
   bylaws_url: string;
   luma_kickoff_url: string;
 };
@@ -666,62 +667,6 @@ export function usePreviewOnboardingEmailSettings() {
     mutationFn: previewOnboardingEmailSettings,
     onError: (error: Error) => {
       toast.error(error.message || "Failed to render preview.");
-    },
-  });
-}
-
-export type OnboardingContractTemplate = {
-  uploaded: boolean;
-  file_name?: string;
-  content_type?: string;
-  updated_by_email?: string;
-  updated_at?: string;
-};
-
-async function fetchOnboardingContractTemplate(): Promise<OnboardingContractTemplate> {
-  const response = await fetch(`${API_URL}/admin/onboarding/contract-template`, {
-    credentials: "include",
-  });
-  if (!response.ok) {
-    throw new Error("Failed to load the contract template status");
-  }
-  return response.json();
-}
-
-export function useOnboardingContractTemplate() {
-  return useQuery<OnboardingContractTemplate>({
-    queryKey: ["onboarding-contract-template"],
-    queryFn: fetchOnboardingContractTemplate,
-  });
-}
-
-async function uploadOnboardingContractTemplate(
-  file: File,
-): Promise<OnboardingContractTemplate> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const response = await fetch(`${API_URL}/admin/onboarding/contract-template`, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
-  if (!response.ok) {
-    const data = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(data?.error || "Failed to upload the contract template");
-  }
-  return response.json();
-}
-
-export function useUploadOnboardingContractTemplate() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: uploadOnboardingContractTemplate,
-    onSuccess: (data) => {
-      toast.success("Contract template uploaded.");
-      queryClient.setQueryData(["onboarding-contract-template"], data);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to upload the contract template.");
     },
   });
 }
