@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, Eye, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,18 +36,30 @@ const DEFAULT_CONFIRM_INTRO =
   "Please confirm this is your KTH email address to continue setting up your KTH AI Society account.";
 const DEFAULT_MATTERMOST_INTRO =
   "You've been invited to the KTH AI Society Mattermost workspace — check your new @kthais.com inbox for an invite link to get started.";
+const DEFAULT_CONTRACT_INTRO =
+  "Ahead of our kick-off event, take a moment to read through your KTH AI Society membership contract below — you'll sign it in person there. You can also find our bylaws and the kick-off event details below.";
 
 // Renders by calling the backend, which builds it the exact same way the
 // real email is built — so this can never drift from the real email the
-// way a hand-rolled client-side mockup could.
+// way a hand-rolled client-side mockup could. contractUrl/bylawsUrl/
+// lumaKickoffUrl are only used for kind "contract" — always the current
+// draft (possibly unsaved), never re-fetched from what's saved, so editing
+// a link and previewing before hitting Save shows that edit, not a stale
+// value.
 function OnboardingEmailPreviewDialog({
   kind,
   title,
   introText,
+  contractUrl,
+  bylawsUrl,
+  lumaKickoffUrl,
 }: {
   kind: OnboardingEmailKind;
   title: string;
   introText: string;
+  contractUrl?: string;
+  bylawsUrl?: string;
+  lumaKickoffUrl?: string;
 }) {
   const preview = usePreviewOnboardingEmailSettings();
 
@@ -54,7 +67,7 @@ function OnboardingEmailPreviewDialog({
     <Dialog
       onOpenChange={(open) => {
         if (open) {
-          preview.mutate({ kind, introText });
+          preview.mutate({ kind, introText, contractUrl, bylawsUrl, lumaKickoffUrl });
         } else {
           preview.reset();
         }
@@ -145,6 +158,19 @@ const SECTIONS: EmailSection[] = [
     placeholder: DEFAULT_MATTERMOST_INTRO,
     defaultValue: DEFAULT_MATTERMOST_INTRO,
   },
+  {
+    kind: "contract",
+    label: "Membership contract email",
+    description: (
+      <>
+        Sent right after the Mattermost email. Links to the contract, the club bylaws, and this
+        season&apos;s kick-off event (all below) are added automatically — just write the
+        paragraph in between.
+      </>
+    ),
+    placeholder: DEFAULT_CONTRACT_INTRO,
+    defaultValue: DEFAULT_CONTRACT_INTRO,
+  },
 ];
 
 const FIELD_BY_KIND: Record<OnboardingEmailKind, keyof OnboardingEmailSettings> = {
@@ -152,6 +178,7 @@ const FIELD_BY_KIND: Record<OnboardingEmailKind, keyof OnboardingEmailSettings> 
   confirm: "confirm_intro_text",
   account: "account_intro_text",
   mattermost: "mattermost_intro_text",
+  contract: "contract_intro_text",
 };
 
 export function OnboardingEmailSettingsPanel() {
@@ -163,6 +190,10 @@ export function OnboardingEmailSettingsPanel() {
     confirm_intro_text: "",
     account_intro_text: "",
     mattermost_intro_text: "",
+    contract_intro_text: "",
+    contract_url: "",
+    bylaws_url: "",
+    luma_kickoff_url: "",
   });
   const [initialised, setInitialised] = useState(false);
 
@@ -171,6 +202,10 @@ export function OnboardingEmailSettingsPanel() {
     confirm_intro_text: "",
     account_intro_text: "",
     mattermost_intro_text: "",
+    contract_intro_text: "",
+    contract_url: "",
+    bylaws_url: "",
+    luma_kickoff_url: "",
   };
 
   if (settings && !initialised) {
@@ -183,7 +218,11 @@ export function OnboardingEmailSettingsPanel() {
     (drafts.start_intro_text !== saved.start_intro_text ||
       drafts.confirm_intro_text !== saved.confirm_intro_text ||
       drafts.account_intro_text !== saved.account_intro_text ||
-      drafts.mattermost_intro_text !== saved.mattermost_intro_text);
+      drafts.mattermost_intro_text !== saved.mattermost_intro_text ||
+      drafts.contract_intro_text !== saved.contract_intro_text ||
+      drafts.contract_url !== saved.contract_url ||
+      drafts.bylaws_url !== saved.bylaws_url ||
+      drafts.luma_kickoff_url !== saved.luma_kickoff_url);
 
   function setField(field: keyof OnboardingEmailSettings, value: string) {
     setDrafts((prev) => ({ ...prev, [field]: value }));
@@ -218,7 +257,7 @@ export function OnboardingEmailSettingsPanel() {
         </div>
         {!open && (
           <CardDescription>
-            The four emails sent over the course of an onboarding. Click to view or edit.
+            The five emails sent over the course of an onboarding. Click to view or edit.
           </CardDescription>
         )}
       </CardHeader>
@@ -276,7 +315,53 @@ export function OnboardingEmailSettingsPanel() {
                       value={value}
                       onChange={(e) => setField(field, e.target.value)}
                     />
-                    <OnboardingEmailPreviewDialog kind={section.kind} title={section.label} introText={value} />
+                    {section.kind === "contract" && (
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="onboarding-contract-url">Contract link</Label>
+                          <Input
+                            id="onboarding-contract-url"
+                            type="url"
+                            placeholder="https://drive.google.com/..."
+                            value={drafts.contract_url}
+                            onChange={(e) => setField("contract_url", e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            A Google Drive link shared within the kthais.com org — being signed
+                            into their @kthais.com account is what keeps this private, so there&apos;s
+                            no file to upload here.
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="onboarding-contract-bylaws-url">Bylaws link</Label>
+                          <Input
+                            id="onboarding-contract-bylaws-url"
+                            type="url"
+                            placeholder="https://kthais.com/bylaws.pdf"
+                            value={drafts.bylaws_url}
+                            onChange={(e) => setField("bylaws_url", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="onboarding-contract-luma-url">Kick-off event link (Luma)</Label>
+                          <Input
+                            id="onboarding-contract-luma-url"
+                            type="url"
+                            placeholder="https://lu.ma/..."
+                            value={drafts.luma_kickoff_url}
+                            onChange={(e) => setField("luma_kickoff_url", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <OnboardingEmailPreviewDialog
+                      kind={section.kind}
+                      title={section.label}
+                      introText={value}
+                      contractUrl={drafts.contract_url}
+                      bylawsUrl={drafts.bylaws_url}
+                      lumaKickoffUrl={drafts.luma_kickoff_url}
+                    />
                   </div>
                 );
               })}
