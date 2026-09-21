@@ -110,10 +110,16 @@ async function deactivateAccount(email: string): Promise<void> {
 }
 
 export function useDeactivateAccount() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deactivateAccount,
     onSuccess: () => {
       toast.success("Account deactivated.");
+      // The Members dashboard reads deactivated_at straight from this
+      // list to exclude the account from its default counts/views —
+      // refetch so that happens immediately, not on some unrelated
+      // refresh.
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to deactivate the account.");

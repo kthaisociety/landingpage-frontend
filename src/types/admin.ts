@@ -36,6 +36,12 @@ export interface AdminUser {
   last_name: string;
   team: string;
   board_role: string;
+  // Set once OffboardingHandler.Deactivate succeeds for this user; null/
+  // absent for an active member. Still present in every /admin/users
+  // response (not filtered server-side) so a deactivated member can still
+  // be found, e.g. to finish permanently deleting them later — this app's
+  // own UI is what excludes them from default counts/views.
+  deactivated_at?: string | null;
 }
 
 // Every value Profile.BoardRole may hold — mirrors the backend's
