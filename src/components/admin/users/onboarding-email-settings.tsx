@@ -37,7 +37,7 @@ const DEFAULT_CONFIRM_INTRO =
 const DEFAULT_MATTERMOST_INTRO =
   "You've been invited to the KTH AI Society Mattermost workspace — check your new @kthais.com inbox for an invite link to get started.";
 const DEFAULT_CONTRACT_INTRO =
-  "Ahead of our kick-off event, take a moment to read through your KTH AI Society membership contract below — you'll sign it in person there. You can also find our bylaws and the kick-off event details below.";
+  "Attending our kick-off event is mandatory — that's where you'll sign your KTH AI Society membership contract in person. Please RSVP below, and take a look at the contract and our bylaws beforehand so you know what you're signing.";
 
 // Renders by calling the backend, which builds it the exact same way the
 // real email is built — so this can never drift from the real email the
@@ -163,9 +163,9 @@ const SECTIONS: EmailSection[] = [
     label: "Membership contract email",
     description: (
       <>
-        Sent right after the Mattermost email. Links to the contract, the club bylaws, and this
-        season&apos;s kick-off event (all below) are added automatically — just write the
-        paragraph in between.
+        Sent right after the Mattermost email. The kick-off RSVP button, and plain links to the
+        contract and bylaws (all below), are added automatically — just write the paragraph in
+        between.
       </>
     ),
     placeholder: DEFAULT_CONTRACT_INTRO,
@@ -318,6 +318,20 @@ export function OnboardingEmailSettingsPanel() {
                     {section.kind === "contract" && (
                       <div className="grid gap-3 sm:grid-cols-3">
                         <div className="space-y-1">
+                          <Label htmlFor="onboarding-contract-luma-url">Kick-off RSVP link (Luma)</Label>
+                          <Input
+                            id="onboarding-contract-luma-url"
+                            type="url"
+                            placeholder="https://lu.ma/..."
+                            value={drafts.luma_kickoff_url}
+                            onChange={(e) => setField("luma_kickoff_url", e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            This is the email&apos;s button — attending is mandatory, so it needs a
+                            real link before this email will send.
+                          </p>
+                        </div>
+                        <div className="space-y-1">
                           <Label htmlFor="onboarding-contract-url">Contract link</Label>
                           <Input
                             id="onboarding-contract-url"
@@ -340,16 +354,6 @@ export function OnboardingEmailSettingsPanel() {
                             placeholder="https://kthais.com/bylaws.pdf"
                             value={drafts.bylaws_url}
                             onChange={(e) => setField("bylaws_url", e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="onboarding-contract-luma-url">Kick-off event link (Luma)</Label>
-                          <Input
-                            id="onboarding-contract-luma-url"
-                            type="url"
-                            placeholder="https://lu.ma/..."
-                            value={drafts.luma_kickoff_url}
-                            onChange={(e) => setField("luma_kickoff_url", e.target.value)}
                           />
                         </div>
                       </div>
