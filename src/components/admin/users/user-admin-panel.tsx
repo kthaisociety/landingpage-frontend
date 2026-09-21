@@ -429,25 +429,26 @@ function MembersTable({
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const filteredData = useMemo(() => {
-    let list: AdminUser[];
+    // A typed search is a specific lookup — e.g. to find a deactivated
+    // member and finish permanently deleting them — and must not stay
+    // scoped to whichever dashboard tile happened to be open before the
+    // admin started typing, or a match outside that tile's cohort (a
+    // deactivated non-admin found from the Admins tile, say) would look
+    // like it doesn't exist. Only apply the tile cohort and the
+    // exclude-deactivated default while the search box is empty.
+    if (searchQuery.trim()) {
+      return users;
+    }
     switch (filter.kind) {
       case "admins":
-        list = users.filter((user) => user.roles.includes("admin"));
-        break;
+        return users.filter((user) => user.roles.includes("admin") && !user.deactivated_at);
       case "team":
-        list = users.filter((user) => (user.team || "") === filter.team && !user.board_role);
-        break;
+        return users.filter(
+          (user) => (user.team || "") === filter.team && !user.board_role && !user.deactivated_at,
+        );
       default:
-        list = users;
+        return users.filter((user) => !user.deactivated_at);
     }
-    // Deactivated members are excluded from every default view, same as
-    // the dashboard stats — but a typed search should still be able to
-    // find one (e.g. to finish permanently deleting them), so only filter
-    // them out while the search box is empty.
-    if (!searchQuery.trim()) {
-      list = list.filter((user) => !user.deactivated_at);
-    }
-    return list;
   }, [users, filter, searchQuery]);
 
   const columns = useMemo(() => createMemberColumns(), []);
