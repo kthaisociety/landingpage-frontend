@@ -41,15 +41,25 @@ const DEFAULT_CONTRACT_INTRO =
 
 // Renders by calling the backend, which builds it the exact same way the
 // real email is built — so this can never drift from the real email the
-// way a hand-rolled client-side mockup could.
+// way a hand-rolled client-side mockup could. contractUrl/bylawsUrl/
+// lumaKickoffUrl are only used for kind "contract" — always the current
+// draft (possibly unsaved), never re-fetched from what's saved, so editing
+// a link and previewing before hitting Save shows that edit, not a stale
+// value.
 function OnboardingEmailPreviewDialog({
   kind,
   title,
   introText,
+  contractUrl,
+  bylawsUrl,
+  lumaKickoffUrl,
 }: {
   kind: OnboardingEmailKind;
   title: string;
   introText: string;
+  contractUrl?: string;
+  bylawsUrl?: string;
+  lumaKickoffUrl?: string;
 }) {
   const preview = usePreviewOnboardingEmailSettings();
 
@@ -57,7 +67,7 @@ function OnboardingEmailPreviewDialog({
     <Dialog
       onOpenChange={(open) => {
         if (open) {
-          preview.mutate({ kind, introText });
+          preview.mutate({ kind, introText, contractUrl, bylawsUrl, lumaKickoffUrl });
         } else {
           preview.reset();
         }
@@ -344,7 +354,14 @@ export function OnboardingEmailSettingsPanel() {
                         </div>
                       </div>
                     )}
-                    <OnboardingEmailPreviewDialog kind={section.kind} title={section.label} introText={value} />
+                    <OnboardingEmailPreviewDialog
+                      kind={section.kind}
+                      title={section.label}
+                      introText={value}
+                      contractUrl={drafts.contract_url}
+                      bylawsUrl={drafts.bylaws_url}
+                      lumaKickoffUrl={drafts.luma_kickoff_url}
+                    />
                   </div>
                 );
               })}

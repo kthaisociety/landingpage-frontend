@@ -644,16 +644,30 @@ export type OnboardingEmailPreview = {
   html: string;
 };
 
-/** Renders one of the four onboarding emails server-side, from the same code path used to send it. */
+/**
+ * Renders one of the five onboarding emails server-side, from the same code path used to send
+ * it. contractUrl/bylawsUrl/lumaKickoffUrl are only meaningful for kind "contract" — always the
+ * caller's current (possibly unsaved) draft, never re-fetched from what's saved, so previewing an
+ * edited-but-unsaved link shows that edit rather than a stale value.
+ */
 async function previewOnboardingEmailSettings(args: {
   kind: OnboardingEmailKind;
   introText: string;
+  contractUrl?: string;
+  bylawsUrl?: string;
+  lumaKickoffUrl?: string;
 }): Promise<OnboardingEmailPreview> {
   const response = await fetch(`${API_URL}/admin/onboarding/email-settings/preview`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ kind: args.kind, intro_text: args.introText }),
+    body: JSON.stringify({
+      kind: args.kind,
+      intro_text: args.introText,
+      contract_url: args.contractUrl ?? "",
+      bylaws_url: args.bylawsUrl ?? "",
+      luma_kickoff_url: args.lumaKickoffUrl ?? "",
+    }),
   });
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
