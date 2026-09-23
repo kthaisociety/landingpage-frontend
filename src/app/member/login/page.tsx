@@ -7,27 +7,46 @@ import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 import { API_URL } from "@/config";
 
-function GoogleLoginButton() {
+function GoogleLoginButton({
+  onError,
+}: {
+  onError: (message: string | null) => void;
+}) {
+  const [pending, setPending] = useState(false);
+
   const login = async () => {
+    setPending(true);
+    onError(null);
     try {
       const response = await fetch(`${API_URL}/auth/google`, {
         method: "GET",
         credentials: "include",
       });
-      const data = await response.json();
+      const data = response.ok ? await response.json() : null;
 
-      if (data.url) {
+      if (data?.url) {
+        // Leave the button disabled while the browser navigates to Google.
         window.location.href = data.url;
+        return;
       }
+
+      onError(
+        response.status === 429
+          ? "Too many sign-in attempts from your network right now. Please wait a minute and try again."
+          : "Couldn't start sign-in. Please try again.",
+      );
     } catch (error) {
       console.error("Failed to fetch login URL:", error);
+      onError("Couldn't reach the server. Please try again.");
     }
+    setPending(false);
   };
 
   return (
     <button
       type="button"
       onClick={login}
+      disabled={pending}
       className="
         inline-flex items-center justify-center
         rounded-xl px-6 py-3
@@ -37,15 +56,17 @@ function GoogleLoginButton() {
         transition-all duration-300 ease-out
         hover:bg-primary/90
         hover:shadow-lg hover:-translate-y-0.5
+        disabled:opacity-60 disabled:cursor-wait
       "
     >
-      Member Login
+      {pending ? "Signing in…" : "Member Login"}
     </button>
   );
 }
 
 export default function MemberLogin() {
   const [loginTextMask, setLoginTextMask] = useState<string | undefined>();
+  const [loginError, setLoginError] = useState<string | null>(null);
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
@@ -119,7 +140,7 @@ export default function MemberLogin() {
 
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Embedded Google Login Button */}
-            <GoogleLoginButton />
+            <GoogleLoginButton onError={setLoginError} />
 
             <Link
               href="/apply"
@@ -137,6 +158,12 @@ export default function MemberLogin() {
               Apply for Membership
             </Link>
           </div>
+
+          {loginError && (
+            <p role="alert" className="mt-4 text-sm text-red-600">
+              {loginError}
+            </p>
+          )}
         </div>
       </section>
     </div>
