@@ -34,9 +34,15 @@ const DEPARTMENTS = ["Board", "Research", "IT", "Development", "Business", "Grow
 const ABOUT_ME_MAX = 500;
 
 // Unlike the application form, members may already have graduated, so past years are included.
+const GRADUATION_YEARS_BACK = 30;
+const GRADUATION_YEARS_AHEAD = 6;
+
 function getProfileGraduationYears(current: string): string[] {
   const thisYear = new Date().getFullYear();
-  const years = Array.from({ length: 12 }, (_, i) => String(thisYear - 6 + i));
+  const years = Array.from(
+    { length: GRADUATION_YEARS_BACK + GRADUATION_YEARS_AHEAD + 1 },
+    (_, i) => String(thisYear + GRADUATION_YEARS_AHEAD - i),
+  );
   return current && !years.includes(current) ? [current, ...years] : years;
 }
 
@@ -136,8 +142,12 @@ function TeamMembershipSection() {
   const addEntry = useAddMyTeamEntry();
   const removeEntry = useRemoveMyTeamEntry();
   const [newEntry, setNewEntry] = useState({ role: "", department: "", academicYear: "" });
+  // isPending only flips after a rerender, so a second Enter press could slip through without this.
+  const addInFlightRef = useRef(false);
 
   const handleAdd = async () => {
+    if (addInFlightRef.current) return;
+    addInFlightRef.current = true;
     try {
       await addEntry.mutateAsync({
         role: newEntry.role.trim(),
@@ -149,6 +159,8 @@ function TeamMembershipSection() {
       toast.success("Team entry added");
     } catch {
       toast.error("Failed to add team entry");
+    } finally {
+      addInFlightRef.current = false;
     }
   };
 
