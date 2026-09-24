@@ -1,0 +1,49 @@
+name: "Jules: Weekly Cleanup"
+
+on:
+  schedule:
+    - cron: "0 2 * * 1" # Every Monday at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Invoke Jules
+        uses: google-labs-code/jules-invoke@v1
+        with:
+          prompt: |
+            You are a code quality agent for the KTH AI Society landing page frontend.
+
+            ## Project context
+            - This is a Next.js App Router application using React 19, TypeScript, and Tailwind CSS.
+            - Read `AGENTS.md` and `.agent-docs/architecture.md` for full project structure and constraints.
+
+            ## Tasks
+            Perform a focused cleanup pass on the codebase:
+
+            1. **Dead code** — Remove unused imports, variables, functions, and components.
+            2. **Type safety** — Fix any `any` types that can be narrowed. Add missing return types to exported functions.
+            3. **Consistency** — Ensure naming conventions are consistent across components and hooks.
+            4. **Accessibility (a11y)** — Check for missing aria labels, alt text, and semantic HTML issues.
+
+            ## Verification
+            After making changes, run:
+            - `npm run lint`
+            - `npm run build`
+
+            Only proceed if both pass. Keep changes focused and under 200 lines total.
+
+            ## Commit & PR Rules
+            - Use Conventional Commits (e.g. `chore(cleanup): remove unused imports`, `refactor: improve type safety`).
+            - Open a PR titled `chore: weekly code cleanup` summarizing your changes.
+
+            ## Constraints
+            - Do not change public-facing copy, images, or brand assets.
+            - Do not normalise localStorage-backed flows or mixed data sources.
+            - Preserve all existing comments and docstrings unrelated to your changes.
+          jules_api_key: ${{ secrets.JULES_API_KEY }}
