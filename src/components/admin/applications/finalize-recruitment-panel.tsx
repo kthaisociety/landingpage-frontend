@@ -238,10 +238,9 @@ export function FinalizeRecruitmentPanel({
   canCloseFinalizePhase,
   myTeam,
 }: {
-  // Mirrors the backend's requesterIsHeadOfTeam(db, userID, "IT"): true for
-  // a self-declared admin_team === "IT" OR a verified is_head_of_it grant
-  // (see user-admin-panel.tsx) — either is sufficient, so compute this as
-  // an OR of both, not just the self-declared field alone. Opening is at
+  // Mirrors the backend's requesterIsHeadOfIT: true only for the verified
+  // Head of IT board role (is_head_of_it). A self-declared admin_team of
+  // "IT" is not enough, since any admin can set that. Opening is at
   // least as high-stakes as closing (it unlocks every admin's accept/reject
   // power), so it gets the same head-of-IT gate, not the broader "any IT
   // admin" check used elsewhere in this file (e.g. delete-application).
