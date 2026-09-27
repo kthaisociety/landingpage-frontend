@@ -3,10 +3,12 @@ import type { NextRequest } from "next/server";
 import { jwtVerify, importSPKI } from "jose";
 
 const getJwtPublicKey = (): string => {
-  const publicKey = process.env.JWTValidatingKey;
+  // JWTValidatingKey is the old name, still set in deployed environments.
+  // Remove the fallback once they all set JWT_PUBLIC_KEY.
+  const publicKey = process.env.JWT_PUBLIC_KEY || process.env.JWTValidatingKey;
 
   if (!publicKey) {
-    throw new Error("Missing JWTValidatingKey environment variable");
+    throw new Error("Missing JWT_PUBLIC_KEY environment variable");
   }
 
   return publicKey.replace(/\\n/g, "\n");
