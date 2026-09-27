@@ -6,7 +6,7 @@ Use standard Next.js env files such as `.env.local`.
 
 - `NEXT_PUBLIC_API_URL`: backend origin, defaults to `http://localhost:8080`
 - `JWT_SECRET`: used by the mock member auth route handlers (`src/app/api/member/*`)
-- `JWT_PUBLIC_KEY`: the backend's RS256 public key, used by `src/proxy.ts` to verify the member `jwt` cookie (skipped under `next dev`). The old name `JWTValidatingKey` is still accepted as a fallback.
+- `JWT_PUBLIC_KEY`: the backend's RS256 public key, used by `src/proxy.ts` to verify the member `jwt` cookie (skipped under `next dev`).
 - `LUMA_API_KEY`: required by `src/app/api/events/*`
 - `ONBOARDING_SERVICE_URL`: internal-only base URL for `onboarding-service` (no public DNS), required by `src/app/api/onboarding/*`
 
