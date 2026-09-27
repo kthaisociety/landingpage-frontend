@@ -26,7 +26,6 @@
     "@radix-ui/react-switch": "^1.3.7",
     "@radix-ui/react-tabs": "^1.1.21",
     "@radix-ui/react-toast": "^1.2.23",
-    "@react-oauth/google": "^0.13.5",
     "@reduxjs/toolkit": "^2.12.0",
     "@reverse-ui/react": "^1.0.39-alpha.0",
     "@tanstack/react-form": "^1.33.5",
