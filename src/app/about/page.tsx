@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
@@ -32,6 +32,81 @@ const AnnualReportViewer = dynamic(
     ),
   },
 );
+
+function AnnualReportPreview() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canPreview, setCanPreview] = useState(false);
+  const [showViewer, setShowViewer] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px) and (pointer: fine)");
+    const update = () => setCanPreview(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!canPreview || showViewer || !containerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShowViewer(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [canPreview, showViewer]);
+
+  return (
+    <>
+      <div className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <div>
+          <h2 className="font-arial text-3xl font-bold text-secondary-black tracking-tight-2 mb-2">
+            Annual Report
+          </h2>
+          <p className="font-serif text-secondary-black/70 max-w-2xl text-lg">
+            A closer look at our year in review.
+          </p>
+        </div>
+        {canPreview && (
+          <a
+            href="/kth-ais-annual-report.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-xs text-primary hover:underline decoration-2 underline-offset-4 shrink-0"
+          >
+            Open in new tab ↗
+          </a>
+        )}
+      </div>
+      <div ref={containerRef}>
+        {canPreview ? (
+          showViewer ? (
+            <AnnualReportViewer />
+          ) : (
+            <div className="flex min-h-48 items-center justify-center text-sm text-secondary-gray">
+              Report preview loads when you scroll here.
+            </div>
+          )
+        ) : (
+          <a
+            href="/kth-ais-annual-report.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex rounded-lg border border-primary px-5 py-3 font-mono text-sm text-primary"
+          >
+            Read the annual report (PDF)
+          </a>
+        )}
+      </div>
+    </>
+  );
+}
 
 const DEPARTMENTS = [
   "All",
@@ -363,31 +438,13 @@ export default function AboutPage() {
                 Key milestones, events, and initiatives from previous years.
               </p>
             </div>
-            <HistoryTimeline />
+            <HistoryTimeline className="pt-8 pb-4 lg:py-16" />
 
-            <hr className="border-secondary-light-gray/60 my-16" />
+            <hr className="border-secondary-light-gray/60 my-8 md:my-16" />
 
             {/* Annual report — scrollable embed */}
             <div>
-              <div className="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-                <div>
-                  <h2 className="font-arial text-3xl font-bold text-secondary-black tracking-tight-2 mb-2">
-                    Annual Report
-                  </h2>
-                  <p className="font-serif text-secondary-black/70 max-w-2xl text-lg">
-                    A closer look at our year in review.
-                  </p>
-                </div>
-                <a
-                  href="/kth-ais-annual-report.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-mono text-xs text-primary hover:underline decoration-2 underline-offset-4 shrink-0"
-                >
-                  Open in new tab ↗
-                </a>
-              </div>
-              <AnnualReportViewer />
+              <AnnualReportPreview />
             </div>
           </div>
 

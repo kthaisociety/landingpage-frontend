@@ -116,7 +116,7 @@ export function HistoryTimeline({
   };
 
   return (
-    <section id="about" className={cn('container mx-auto py-16 px-4 w-full max-w-7xl', className)}>
+    <section id="about" className={cn('container mx-auto px-4 w-full max-w-7xl', className ?? 'py-16')}>
         {/* Mobile Layout - Horizontal Timeline */}
         <div className="lg:hidden flex flex-col gap-8">
           {/* Image Display */}
@@ -226,26 +226,14 @@ export function HistoryTimeline({
             </div>
 
             {/* Main Heading */}
-            <motion.h2
-              key={`${selectedEvent.year}-heading`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="text-xl sm:text-2xl text-foreground mb-4 tracking-tight"
-            >
+            <h2 className="text-xl sm:text-2xl text-foreground mb-4 tracking-tight">
               {selectedEvent.heading}
-            </motion.h2>
+            </h2>
 
             {/* Descriptive Text */}
-            <motion.p
-              key={`${selectedEvent.year}-description`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
-              className="text-sm sm:text-base text-foreground/80 leading-relaxed"
-            >
+            <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">
               {selectedEvent.description}
-            </motion.p>
+            </p>
           </div>
         </div>
 
