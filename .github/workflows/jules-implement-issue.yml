@@ -1,0 +1,57 @@
+name: "Jules: Implement Issue"
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  implement:
+    if: github.event.label.name == 'Jules'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+
+    steps:
+      - name: Invoke Jules
+        uses: google-labs-code/jules-invoke@v1
+        with:
+          prompt: |
+            Implement the following GitHub issue for the KTH AI Society landing page frontend.
+
+            ## Issue #${{ github.event.issue.number }}
+            **${{ github.event.issue.title }}**
+
+            ${{ github.event.issue.body }}
+
+            ## Instructions
+
+            1. Read `AGENTS.md` and `.agent-docs/architecture.md` to understand the project structure, tech stack, and constraints before writing any code.
+            2. Analyse the issue and plan your implementation.
+            3. Implement the changes with clean, focused commits.
+            4. Use **Conventional Commits** for every commit message:
+               - `feat: …` for new features
+               - `fix: …` for bug fixes
+               - `chore: …` for tooling, deps, config
+               - `refactor: …` for restructuring without behaviour change
+               - `docs: …` for documentation-only changes
+               - `style: …` for formatting, whitespace, semicolons
+               - `test: …` for adding or updating tests
+               - Include a scope when it clarifies context, e.g. `feat(auth): …` or `fix(newsletter): …`
+            5. Run verification before opening a PR:
+               - `npm run lint`
+               - `npm run build`
+            6. Open a **pull request** that:
+               - Has a clear title using the same Conventional Commit prefix, e.g. `feat: add dark mode toggle`
+               - References this issue with `Closes #${{ github.event.issue.number }}` in the PR body
+               - Includes a concise summary of what changed and why
+               - Lists any manual testing steps if the change is visual or interactive
+
+            ## Project Rules (from AGENTS.md)
+            - This is a Next.js App Router application (React 19, TypeScript, Tailwind CSS).
+            - The app mixes Next route handlers, direct backend calls, and localStorage-backed flows — do NOT normalise these without confirming the backend contract exists.
+            - When editing auth, verify both the mock JWT flow and route protection in `src/proxy.ts`.
+            - When editing `src/app/api/*`, remember these handlers run on the Next server, not in the browser.
+            - Preserve public-facing copy, images, and brand assets unless the issue explicitly asks for content/design changes.
+            - Keep changes minimal and focused on the issue scope.
+          jules_api_key: ${{ secrets.JULES_API_KEY }}
