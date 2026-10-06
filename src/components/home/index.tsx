@@ -5,6 +5,7 @@ import { JobsPreview } from "./jobs-preview"
 import { HistoryTimeline } from "./history-timeline"
 import { NewsletterSignup } from "./newsletter-signup"
 import { CollaboratorsCarousel } from "./collaborators-carousel"
+import { Mini2048 } from "./mini-2048"
 
 export function Homepage() {
   return (
@@ -21,6 +22,7 @@ export function Homepage() {
 
       <ProjectsPreview />
       <NewsletterSignup />
+      <Mini2048 />
     </main>
   )
 }
