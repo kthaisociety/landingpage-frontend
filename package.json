@@ -88,7 +88,7 @@
     "eslint-plugin-compat": "^7.0.2",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "postcss": "^8",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "typescript": "5.9.3"
   },
