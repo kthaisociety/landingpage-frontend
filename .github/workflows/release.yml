@@ -1,0 +1,23 @@
+# Keeps the release PR (next version + CHANGELOG.md) up to date. Merging it, which needs a code owner,
+# releases: tag, GitHub Release, and the release commit's image tagged X.Y.Z.
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  release:
+    uses: kthaisociety/workflows/.github/workflows/release.yml@v0.2.0
+    with:
+      build-workflow: build.yml
+    permissions:
+      contents: read
+      packages: write
+      actions: read
+    secrets:
+      release-app-client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
+      release-app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "fae3964176ba3ba38c9d620f95bdd0a7e11e8987",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "landingpage-frontend",
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false
+    }
+  }
+}
+
