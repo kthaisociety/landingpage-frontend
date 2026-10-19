@@ -119,6 +119,8 @@ const DEPARTMENTS = [
   "Alumni",
 ];
 
+const ABOUT_DEPT_KEY = "about-active-department";
+
 type GroupedMember = TeamMember & { departments: string[]; roles: string[]; boardRank: number };
 
 // The 5 team heads, ordered to match DEPARTMENTS above (excluding Board/Alumni).
@@ -183,6 +185,16 @@ export default function AboutPage() {
   const [aboutTextMask, setAboutTextMask] = useState<string | undefined>(undefined);
   const [selectedYear, setSelectedYear] = useState<string>(DEFAULT_ACADEMIC_YEAR);
   const [activeDepartment, setActiveDepartment] = useState("All");
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem(ABOUT_DEPT_KEY);
+    if (saved && DEPARTMENTS.includes(saved)) setActiveDepartment(saved);
+  }, []);
+
+  const selectDepartment = (dept: string) => {
+    sessionStorage.setItem(ABOUT_DEPT_KEY, dept);
+    setActiveDepartment(dept);
+  };
 
   const isAlumni = activeDepartment === "Alumni";
 
@@ -328,7 +340,7 @@ export default function AboutPage() {
                 <button
                   key={dept}
                   type="button"
-                  onClick={() => setActiveDepartment(dept)}
+                  onClick={() => selectDepartment(dept)}
                   className={`font-mono text-xs px-4 py-2 rounded-full transition-all duration-200 border ${
                     activeDepartment === dept
                       ? "bg-primary text-white border-primary shadow-sm"
@@ -418,7 +430,7 @@ export default function AboutPage() {
                 {activeDepartment !== "All" && activeDepartment !== "Alumni" && (
                   <button
                     type="button"
-                    onClick={() => setActiveDepartment("All")}
+                    onClick={() => selectDepartment("All")}
                     className="mt-4 text-primary font-mono text-xs hover:underline"
                   >
                     Clear filter
