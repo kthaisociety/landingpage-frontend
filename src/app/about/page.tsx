@@ -186,12 +186,20 @@ export default function AboutPage() {
   const [selectedYear, setSelectedYear] = useState<string>(DEFAULT_ACADEMIC_YEAR);
   const [activeDepartment, setActiveDepartment] = useState(() => {
     if (typeof window === "undefined") return "All";
-    const saved = sessionStorage.getItem(ABOUT_DEPT_KEY);
-    return saved && DEPARTMENTS.includes(saved) ? saved : "All";
+    try {
+      const saved = sessionStorage.getItem(ABOUT_DEPT_KEY);
+      return saved && DEPARTMENTS.includes(saved) ? saved : "All";
+    } catch {
+      return "All";
+    }
   });
 
   const selectDepartment = (dept: string) => {
-    sessionStorage.setItem(ABOUT_DEPT_KEY, dept);
+    try {
+      sessionStorage.setItem(ABOUT_DEPT_KEY, dept);
+    } catch {
+      // Persistence is optional; the filter must still update.
+    }
     setActiveDepartment(dept);
   };
 
