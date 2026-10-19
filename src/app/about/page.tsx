@@ -119,6 +119,8 @@ const DEPARTMENTS = [
   "Alumni",
 ];
 
+const ABOUT_DEPT_KEY = "about-active-department";
+
 type GroupedMember = TeamMember & { departments: string[]; roles: string[]; boardRank: number };
 
 // The 5 team heads, ordered to match DEPARTMENTS above (excluding Board/Alumni).
@@ -182,7 +184,24 @@ function compareMembersBoardFirst(a: GroupedMember, b: GroupedMember): number {
 export default function AboutPage() {
   const [aboutTextMask, setAboutTextMask] = useState<string | undefined>(undefined);
   const [selectedYear, setSelectedYear] = useState<string>(DEFAULT_ACADEMIC_YEAR);
-  const [activeDepartment, setActiveDepartment] = useState("All");
+  const [activeDepartment, setActiveDepartment] = useState(() => {
+    if (typeof window === "undefined") return "All";
+    try {
+      const saved = sessionStorage.getItem(ABOUT_DEPT_KEY);
+      return saved && DEPARTMENTS.includes(saved) ? saved : "All";
+    } catch {
+      return "All";
+    }
+  });
+
+  const selectDepartment = (dept: string) => {
+    try {
+      sessionStorage.setItem(ABOUT_DEPT_KEY, dept);
+    } catch {
+      // Persistence is optional; the filter must still update.
+    }
+    setActiveDepartment(dept);
+  };
 
   const isAlumni = activeDepartment === "Alumni";
 
@@ -328,7 +347,7 @@ export default function AboutPage() {
                 <button
                   key={dept}
                   type="button"
-                  onClick={() => setActiveDepartment(dept)}
+                  onClick={() => selectDepartment(dept)}
                   className={`font-mono text-xs px-4 py-2 rounded-full transition-all duration-200 border ${
                     activeDepartment === dept
                       ? "bg-primary text-white border-primary shadow-sm"
@@ -418,7 +437,7 @@ export default function AboutPage() {
                 {activeDepartment !== "All" && activeDepartment !== "Alumni" && (
                   <button
                     type="button"
-                    onClick={() => setActiveDepartment("All")}
+                    onClick={() => selectDepartment("All")}
                     className="mt-4 text-primary font-mono text-xs hover:underline"
                   >
                     Clear filter
