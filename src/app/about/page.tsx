@@ -184,12 +184,11 @@ function compareMembersBoardFirst(a: GroupedMember, b: GroupedMember): number {
 export default function AboutPage() {
   const [aboutTextMask, setAboutTextMask] = useState<string | undefined>(undefined);
   const [selectedYear, setSelectedYear] = useState<string>(DEFAULT_ACADEMIC_YEAR);
-  const [activeDepartment, setActiveDepartment] = useState("All");
-
-  useEffect(() => {
+  const [activeDepartment, setActiveDepartment] = useState(() => {
+    if (typeof window === "undefined") return "All";
     const saved = sessionStorage.getItem(ABOUT_DEPT_KEY);
-    if (saved && DEPARTMENTS.includes(saved)) setActiveDepartment(saved);
-  }, []);
+    return saved && DEPARTMENTS.includes(saved) ? saved : "All";
+  });
 
   const selectDepartment = (dept: string) => {
     sessionStorage.setItem(ABOUT_DEPT_KEY, dept);
