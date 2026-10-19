@@ -133,7 +133,7 @@ export function Navigation() {
     if (!isAuthenticated || !user) {
       return (
         <Link
-          href="mailto:contact@kthais.com"
+          href="/contact"
           className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
         >
           Contact
@@ -304,7 +304,7 @@ export function Navigation() {
               </Link>
               {!isAuthenticated && (
                 <Link
-                  href="mailto:contact@kthais.com"
+                  href="/contact"
                   className="block py-3 text-base text-foreground/70 hover:text-foreground"
                   onClick={handleMobileLinkClick}
                 >
