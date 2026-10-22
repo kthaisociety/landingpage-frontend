@@ -33,14 +33,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { useJobs, useDeleteJob } from "@/hooks/admin";
+import { useAdminJobs, useDeleteJob } from "@/hooks/admin";
 import { JobForm } from "@/components/admin/jobs/job-form";
 
 type FormMode = { type: "new" } | { type: "edit"; jobId: string } | null;
 
 export function JobAdminPanel() {
   const { mutate: deleteJob, isPending: isDeleting } = useDeleteJob();
-  const { data: jobs = [], isLoading: isLoadingJobs, isError } = useJobs();
+  const { data: jobs = [], isLoading: isLoadingJobs, isError } = useAdminJobs();
 
   const [jobSearchQuery, setJobSearchQuery] = useState("");
   const [formMode, setFormMode] = useState<FormMode>(null);

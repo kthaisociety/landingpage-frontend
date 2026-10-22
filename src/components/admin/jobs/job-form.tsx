@@ -96,7 +96,9 @@ export function JobForm({
     const fetchJob = async () => {
       setIsFetchingJob(true);
       try {
-        const res = await fetch(`${API_URL}/joblistings/job?id=${jobId}`);
+        const res = await fetch(`${API_URL}/joblistings/admin/job?id=${jobId}`, {
+          credentials: "include",
+        });
         if (!res.ok) throw new Error("Failed to fetch job details");
         const fullJob = await res.json();
 
