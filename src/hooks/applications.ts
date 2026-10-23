@@ -1119,16 +1119,17 @@ export function useApplicationSettings() {
 }
 
 /**
- * Whether the site's Apply CTAs (nav, hero) should render. Fails open on a
- * loading or errored settings fetch — same "showing is safer than silently
- * hiding over a transient API blip" reasoning as ApplicationPage's own
- * deadline handling — and only hides once we positively know recruitment is
- * closed.
+ * Whether the site's Apply CTAs (nav, hero) should render. Hidden while
+ * settings are still loading so a closed cycle does not flash Apply. Fails
+ * open on an errored fetch — same "showing is safer than silently hiding
+ * over a transient API blip" reasoning as ApplicationPage's own deadline
+ * handling — and only hides once we positively know recruitment is closed.
  */
 export function useShowApplyCta(): boolean {
-  const { data, isError } = useApplicationSettings();
-  if (!data || isError) return true;
-  return data.is_recruitment_open;
+  const { data, isError, isPending } = useApplicationSettings();
+  if (isPending) return false;
+  if (isError) return true;
+  return data?.is_recruitment_open ?? true;
 }
 
 async function fetchAdminApplicationSettings(): Promise<AdminApplicationSettings> {
