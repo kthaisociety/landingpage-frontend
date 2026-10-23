@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CompanyAdminPanel } from "@/components/admin/companies/company-admin-panel";
+import { SponsorAdminPanel } from "@/components/admin/sponsors/sponsor-admin-panel";
 import { JobAdminPanel } from "@/components/admin/jobs/job-admin-panel";
 import { ProjectAdminPanel } from "@/components/admin/projects/project-admin-panel";
 import { UserAdminPanel } from "@/components/admin/users/user-admin-panel"; // Import the new panel
@@ -20,7 +21,7 @@ import { ApplicationAdminPanel } from "@/components/admin/applications/applicati
 
 // Added "users" to the ID union type
 type AdminSection = {
-  id: "users" | "applications" | "companies" | "jobs" | "projects";
+  id: "users" | "applications" | "companies" | "sponsors" | "jobs" | "projects";
   /** Short text for the nav pill / mobile dropdown. */
   label: string;
   /** The section's actual page title — rendered big, once, here — so adding a
@@ -57,6 +58,13 @@ const adminSections: AdminSection[] = [
     title: "Companies",
     description: "Manage company profiles used for job postings.",
     content: <CompanyAdminPanel />,
+  },
+  {
+    id: "sponsors",
+    label: "Sponsors",
+    title: "Sponsors",
+    description: "Manage the sponsors shown on the public sponsors page.",
+    content: <SponsorAdminPanel />,
   },
   {
     id: "jobs",
