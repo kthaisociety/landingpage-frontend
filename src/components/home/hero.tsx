@@ -115,7 +115,6 @@ export function Hero() {
           animate={isHydrated ? "visible" : "hidden"}
         >
           <motion.h1
-            key={showApplyCta ? "recruiting" : "closed"}
             className="mx-auto max-w-3xl text-4xl leading-none tracking-tight text-black sm:text-6xl md:text-7xl"
             variants={titleVariants}
           >
