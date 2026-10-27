@@ -1,5 +1,6 @@
 
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
@@ -42,6 +43,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Runtime config (BACKEND_URL) for src/config/env.ts; must run first. */}
+        <Script src="/runtime-env.js" strategy="beforeInteractive" />
         <Providers>
           <Navigation />
           <ToastProvider><TooltipProvider>{children}</TooltipProvider></ToastProvider>

@@ -13,10 +13,14 @@ const getJwtPublicKey = (): string => {
 };
 
 
+// The backend's member cookie. Staging and production share its domain
+// (.kthais.com), so each environment names it differently (JWT_COOKIE_NAME).
+const jwtCookieName = (): string => process.env.JWT_COOKIE_NAME || "jwt";
+
 export async function proxy(req: NextRequest) {
   const url = req.nextUrl.clone();
   const { pathname } = url;
-  const token = req.cookies.get("jwt")?.value;
+  const token = req.cookies.get(jwtCookieName())?.value;
 
   // Skip auth entirely in local development
   if (process.env.NODE_ENV === "development") {
@@ -74,7 +78,7 @@ export async function proxy(req: NextRequest) {
     url.pathname = "/member/login";
     const response = NextResponse.redirect(url);
 
-    response.cookies.delete("jwt");
+    response.cookies.delete(jwtCookieName());
     response.cookies.delete("roles");
 
     return response;
