@@ -1,0 +1,45 @@
+# Every push to main: test, build and push ghcr.io/kthaisociety/landingpage-frontend:sha-<7>, then deploy
+# it to staging through kthaisociety/deployments, and wait until it runs there. release.yml waits for this
+# workflow's run of a release commit (so a release is promoted only after it ran on staging): the two stay
+# separate files.
+name: build
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  build:
+    needs: test
+    uses: kthaisociety/workflows/.github/workflows/build.yml@v0.2.0
+    permissions:
+      contents: read
+      packages: write
+
+  deploy-staging:
+    needs: build
+    uses: kthaisociety/workflows/.github/workflows/request-deploy.yml@v0.2.0
+    with:
+      environment: staging
+      tag: ${{ needs.build.outputs.tag }}
+    secrets:
+      dispatch-app-client-id: ${{ secrets.DISPATCH_APP_CLIENT_ID }}
+      dispatch-app-private-key: ${{ secrets.DISPATCH_APP_PRIVATE_KEY }}
