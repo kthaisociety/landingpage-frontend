@@ -3,7 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Camera, Loader2, User, Plus, Trash2 } from "lucide-react";
+import {
+  Camera,
+  Loader2,
+  User,
+  Plus,
+  Trash2,
+  Music2,
+  CheckCircle2,
+  Circle,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -18,10 +27,24 @@ import {
 } from "@/components/ui/select";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { ProgrammeSelect } from "@/components/member/programme-select";
+import { SpotifyEarwormEmbed } from "@/components/member/spotify-earworm-embed";
 import { useMemberProfile, useUpdateMemberProfile } from "@/hooks/member";
 import { useAddMyTeamEntry, useRemoveMyTeamEntry } from "@/hooks/team";
+import {
+  useProfileEarworm,
+  useSaveProfileEarworm,
+} from "@/hooks/profile-touches";
 import { API_URL } from "@/config";
 import { ACADEMIC_YEARS } from "@/lib/academic-years";
+import {
+  buildGitHubUrl,
+  buildLinkedInUrl,
+  optionalProfileLinks,
+} from "@/lib/social-links";
+import {
+  isValidSpotifyOpenUrl,
+  toSpotifyEmbedUrl,
+} from "@/lib/spotify-earworm";
 import {
   UNIVERSITIES,
   OTHER_UNIVERSITY_VALUE,
@@ -97,20 +120,31 @@ function FormSection({
   title,
   description,
   children,
+  complete,
 }: {
   title: string;
   description?: string;
   children: React.ReactNode;
+  complete?: boolean;
 }) {
   return (
-    <section className="space-y-4">
-      <div>
-        <h3 className="text-sm font-semibold">{title}</h3>
-        {description ? (
-          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-        ) : null}
+    <section className="space-y-4 animate-fade-in">
+      <div className="flex items-start gap-2">
+        <div className="mt-0.5 shrink-0 text-primary">
+          {complete ? (
+            <CheckCircle2 className="h-4 w-4" aria-hidden />
+          ) : (
+            <Circle className="h-4 w-4 text-muted-foreground/50" aria-hidden />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          {description ? (
+            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+          ) : null}
+        </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-6">{children}</div>
     </section>
   );
 }
@@ -268,6 +302,167 @@ function TeamMembershipSection() {
   );
 }
 
+function SpotifyEarwormSection({
+  storageKey,
+  aliases,
+}: {
+  storageKey: string;
+  aliases: string[];
+}) {
+  const { data: saved, isLoading } = useProfileEarworm(storageKey);
+  const saveEarworm = useSaveProfileEarworm();
+  const [url, setUrl] = useState("");
+  const [label, setLabel] = useState("");
+  const seededRef = useRef(false);
+
+  useEffect(() => {
+    if (!saved || seededRef.current) return;
+    seededRef.current = true;
+    setUrl(saved.url);
+    setLabel(saved.label ?? "");
+  }, [saved]);
+
+  const previewOk = isValidSpotifyOpenUrl(url);
+  const dirty =
+    url.trim() !== (saved?.url ?? "") ||
+    (label.trim() || undefined) !== (saved?.label || undefined);
+
+  const handleSave = async () => {
+    try {
+      if (!url.trim()) {
+        await saveEarworm.mutateAsync({
+          key: storageKey,
+          aliases,
+          url: "",
+          clear: true,
+        });
+        toast.success("Earworm cleared");
+        return;
+      }
+      if (!previewOk) {
+        toast.error("That does not look like a Spotify link", {
+          description: "Paste an open.spotify.com track, album, playlist, or episode URL.",
+        });
+        return;
+      }
+      await saveEarworm.mutateAsync({
+        key: storageKey,
+        aliases,
+        url: url.trim(),
+        label: label.trim() || undefined,
+      });
+      toast.success("Earworm saved — it will show on your public profile");
+    } catch (err) {
+      toast.error("Could not save earworm", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
+    }
+  };
+
+  return (
+    <section className="border-t pt-6 space-y-4 animate-fade-in">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Music2 className="h-4 w-4" aria-hidden />
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold">Current earworm</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Share what you cannot stop playing. Paste a Spotify link — it shows as a player on your public profile.
+          </p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground pl-11">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Loading earworm…
+        </div>
+      ) : (
+        <div className="space-y-3 pl-11">
+          <div className="space-y-2">
+            <Label htmlFor="earwormUrl">Spotify link</Label>
+            <Input
+              id="earwormUrl"
+              type="url"
+              inputMode="url"
+              placeholder="https://open.spotify.com/track/…"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="earwormLabel">Label (optional)</Label>
+            <Input
+              id="earwormLabel"
+              placeholder="e.g. Late-night coding fuel"
+              value={label}
+              maxLength={80}
+              onChange={(e) => setLabel(e.target.value.slice(0, 80))}
+            />
+          </div>
+
+          {previewOk && toSpotifyEmbedUrl(url) ? (
+            <div className="pt-1 transition-opacity duration-300">
+              <SpotifyEarwormEmbed
+                url={url}
+                label={label.trim() || "Preview"}
+                compact
+              />
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={saveEarworm.isPending || (!dirty && Boolean(saved))}
+              onClick={handleSave}
+            >
+              {saveEarworm.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving…
+                </>
+              ) : url.trim() ? (
+                "Save earworm"
+              ) : (
+                "Clear earworm"
+              )}
+            </Button>
+            {saved ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={saveEarworm.isPending}
+                onClick={() => {
+                  setUrl("");
+                  setLabel("");
+                  void saveEarworm
+                    .mutateAsync({
+                      key: storageKey,
+                      aliases,
+                      url: "",
+                      clear: true,
+                    })
+                    .then(() => toast.success("Earworm cleared"))
+                    .catch(() => toast.error("Could not clear earworm"));
+                }}
+              >
+                Remove
+              </Button>
+            ) : null}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Proof of concept — stored via a Next route until a backend field lands. Needs Sam&apos;s OK before production.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function MemberProfileForm() {
   const { data: profile, isLoading, refetch } = useMemberProfile();
   const updateProfile = useUpdateMemberProfile();
@@ -280,21 +475,22 @@ export function MemberProfileForm() {
   const setField = <K extends keyof ProfileFormData>(key: K, value: ProfileFormData[K]) =>
     setFormData((prev) => ({ ...prev, [key]: value }));
 
-  // Seed the form once. Re-seeding on every profile refetch (picture upload,
-  // window refocus after staleTime) would wipe whatever the user is editing.
+  // Seed once when profile data arrives — including exists:false, so name/email
+  // from the account still populate. Re-seeding on every refetch would wipe edits.
   const seededRef = useRef(false);
   useEffect(() => {
-    if (!profile?.exists || seededRef.current) return;
+    if (!profile || seededRef.current) return;
     seededRef.current = true;
     const university = profile.university?.trim() || UNIVERSITIES[0];
     const isKnownUniversity = (UNIVERSITIES as readonly string[]).includes(university);
+    const programme = profile.programme?.trim() || "";
     setFormData({
       firstName: profile.firstName || "",
       lastName: profile.lastName || "",
       email: profile.email || "",
       university: isKnownUniversity ? university : OTHER_UNIVERSITY_VALUE,
       universityOther: isKnownUniversity ? "" : university,
-      programme: profile.programme || "",
+      programme,
       programmeOther: "",
       graduationYear: profile.graduationYear ? String(profile.graduationYear) : "",
       githubLink: profile.githubLink || "",
@@ -325,7 +521,7 @@ export function MemberProfileForm() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Upload failed");
+        throw new Error((err as { error?: string }).error || "Upload failed");
       }
 
       await refetch();
@@ -337,6 +533,16 @@ export function MemberProfileForm() {
       });
     } finally {
       setIsUploadingPicture(false);
+    }
+  };
+
+  const handleSocialBlur = (field: "githubLink" | "linkedinLink") => {
+    const raw = formData[field].trim();
+    if (!raw) return;
+    const normalized =
+      field === "githubLink" ? buildGitHubUrl(raw) : buildLinkedInUrl(raw);
+    if (normalized && normalized !== raw) {
+      setField(field, normalized);
     }
   };
 
@@ -358,24 +564,52 @@ export function MemberProfileForm() {
       return;
     }
 
+    const githubRaw = formData.githubLink.trim();
+    const linkedinRaw = formData.linkedinLink.trim();
+    if (githubRaw && !buildGitHubUrl(githubRaw)) {
+      toast.error("GitHub link looks off", {
+        description: "Use a github.com URL or your username.",
+      });
+      return;
+    }
+    if (linkedinRaw && !buildLinkedInUrl(linkedinRaw)) {
+      toast.error("LinkedIn link looks off", {
+        description: "Use a linkedin.com/in/… URL or your handle.",
+      });
+      return;
+    }
+
+    const links = optionalProfileLinks({
+      githubLink: githubRaw,
+      linkedinLink: linkedinRaw,
+    });
+
     try {
       await updateProfile.mutateAsync({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim(),
         university,
-        programme,
+        programme: programme || undefined,
         graduationYear: formData.graduationYear
           ? parseInt(formData.graduationYear, 10)
           : undefined,
-        githubLink: formData.githubLink.trim(),
-        linkedinLink: formData.linkedinLink.trim(),
-        aboutMe: formData.aboutMe.trim(),
+        ...links,
+        aboutMe: formData.aboutMe.trim() || undefined,
       });
-      toast.success("Changes saved");
-    } catch {
+      // Keep displayed social fields in normalized form after a successful save.
+      setFormData((prev) => ({
+        ...prev,
+        githubLink: links.githubLink ?? "",
+        linkedinLink: links.linkedinLink ?? "",
+      }));
+      toast.success("Profile saved", {
+        description: "Your public page is up to date.",
+      });
+    } catch (err) {
       toast.error("Could not save profile", {
-        description: "Please try again in a moment.",
+        description:
+          err instanceof Error ? err.message : "Please try again in a moment.",
       });
     }
   };
@@ -402,8 +636,33 @@ export function MemberProfileForm() {
 
   const graduationYears = getProfileGraduationYears(formData.graduationYear);
 
+  const personalComplete = Boolean(
+    formData.firstName.trim() && formData.lastName.trim() && formData.email.trim(),
+  );
+  const studiesComplete = Boolean(
+    resolveUniversity(formData) && resolveProgramme(formData),
+  );
+  const personalityComplete = Boolean(formData.aboutMe.trim().length >= 40);
+
+  const earwormKey =
+    profile?.slug || profile?.id || profile?.userId || "";
+  const earwormAliases = [
+    profile?.slug,
+    profile?.id,
+    profile?.userId,
+  ].filter((v): v is string => Boolean(v && v !== earwormKey));
+
   return (
     <div className="space-y-8">
+      {!profile?.exists ? (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm animate-fade-in">
+          <p className="font-medium text-secondary-black">Welcome — claim your page</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Fill in the basics below and hit save. You can add personality (bio, Spotify earworm) whenever you like.
+          </p>
+        </div>
+      ) : null}
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="flex items-center gap-5">
           <button
@@ -454,7 +713,11 @@ export function MemberProfileForm() {
           />
         </div>
 
-        <FormSection title="Personal details">
+        <FormSection
+          title="Personal details"
+          description="The name people see on About and your public page."
+          complete={personalComplete}
+        >
           <div className="space-y-2">
             <Label htmlFor="firstName">First name</Label>
             <Input
@@ -490,7 +753,11 @@ export function MemberProfileForm() {
           </div>
         </FormSection>
 
-        <FormSection title="Studies">
+        <FormSection
+          title="Studies"
+          description="Helps members find classmates and alumni."
+          complete={studiesComplete}
+        >
           <div className="space-y-2">
             <Label htmlFor="university">University</Label>
             <NativeSelect
@@ -551,18 +818,23 @@ export function MemberProfileForm() {
               />
             </div>
           ) : null}
-
         </FormSection>
 
-        <FormSection title="Links">
+        <FormSection
+          title="Links & bio"
+          description="Handles or full URLs both work — we normalize on blur."
+          complete={personalityComplete}
+        >
           <div className="space-y-2">
             <Label htmlFor="githubLink">GitHub</Label>
             <Input
               id="githubLink"
-              type="url"
+              type="text"
+              inputMode="url"
               value={formData.githubLink}
               onChange={(e) => setField("githubLink", e.target.value)}
-              placeholder="https://github.com/yourusername"
+              onBlur={() => handleSocialBlur("githubLink")}
+              placeholder="username or https://github.com/…"
             />
           </div>
 
@@ -570,10 +842,12 @@ export function MemberProfileForm() {
             <Label htmlFor="linkedinLink">LinkedIn</Label>
             <Input
               id="linkedinLink"
-              type="url"
+              type="text"
+              inputMode="url"
               value={formData.linkedinLink}
               onChange={(e) => setField("linkedinLink", e.target.value)}
-              placeholder="https://linkedin.com/in/yourprofile"
+              onBlur={() => handleSocialBlur("linkedinLink")}
+              placeholder="handle or https://linkedin.com/in/…"
             />
           </div>
 
@@ -583,7 +857,7 @@ export function MemberProfileForm() {
               id="aboutMe"
               value={formData.aboutMe}
               onChange={(e) => setField("aboutMe", e.target.value.slice(0, ABOUT_ME_MAX))}
-              placeholder="Write a short bio about yourself..."
+              placeholder="What are you geeking out about lately? A course, a side project, a paper…"
               className="resize-none h-32"
               maxLength={ABOUT_ME_MAX}
             />
@@ -606,6 +880,10 @@ export function MemberProfileForm() {
           </Button>
         </div>
       </form>
+
+      {earwormKey ? (
+        <SpotifyEarwormSection storageKey={earwormKey} aliases={earwormAliases} />
+      ) : null}
 
       <TeamMembershipSection />
     </div>

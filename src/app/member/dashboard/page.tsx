@@ -57,7 +57,7 @@ export default function MemberDashboardPage() {
                   Member Dashboard
                 </CardTitle>
                 <CardDescription>
-                  Manage your profile information and project associations
+                  Shape your public profile — basics, a short bio, and a personal touch like your current Spotify earworm
                 </CardDescription>
               </CardHeader>
               <CardContent>

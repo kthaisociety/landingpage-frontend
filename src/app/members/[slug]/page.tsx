@@ -10,11 +10,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { usePublicProfile } from "@/hooks/team";
+import { useProfileEarworm } from "@/hooks/profile-touches";
+import { SpotifyEarwormEmbed } from "@/components/member/spotify-earworm-embed";
 import { API_URL } from "@/config";
 
 export default function MemberPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { data: profile, isLoading, isError } = usePublicProfile(slug);
+  const earwormKey = profile?.slug || profile?.id || slug;
+  const { data: earworm } = useProfileEarworm(earwormKey);
   const [textMask, setTextMask] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -237,6 +241,19 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                     </Link>
                   </Button>
                 )}
+
+                {earworm?.url ? (
+                  <div className="space-y-2 animate-fade-in">
+                    <h4 className="text-xs font-mono uppercase tracking-widest text-secondary-gray">
+                      Current earworm
+                    </h4>
+                    <SpotifyEarwormEmbed
+                      url={earworm.url}
+                      label={earworm.label}
+                      compact
+                    />
+                  </div>
+                ) : null}
 
                 {profile.programme && (
                   <div className="p-4 rounded-xl border border-secondary-light-gray/60 bg-white space-y-3">

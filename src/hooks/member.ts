@@ -5,6 +5,10 @@ import { API_URL } from "@/config";
 // Matches the exact JSON structure returned by GET /profile/me
 export interface MemberProfile {
   userId: string;
+  /** Profile row UUID when the backend includes it */
+  id?: string;
+  /** Public URL slug when the backend includes it */
+  slug?: string;
   exists: boolean;
   roles: string[];
   firstName: string;
@@ -27,8 +31,23 @@ export interface UpdateMemberProfileData {
   programme?: string;
   graduationYear?: number;
   githubLink?: string;
-  linkedinLink?: string; 
+  linkedinLink?: string; // PUT expects lowercase 'i'
   aboutMe?: string;
+}
+
+async function readErrorMessage(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  try {
+    const body = (await response.json()) as {
+      error?: string;
+      message?: string;
+    };
+    return body.error || body.message || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 async function fetchMemberProfile(): Promise<MemberProfile> {
@@ -40,25 +59,50 @@ async function fetchMemberProfile(): Promise<MemberProfile> {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch member profile: ${response.status}`);
+    throw new Error(
+      await readErrorMessage(
+        response,
+        `Failed to fetch member profile: ${response.status}`,
+      ),
+    );
   }
   return response.json();
 }
 
 async function updateMemberProfile(
-  data: UpdateMemberProfileData
+  data: UpdateMemberProfileData,
 ): Promise<MemberProfile> {
+  // Omit empty optional strings — backend URL validators reject "".
+  const payload: Record<string, string | number> = {
+    firstName: data.firstName,
+    lastName: data.lastName,
+    email: data.email,
+  };
+  if (data.university?.trim()) payload.university = data.university.trim();
+  if (data.programme?.trim()) payload.programme = data.programme.trim();
+  if (data.graduationYear != null && !Number.isNaN(data.graduationYear)) {
+    payload.graduationYear = data.graduationYear;
+  }
+  if (data.githubLink?.trim()) payload.githubLink = data.githubLink.trim();
+  if (data.linkedinLink?.trim()) payload.linkedinLink = data.linkedinLink.trim();
+  if (data.aboutMe?.trim()) payload.aboutMe = data.aboutMe.trim();
+
   const response = await fetch(`${API_URL}/profile/update`, {
     method: "PUT",
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to update member profile: ${response.status}`);
+    throw new Error(
+      await readErrorMessage(
+        response,
+        `Failed to update member profile: ${response.status}`,
+      ),
+    );
   }
 
   return response.json();

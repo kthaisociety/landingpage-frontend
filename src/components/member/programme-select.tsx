@@ -95,8 +95,10 @@ export function ProgrammeSelect({
                     key={program}
                     value={program}
                     data-checked={value === program}
-                    onSelect={(selectedProgramme) => {
-                      onValueChange(selectedProgramme);
+                    // Use the mapped `program` — don't trust onSelect's value
+                    // argument (cmdk historically lowercased / trimmed it).
+                    onSelect={() => {
+                      onValueChange(program);
                       setOpen(false);
                     }}
                     className="whitespace-normal break-words"
