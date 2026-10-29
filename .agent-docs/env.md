@@ -10,10 +10,9 @@ at build time.
 - `BACKEND_URL`: backend origin, read at runtime (default `http://localhost:8080`). The server reads it
   from env; the browser gets it from `/runtime-env.js` (`src/app/runtime-env.js/route.ts`), loaded by the
   root layout before any app code. `src/config/env.ts` exports it as `API_BASE`.
-- `JWT_COOKIE_NAME`: name of the backend's member cookie (default `jwt`; staging uses `jwt_staging`). Must
-  match the backend's.
 - `JWT_PUBLIC_KEY`: the backend's RS256 public key, used by `src/proxy.ts` to verify the member cookie
-  (skipped under `next dev`).
+  (skipped under `next dev`). The cookie is `__Host-jwt` in staging and production, where the API is on the
+  site's own host under `/api/v1`, and `jwt` locally; `src/proxy.ts` reads either.
 - `LUMA_API_KEY`: required by `src/app/api/events/*`
 - `ONBOARDING_SERVICE_URL`: internal-only base URL for `onboarding-service` (no public DNS), required by `src/app/api/onboarding/*`
 - `JWT_SECRET`: used only by the mock member auth route handlers (`src/app/api/member/*`)
@@ -25,6 +24,6 @@ at build time.
 - Missing `LUMA_API_KEY` breaks event route handlers.
 - Missing `ONBOARDING_SERVICE_URL` breaks the `/onboarding/start` and `/onboarding/confirm` pages (their proxy routes 500 instead of reaching onboarding-service).
 - `JWT_SECRET` must stay consistent across the mock auth route handlers.
-- `JWT_PUBLIC_KEY` must match the backend's key pair, and `JWT_COOKIE_NAME` the backend's cookie name, or
-  `src/proxy.ts` rejects every login outside `next dev`.
+- `JWT_PUBLIC_KEY` must match the backend's key pair, or `src/proxy.ts` rejects every login outside
+  `next dev`.
 - Only public values go in `/runtime-env.js`: anyone can read it.
