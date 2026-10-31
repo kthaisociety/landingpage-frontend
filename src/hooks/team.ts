@@ -35,6 +35,12 @@ export interface PublicProfile {
   githubLink: string;
   linkedinLink: string;
   aboutMe: string;
+  askMeAbout?: string;
+  outsideStudies?: string;
+  currentlyBuilding?: string;
+  currentlyReading?: string;
+  spotifyUrl?: string;
+  spotifyUrls?: string[];
   teamHistory: TeamEntry[];
   projects: {
     id: string;
