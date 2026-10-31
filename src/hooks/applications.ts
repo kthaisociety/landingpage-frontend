@@ -1119,15 +1119,14 @@ export function useApplicationSettings() {
 }
 
 /**
- * Whether the site's Apply CTAs (nav, hero) should render. Fails open on a
- * loading or errored settings fetch — same "showing is safer than silently
- * hiding over a transient API blip" reasoning as ApplicationPage's own
- * deadline handling — and only hides once we positively know recruitment is
- * closed.
+ * Whether the site's Apply CTAs (nav, hero, footer) should render.
+ * Only shows once we positively know recruitment is open — hides while
+ * loading, on error, or when closed, so a closed period never keeps a
+ * misleading Apply button in the chrome.
  */
 export function useShowApplyCta(): boolean {
   const { data, isError } = useApplicationSettings();
-  if (!data || isError) return true;
+  if (!data || isError) return false;
   return data.is_recruitment_open;
 }
 
