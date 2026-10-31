@@ -21,6 +21,7 @@ import { ProgrammeSelect } from "@/components/member/programme-select";
 import { useMemberProfile, useUpdateMemberProfile } from "@/hooks/member";
 import { useAddMyTeamEntry, useRemoveMyTeamEntry } from "@/hooks/team";
 import { API_URL } from "@/config";
+import { loadTouches, saveTouches, type ProfileTouches } from "@/lib/profile-touches";
 import { ACADEMIC_YEARS } from "@/lib/academic-years";
 import {
   UNIVERSITIES,
@@ -77,6 +78,11 @@ interface ProfileFormData {
   githubLink: string;
   linkedinLink: string;
   aboutMe: string;
+  askMeAbout: string;
+  outsideStudies: string;
+  currentlyBuilding: string;
+  currentlyReading: string;
+  spotifyUrl: string;
 }
 
 const EMPTY_FORM: ProfileFormData = {
@@ -91,6 +97,11 @@ const EMPTY_FORM: ProfileFormData = {
   githubLink: "",
   linkedinLink: "",
   aboutMe: "",
+  askMeAbout: "",
+  outsideStudies: "",
+  currentlyBuilding: "",
+  currentlyReading: "",
+  spotifyUrl: "",
 };
 
 function FormSection({
@@ -288,6 +299,7 @@ export function MemberProfileForm() {
     seededRef.current = true;
     const university = profile.university?.trim() || UNIVERSITIES[0];
     const isKnownUniversity = (UNIVERSITIES as readonly string[]).includes(university);
+    const stored = loadTouches(profile.userId);
     setFormData({
       firstName: profile.firstName || "",
       lastName: profile.lastName || "",
@@ -300,6 +312,11 @@ export function MemberProfileForm() {
       githubLink: profile.githubLink || "",
       linkedinLink: profile.linkedInLink || "",
       aboutMe: profile.aboutMe || "",
+      askMeAbout: stored?.askMeAbout || "",
+      outsideStudies: stored?.outsideStudies || "",
+      currentlyBuilding: stored?.currentlyBuilding || "",
+      currentlyReading: stored?.currentlyReading || "",
+      spotifyUrl: stored?.spotifyUrl || "",
     });
   }, [profile]);
 
@@ -358,6 +375,14 @@ export function MemberProfileForm() {
       return;
     }
 
+    const touches: ProfileTouches = {
+      askMeAbout: formData.askMeAbout.trim(),
+      outsideStudies: formData.outsideStudies.trim(),
+      currentlyBuilding: formData.currentlyBuilding.trim(),
+      currentlyReading: formData.currentlyReading.trim(),
+      spotifyUrl: formData.spotifyUrl.trim(),
+    };
+
     try {
       await updateProfile.mutateAsync({
         firstName: formData.firstName.trim(),
@@ -372,6 +397,16 @@ export function MemberProfileForm() {
         linkedinLink: formData.linkedinLink.trim(),
         aboutMe: formData.aboutMe.trim(),
       });
+      if (profile?.userId) saveTouches(profile.userId, touches);
+      try {
+        const pub = await fetch(`${API_URL}/profile/public/${profile?.userId}`);
+        if (pub.ok) {
+          const body = (await pub.json()) as { slug?: string };
+          if (body.slug) saveTouches(body.slug, touches);
+        }
+      } catch {
+        // The public page still picks this up on this browser via the user id when present.
+      }
       toast.success("Changes saved");
     } catch {
       toast.error("Could not save profile", {
@@ -590,6 +625,62 @@ export function MemberProfileForm() {
             <p className="text-right text-xs text-muted-foreground">
               {formData.aboutMe.length} / {ABOUT_ME_MAX}
             </p>
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="Get to know me"
+          description="Short answers for your public profile. These stay in this browser for now, so you can preview them."
+        >
+          <div className="space-y-2">
+            <Label htmlFor="askMeAbout">Ask me about…</Label>
+            <Input
+              id="askMeAbout"
+              value={formData.askMeAbout}
+              onChange={(e) => setField("askMeAbout", e.target.value.slice(0, 140))}
+              placeholder="How AI and design create meaningful digital experiences."
+              maxLength={140}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="outsideStudies">Outside of studies you'll find me…</Label>
+            <Input
+              id="outsideStudies"
+              value={formData.outsideStudies}
+              onChange={(e) => setField("outsideStudies", e.target.value.slice(0, 140))}
+              placeholder="Figure skating and swimming"
+              maxLength={140}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="currentlyBuilding">Currently building</Label>
+            <Input
+              id="currentlyBuilding"
+              value={formData.currentlyBuilding}
+              onChange={(e) => setField("currentlyBuilding", e.target.value.slice(0, 80))}
+              placeholder="a UX research tool"
+              maxLength={80}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="currentlyReading">Currently reading</Label>
+            <Input
+              id="currentlyReading"
+              value={formData.currentlyReading}
+              onChange={(e) => setField("currentlyReading", e.target.value.slice(0, 80))}
+              placeholder="Designing for the Digital Age"
+              maxLength={80}
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="spotifyUrl">Spotify link</Label>
+            <Input
+              id="spotifyUrl"
+              type="url"
+              value={formData.spotifyUrl}
+              onChange={(e) => setField("spotifyUrl", e.target.value)}
+              placeholder="Paste a Spotify song link"
+            />
           </div>
         </FormSection>
 
