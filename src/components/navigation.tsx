@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Menu,
   X,
@@ -16,16 +16,21 @@ import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 import { useShowApplyCta } from "@/hooks/applications";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 export function Navigation() {
   // const { user, isLoggedIn, logoutUser: logout } = useAuth();
   const { isAuthenticated, user, logout } = useAuth();
   const showApplyCta = useShowApplyCta();
   const router = useRouter();
+  const pathname = usePathname();
+  const isHydrated = useHydrated();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const needsSolidNav = pathname === "/contact";
+  const showApply = isHydrated && showApplyCta;
 
   useEffect(function () {
     function handleScroll() {
@@ -133,7 +138,7 @@ export function Navigation() {
     if (!isAuthenticated || !user) {
       return (
         <Link
-          href="mailto:contact@kthais.com"
+          href="/contact"
           className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
         >
           Contact
@@ -201,44 +206,32 @@ export function Navigation() {
   }
 
   function renderDesktopNav() {
+    const linkClass =
+      "text-md font-medium text-foreground/80 hover:text-foreground transition-colors";
+
     return (
-      <div className="items-center gap-6 hidden md:flex">
-        <Link
-          href="/about"
-          className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
-        >
+      <div className="hidden items-center gap-6 md:flex">
+        <Link href="/about" className={linkClass}>
           About
         </Link>
-        <Link
-          href="/events"
-          className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
-        >
+        <Link href="/events" className={linkClass}>
           Events
         </Link>
-        <Link
-          href="/projects"
-          className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
-        >
+        <Link href="/projects" className={linkClass}>
           Projects
         </Link>
-        <Link
-          href="/business/jobs"
-          className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
-        >
+        <Link href="/business/jobs" className={linkClass}>
           Job Board
         </Link>
-        <Link
-          href="/newsletter"
-          className="text-md font-medium text-foreground/80 hover:text-foreground transition-colors"
-        >
+        <Link href="/newsletter" className={linkClass}>
           Newsletter
         </Link>
         {renderAuthDropdown()}
-        {showApplyCta && (
+        {showApply ? (
           <Button asChild>
             <Link href="/apply">Apply</Link>
           </Button>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -257,16 +250,16 @@ export function Navigation() {
               height: 0,
               transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
             }}
-            className="md:hidden fixed top-0 left-0 right-0 bg-white shadow-md z-40 overflow-hidden"
+            className="fixed top-0 right-0 left-0 z-[60] overflow-hidden bg-white shadow-md md:hidden"
           >
-            <div className="max-w-7xl mx-auto px-6 pt-18 pb-6 flex flex-col gap-1">
-              {showApplyCta && (
+            <div className="mx-auto flex max-w-7xl flex-col gap-1 px-6 pt-18 pb-6">
+              {showApply ? (
                 <Button asChild className="mb-3 w-full" size="lg">
                   <Link href="/apply" onClick={handleMobileLinkClick}>
                     Apply
                   </Link>
                 </Button>
-              )}
+              ) : null}
               <Link
                 href="/about"
                 className="block py-3 text-base text-foreground/70 hover:text-foreground"
@@ -302,15 +295,15 @@ export function Navigation() {
               >
                 Newsletter
               </Link>
-              {!isAuthenticated && (
+              {!isAuthenticated ? (
                 <Link
-                  href="mailto:contact@kthais.com"
+                  href="/contact"
                   className="block py-3 text-base text-foreground/70 hover:text-foreground"
                   onClick={handleMobileLinkClick}
                 >
                   Contact
                 </Link>
-              )}
+              ) : null}
 
               {isAuthenticated && user && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
@@ -369,27 +362,33 @@ export function Navigation() {
       </AnimatePresence>
 
       <nav className="fixed top-0 left-0 right-0 z-50 select-none">
-        <ProgressiveBlur
-          className="pointer-events-none absolute top-0 left-0 w-full z-10"
-          height="150%"
-          position="top"
-        />
-        <div className="absolute top-0 left-0 h-[120%] w-full bg-linear-to-b from-white/60 via-white/50 to-white/0 pointer-events-none" />
+        {needsSolidNav ? (
+          <div className="pointer-events-none absolute inset-0 z-10 bg-white/95 shadow-sm backdrop-blur-md" />
+        ) : (
+          <>
+            <ProgressiveBlur
+              className="pointer-events-none absolute top-0 left-0 z-10 w-full"
+              height="150%"
+              position="top"
+            />
+            <div className="pointer-events-none absolute top-0 left-0 h-[120%] w-full bg-linear-to-b from-white/60 via-white/50 to-white/0" />
+          </>
+        )}
 
         <motion.div
           initial={false}
           animate={{ opacity: isMobileMenuOpen ? 1 : 0 }}
           transition={{ duration: 0.3 }}
-          className="absolute top-0 left-0 h-full w-full bg-white pointer-events-none"
+          className="pointer-events-none absolute top-0 left-0 h-full w-full bg-white"
         />
 
-        <div className="max-w-7xl mx-auto py-6 px-6 relative z-50">
+        <div className="relative z-50 mx-auto max-w-7xl px-6 py-6">
           <div className="flex items-center justify-between">
             {renderLogo()}
             {renderDesktopNav()}
             <button
               type="button"
-              className="md:hidden p-2 text-foreground hover:text-foreground/80 transition-colors"
+              className="p-2 text-foreground transition-colors hover:text-foreground/80 md:hidden"
               onClick={handleMobileMenuToggle}
               aria-label="Toggle menu"
             >
