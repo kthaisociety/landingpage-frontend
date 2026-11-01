@@ -4,7 +4,7 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "package-name": "landingpage-frontend",
+      "package-name": "kthais-frontend",
       "changelog-path": "CHANGELOG.md",
       "include-component-in-tag": false
     }
