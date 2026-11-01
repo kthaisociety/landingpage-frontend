@@ -5,6 +5,8 @@ export interface ProfileTouches {
   outsideStudies: string;
   currentlyBuilding: string;
   currentlyReading: string;
+  currentlyLearning?: string;
+  currentlyExploring?: string;
   spotifyUrl: string;
 }
 
@@ -42,6 +44,8 @@ export function loadTouches(id: string): ProfileTouches | null {
     outsideStudies: stored.outsideStudies || "",
     currentlyBuilding: stored.currentlyBuilding || "",
     currentlyReading: stored.currentlyReading || "",
+    currentlyLearning: stored.currentlyLearning || "",
+    currentlyExploring: stored.currentlyExploring || "",
     spotifyUrl: spotifyUrlFrom(stored),
   };
 }
@@ -75,6 +79,7 @@ export interface PreviewDraft {
   currentlyLearning: string;
   currentlyExploring: string;
   spotifyUrl: string;
+  teamHistory: { id: number; role: string; department: string; academicYear: string }[];
 }
 
 export function loadPreviewDraft(): PreviewDraft | null {

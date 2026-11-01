@@ -1,15 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Briefcase } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { User, Briefcase, Loader2 } from "lucide-react";
 import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MemberProfileForm } from "@/components/member/member-profile-form";
 import { MemberProjectSelection } from "@/components/member/member-project-selection";
+import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 
 export default function MemberDashboardPage() {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [dashboardTextMask, setDashboardTextMask] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (authLoading || !isAuthenticated || !user?.slug) return;
+    router.replace(`/members/${user.slug}`);
+  }, [authLoading, isAuthenticated, router, user?.slug]);
 
   useEffect(() => {
     const canvas = document.createElement("canvas");
@@ -29,6 +38,14 @@ export default function MemberDashboardPage() {
     const dataUrl = canvas.toDataURL("image/png");
     requestAnimationFrame(() => setDashboardTextMask(dataUrl));
   }, []);
+
+  if (authLoading || (isAuthenticated && user?.slug)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-screen">

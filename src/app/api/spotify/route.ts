@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     const images = entity?.visualIdentity?.image ?? [];
     const image = [...images].sort((a, b) => (b.maxHeight ?? 0) - (a.maxHeight ?? 0))[0]?.url ?? "";
     const title = entity?.title || entity?.name || "";
-    if (!title || !image) {
+    if (!title) {
       return NextResponse.json({ error: "Spotify link could not be loaded" }, { status: 502 });
     }
     const artist = (entity?.artists ?? []).map((person) => person.name?.trim() || "").filter(Boolean).join(", ");
