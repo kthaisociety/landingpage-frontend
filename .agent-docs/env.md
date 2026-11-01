@@ -2,7 +2,7 @@
 
 Use standard Next.js env files such as `.env.local`. `.env.example` lists every variable. Staging and
 production set the same names at runtime from `kthaisociety/deployments`
-(`projects/landingpage-frontend/project.yaml`); the image is the same in both, so nothing may be needed
+(`projects/kthais-frontend/project.yaml`); the image is the same in both, so nothing may be needed
 at build time.
 
 ## Common Variables

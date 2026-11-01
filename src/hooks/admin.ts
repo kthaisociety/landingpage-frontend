@@ -232,7 +232,7 @@ export function useDeleteAccount() {
     onSuccess: () => {
       toast.success("Account permanently deleted.");
       // Unlike Deactivate, a successful Delete removes the local user
-      // record too (see landingpage-backend's OffboardingHandler.Delete),
+      // record too (see kthais-backend's OffboardingHandler.Delete),
       // so the Members list needs to actually drop this row rather than
       // keep showing it until an unrelated refetch happens to occur.
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
