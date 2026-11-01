@@ -481,8 +481,6 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
       savedDraft.current = next;
       draftRef.current = next;
       setDraft(next);
-      setAddingCurrently(null);
-      setAddingText("");
       setNewTeamEntry({ role: "", department: "", academicYear: "" });
       setDashboardTab("profile");
       setEditing(false);
@@ -550,8 +548,6 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
       savedDraft.current = next;
       draftRef.current = next;
       setDraft(next);
-      setAddingCurrently(null);
-      setAddingText("");
       setNewTeamEntry({ role: "", department: "", academicYear: "" });
       setDashboardTab("profile");
       setEditing(false);
