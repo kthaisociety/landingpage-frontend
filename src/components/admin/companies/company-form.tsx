@@ -30,6 +30,28 @@ const emptyForm: CompanyInput = {
   removeLogo: false,
 };
 
+// Returns the website as it should be saved, or null if it isn't a usable web
+// address. A bare domain ("company.com") gets https:// added, since that's how
+// admins usually paste it; anything without a dotted domain and a letter TLD
+// ("hello", "www.google", "localhost") is rejected. This checks the format
+// only: it can't tell whether the site actually exists.
+function normalizeWebsiteUrl(raw: string): string | null {
+  const value = raw.trim();
+  if (!value) return null;
+  const withScheme = /^[a-z][a-z\d+.-]*:\/\//i.test(value) ? value : `https://${value}`;
+  let url: URL;
+  try {
+    url = new URL(withScheme);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  if (!/^([a-z\d-]+\.)+[a-z]{2,}$/i.test(url.hostname)) return null;
+  return withScheme;
+}
+
+const WEBSITE_ERROR = "Enter a valid website, like https://company.com.";
+
 type CompanyFormFieldsProps = {
   companyId?: string;
   initialData: ReturnType<typeof useCompany>["data"];
@@ -68,6 +90,7 @@ function CompanyFormFields({
     return "";
   });
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [websiteError, setWebsiteError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange =
@@ -113,18 +136,25 @@ function CompanyFormFields({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const websiteUrl = normalizeWebsiteUrl(form.websiteUrl);
+    if (!websiteUrl) {
+      setWebsiteError(WEBSITE_ERROR);
+      return;
+    }
+
     // Require logo ONLY on creation. If editing, they can keep the existing one.
     if (!companyId && !form.logoFile) {
       setLogoError("Upload a logo image.");
       return;
     }
 
+    const input = { ...form, websiteUrl };
     try {
       if (companyId) {
-        await updateCompany({ id: companyId, input: form });
+        await updateCompany({ id: companyId, input });
         onClose?.();
       } else {
-        await createCompany(form);
+        await createCompany(input);
         setForm(emptyForm);
         setPreviewUrl("");
         setLogoError(null);
@@ -238,11 +268,28 @@ function CompanyFormFields({
           </Label>
           <Input
             id="company-website"
+            type="text"
+            inputMode="url"
             value={form.websiteUrl}
-            onChange={handleChange("websiteUrl")}
+            onChange={(event) => {
+              handleChange("websiteUrl")(event);
+              setWebsiteError(null);
+            }}
+            onBlur={() => {
+              if (form.websiteUrl.trim() && !normalizeWebsiteUrl(form.websiteUrl)) {
+                setWebsiteError(WEBSITE_ERROR);
+              }
+            }}
             placeholder="https://company.com"
+            aria-invalid={websiteError ? true : undefined}
+            aria-describedby={websiteError ? "company-website-error" : undefined}
             required
           />
+          {websiteError ? (
+            <p id="company-website-error" className="text-xs text-destructive">
+              {websiteError}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 pt-4 border-t">

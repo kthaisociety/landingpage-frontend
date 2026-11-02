@@ -43,7 +43,7 @@ function outcomeBadge(outcome: TeamQuestionsDeliveryOutcome) {
 // check manually before resending, since resending risks a duplicate email.
 function outcomeExplanation(outcome: TeamQuestionsDeliveryOutcome): string | null {
   if (outcome === "superseded") {
-    return "Skipped — a concurrent send already covered this applicant.";
+    return "Skipped because a concurrent send already covered this applicant.";
   }
   if (outcome === "delivered_not_recorded") {
     return "The email was very likely sent, but recording it failed. Verify manually before resending.";
@@ -78,13 +78,13 @@ export function TeamQuestionsDeliveryActivityCard() {
         {!open && isError && (
           <CardDescription className="text-destructive">
             Failed to load delivery activity{error instanceof Error ? `: ${error.message}` : ""}. This
-            may be hiding failed sends or entries that need manual review — reload the page to try
+            may be hiding failed sends or entries that need manual review. Reload the page to try
             again.
           </CardDescription>
         )}
         {!open && !isError && (
           <CardDescription>
-            What the automatic invite/reminder/final-call emails actually did — sent, failed,
+            What the automatic invite/reminder/final-call emails actually did: sent, failed,
             skipped, or needing manual review.
             {needsReviewCount > 0 && (
               <span className="ml-1 font-medium text-amber-700 dark:text-amber-300">
@@ -105,7 +105,7 @@ export function TeamQuestionsDeliveryActivityCard() {
           ) : isError ? (
             <CardDescription className="text-destructive">
               Failed to load delivery activity{error instanceof Error ? `: ${error.message}` : ""}. This
-              may be hiding failed sends or entries that need manual review — reload the page to try
+              may be hiding failed sends or entries that need manual review. Reload the page to try
               again.
             </CardDescription>
           ) : events.length === 0 ? (

@@ -174,8 +174,8 @@ function SendRejectionsBulkCard() {
       </div>
       <p className="text-sm text-muted-foreground">
         Emails every applicant from this cycle who wasn&apos;t accepted and hasn&apos;t already
-        been sent this notice — including anyone never interviewed or marked ineligible, not just
-        applicants an admin individually rejected. Withdrawn applicants are left alone.
+        been sent this notice. This includes anyone never interviewed or marked ineligible, not
+        just applicants an admin individually rejected. Withdrawn applicants are left alone.
       </p>
       {previewFailed ? (
         <div className="flex items-center gap-2">
@@ -224,7 +224,7 @@ function SendRejectionsBulkCard() {
           )}
           {nothingToSend && (
             <p className="text-xs text-muted-foreground">
-              Nothing left to send — everyone&apos;s been emailed.
+              Nothing left to send. Everyone&apos;s been emailed.
             </p>
           )}
         </>
@@ -339,7 +339,7 @@ export function FinalizeRecruitmentPanel({
           ) : (
             <>
               <span className="text-sm text-muted-foreground">
-                Finalize phase is closed — accept/reject is locked.
+                Finalize phase is closed, so accept/reject is locked.
                 {phase?.closed_by_email && (
                   <> Last closed by {phase.closed_by_email}.</>
                 )}
@@ -355,7 +355,7 @@ export function FinalizeRecruitmentPanel({
                   description={
                     <>
                       This lets every admin accept or reject interviewed
-                      applicants — accepting immediately emails them and
+                      applicants. Accepting immediately emails them and
                       records it onto the deciding admin&apos;s own team. Type{" "}
                       <span className="font-mono font-semibold">{OPEN_CONFIRM_PHRASE}</span>{" "}
                       exactly to confirm.

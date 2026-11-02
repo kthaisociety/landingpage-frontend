@@ -22,13 +22,15 @@ import {
   ArrowUpDown,
   Ban,
   ChevronDown,
+  ListFilter,
+  X,
   Download,
   Eye,
   Lock,
   Mail,
   RotateCcw,
   Search,
-  Settings,
+  Send,
   Trash2,
   Unlock,
   XCircle,
@@ -55,6 +57,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -103,11 +106,7 @@ import { TeamQuestionsAdminPanel } from "@/components/admin/applications/team-qu
 import { RecruitmentPeriodPanel } from "@/components/admin/applications/recruitment-period-panel";
 import { FinalizeRecruitmentPanel } from "@/components/admin/applications/finalize-recruitment-panel";
 import { ApplicationAnalyticsPanel } from "@/components/admin/applications/analytics-panel";
-import {
-  ALREADY_INTERVIEWED_CLASSNAME,
-  getStatusBadgeStyle,
-  INTERVIEWING_BY_YOU_CLASSNAME,
-} from "@/components/admin/applications/status-badge";
+import { getStatusBadgeStyle } from "@/components/admin/applications/status-badge";
 import {
   Table,
   TableBody,
@@ -192,6 +191,8 @@ type ApplicationTeamFilter = ApplicationTeam | "all";
 type ApplicationRankFilter = "all" | "1" | "2" | "3" | "4" | "5";
 type ApplicationAvailabilityFilter = ApplicationAvailability | "all";
 type ApplicationPreferenceTypeFilter = "all" | "ranked" | "legacy";
+// Preset views shown as tabs above the applications table.
+type ApplicationView = "all" | "available" | "mine" | "interviewed";
 
 function formatDate(value: string) {
   if (!value) return "Unknown";
@@ -1727,7 +1728,7 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
       <CardHeader className="cursor-pointer select-none" onClick={handleToggle}>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Settings className="h-4 w-4" />
+            <Send className="h-4 w-4" />
             Interview invite
           </CardTitle>
           <ChevronDown
@@ -1773,7 +1774,7 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-auto py-0 text-xs"
+                    className="h-auto py-0 text-xs text-primary hover:text-primary"
                     onClick={() => setEmailTemplate(DEFAULT_INTERVIEW_TEMPLATE)}
                   >
                     Reset to default message
@@ -1794,7 +1795,7 @@ function InterviewSettingsPanel({ currentTeam }: { currentTeam: string }) {
                 </Button>
                 {isDirty && !updateSettings.isPending && (
                   <span className="text-xs text-muted-foreground">
-                    Unsaved - collapsing this without saving will discard your changes.
+                    Unsaved changes. Collapsing this without saving will discard them.
                   </span>
                 )}
               </div>
@@ -1965,8 +1966,11 @@ export function ApplicationAdminPanel({
   const [preferenceTypeFilter, setPreferenceTypeFilterState] =
     useState<ApplicationPreferenceTypeFilter>("all");
   const [graduationYearFilter, setGraduationYearFilterState] = useState("all");
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [myInterviewingFilter, setMyInterviewingFilter] = useState(false);
+  // The Filters panel edits a draft; nothing changes in the list until
+  // Search applies it (or Reset filters clears everything).
+  const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
+  const [filterDraft, setFilterDraft] = useState<Record<string, string>>({});
   const [selectedApplication, setSelectedApplication] =
     useState<GeneralApplication | null>(null);
   const [applicationToDelete, setApplicationToDelete] =
@@ -2003,16 +2007,24 @@ export function ApplicationAdminPanel({
       ineligible: 0,
       withdrawn: 0,
     };
+    // Applicants can apply to several teams; this splits "Total
+    // applications" per team for the card's breakdown popover.
+    const byTeam = Object.fromEntries(
+      APPLICATION_TEAMS.map((team) => [team, 0]),
+    ) as Record<ApplicationTeam, number>;
     applications.forEach((application) => {
       counts.total += 1;
       counts.totalTeamApplications += application.teams.length;
+      application.teams.forEach((team) => {
+        byTeam[team] += 1;
+      });
       if (application.status === "pending") counts.pending += 1;
       else if (application.status === "available") counts.available += 1;
       else if (application.status === "interviewing") counts.interviewing += 1;
       else if (application.status === "ineligible") counts.ineligible += 1;
       else if (application.status === "withdrawn") counts.withdrawn += 1;
     });
-    return counts;
+    return { ...counts, byTeam };
   }, [applications]);
 
   const graduationYears = useMemo(
@@ -2134,6 +2146,156 @@ export function ApplicationAdminPanel({
     resetFilters();
     setStatusFilter(status);
   }
+
+  const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+  const advancedFilters: {
+    id: string;
+    label: string;
+    allLabel: string;
+    value: string;
+    options: { value: string; label: string }[];
+    onChange: (value: string) => void;
+    /** Only meaningful once a team is chosen (rank is per team). */
+    requiresTeam?: boolean;
+  }[] = [
+    {
+      id: "status",
+      label: "Status",
+      allLabel: "All statuses",
+      value: filters.status ?? "all",
+      options: [
+        ...APPLICATION_STATUSES.map((status) => ({ value: status, label: capitalize(status) })),
+        { value: "interviewed", label: "Interviewed by me / my team" },
+        { value: "interviewed_by_anyone", label: "Interviewed by anyone" },
+      ],
+      onChange: (value) => setStatusFilter(value as ApplicationStatusFilter),
+    },
+    {
+      id: "team",
+      label: "Team",
+      allLabel: "All teams",
+      value: filters.team ?? "all",
+      options: APPLICATION_TEAMS.map((team) => ({
+        value: team,
+        label: APPLICATION_TEAM_LABELS[team],
+      })),
+      onChange: (value) => setTeamFilter(value as ApplicationTeamFilter),
+    },
+    {
+      id: "rank",
+      label: "Rank in team",
+      allLabel: "All ranks",
+      value: rankFilter,
+      options: [1, 2, 3, 4, 5].map((rank) => ({ value: String(rank), label: `Rank ${rank}` })),
+      onChange: (value) => setRankFilter(value as ApplicationRankFilter),
+      requiresTeam: true,
+    },
+    {
+      id: "availability",
+      label: "Availability",
+      allLabel: "Any availability",
+      value: availabilityFilter,
+      options: APPLICATION_AVAILABILITY.map((availability) => ({
+        value: availability,
+        label: availability,
+      })),
+      onChange: (value) => setAvailabilityFilter(value as ApplicationAvailabilityFilter),
+    },
+    {
+      id: "graduation-year",
+      label: "Graduation year",
+      allLabel: "Any year",
+      value: graduationYearFilter,
+      options: graduationYears.map((year) => ({ value: String(year), label: String(year) })),
+      onChange: setGraduationYearFilter,
+    },
+    {
+      id: "preference-type",
+      label: "Preference type",
+      allLabel: "Ranked and legacy",
+      value: preferenceTypeFilter,
+      options: [
+        { value: "ranked", label: "Ranked only" },
+        { value: "legacy", label: "Legacy only" },
+      ],
+      onChange: (value) => setPreferenceTypeFilter(value as ApplicationPreferenceTypeFilter),
+    },
+  ];
+  const activeAdvancedFilters = advancedFilters.filter((filter) => filter.value !== "all");
+  const isAvailableForMyTeamActive =
+    !myInterviewingFilter &&
+    filters.status === "available" &&
+    filters.team === effectiveTeam;
+  const isInterviewedByMyTeamActive = filters.status === "interviewed";
+  const activeView: ApplicationView = myInterviewingFilter
+    ? "mine"
+    : isInterviewedByMyTeamActive
+      ? "interviewed"
+      : isAvailableForMyTeamActive
+        ? "available"
+        : "all";
+
+  function selectView(view: ApplicationView) {
+    if (view === activeView) return;
+    // Leave the current view by undoing only what it set, so filters added
+    // on top of it (availability, search, …) carry over.
+    if (activeView === "mine") setMyInterviewingFilter(false);
+    if (activeView === "interviewed") setStatusFilter("all");
+    if (activeView === "available") {
+      setStatusFilter("all");
+      setTeamFilter("all");
+    }
+    if (view === "available") {
+      setStatusFilter("available");
+      setTeamFilter(effectiveTeam as ApplicationTeamFilter);
+    } else if (view === "mine") {
+      resetFilters();
+      setMyInterviewingFilter(true);
+    } else if (view === "interviewed") {
+      resetFilters();
+      setStatusFilter("interviewed");
+    }
+  }
+
+  function clearAdvancedFilters() {
+    advancedFilters.forEach((filter) => filter.onChange("all"));
+  }
+
+  function openFiltersPanel(open: boolean) {
+    if (open) {
+      setFilterDraft(
+        Object.fromEntries(advancedFilters.map((filter) => [filter.id, filter.value])),
+      );
+    }
+    setFiltersPanelOpen(open);
+  }
+
+  function updateFilterDraft(id: string, value: string) {
+    setFilterDraft((draft) => ({
+      ...draft,
+      [id]: value,
+      // Rank only exists within a team, so dropping the team drops the rank.
+      ...(id === "team" && value === "all" ? { rank: "all" } : {}),
+    }));
+  }
+
+  function applyFilterDraft() {
+    // advancedFilters lists team before rank, so a team change (which
+    // resets rank) lands before the drafted rank is applied.
+    advancedFilters.forEach((filter) => {
+      const next = filterDraft[filter.id] ?? "all";
+      if (next !== filter.value) filter.onChange(next);
+    });
+    setFiltersPanelOpen(false);
+  }
+
+  function resetFilterPanel() {
+    clearAdvancedFilters();
+    setFilterDraft(Object.fromEntries(advancedFilters.map((filter) => [filter.id, "all"])));
+  }
+
+  const shownCount = table.getFilteredRowModel().rows.length;
+  const totalCount = table.getCoreRowModel().rows.length;
 
   function exportFilteredApplications() {
     exportApplicationsCsv({
@@ -2264,18 +2426,56 @@ export function ApplicationAdminPanel({
             { label: "Ineligible", value: summary.ineligible, onClick: () => setStatusFilterAllTeams("ineligible") },
             { label: "Withdrawn", value: summary.withdrawn, onClick: () => setStatusFilterAllTeams("withdrawn") },
           ] as const
-        ).map(({ label, value, onClick }) => (
-          <Card
-            key={label}
-            className={onClick ? "cursor-pointer transition-colors hover:bg-muted/50" : undefined}
-            onClick={onClick}
-          >
-            <CardHeader className="pb-2">
-              <CardDescription>{label}</CardDescription>
-              <CardTitle className="font-mono text-2xl">{value}</CardTitle>
-            </CardHeader>
-          </Card>
-        ))}
+        ).map(({ label, value, onClick }) => {
+          // "Total applications" has no list of its own to filter to (the
+          // table is one row per applicant), so it opens a per-team
+          // breakdown instead.
+          const opensBreakdown = label === "Total applications";
+          const card = (
+            <Card
+              key={label}
+              className={
+                onClick || opensBreakdown
+                  ? "cursor-pointer transition-colors hover:bg-muted/50"
+                  : undefined
+              }
+              onClick={onClick}
+              {...(opensBreakdown && { role: "button", tabIndex: 0 })}
+            >
+              {/* Labels wrap to one or two lines; pinning the number to the
+                  bottom keeps every card's number on the same line. */}
+              <CardHeader className="flex flex-1 flex-col gap-3 pb-2">
+                <CardDescription>{label}</CardDescription>
+                <CardTitle className="mt-auto font-mono text-2xl">{value}</CardTitle>
+              </CardHeader>
+            </Card>
+          );
+          if (!opensBreakdown) return card;
+          return (
+            <Popover key={label}>
+              <PopoverTrigger asChild>{card}</PopoverTrigger>
+              <PopoverContent align="start" className="w-64">
+                <p className="font-medium">Applications per team</p>
+                <ul className="space-y-1.5">
+                  {[...APPLICATION_TEAMS]
+                    .sort((a, b) => summary.byTeam[b] - summary.byTeam[a])
+                    .map((team) => (
+                      <li key={team} className="flex items-baseline justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          {APPLICATION_TEAM_LABELS[team]}
+                        </span>
+                        <span className="font-mono tabular-nums">{summary.byTeam[team]}</span>
+                      </li>
+                    ))}
+                </ul>
+                <p className="border-t pt-2 text-xs text-muted-foreground">
+                  {summary.total} applicant{summary.total === 1 ? "" : "s"} applied to{" "}
+                  {value} team{value === 1 ? "" : "s"} in total.
+                </p>
+              </PopoverContent>
+            </Popover>
+          );
+        })}
       </div>
 
       <InterviewSettingsPanel currentTeam={effectiveTeam} />
@@ -2286,17 +2486,40 @@ export function ApplicationAdminPanel({
           <CardDescription>
             Search, filter, inspect applications, and manage the interview pipeline.
           </CardDescription>
-          <CardAction>
-            <Badge variant="outline">
-              {table.getFilteredRowModel().rows.length} result
-              {table.getFilteredRowModel().rows.length === 1 ? "" : "s"}
-            </Badge>
+          <CardAction className="flex flex-wrap items-center justify-end gap-2">
+            <DataTableViewOptions table={table} />
           </CardAction>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative min-w-[200px] flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          {/* Preset views (only one applies at a time, so they're tabs), with
+              the size of the resulting list and its export on the right. */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b pb-1">
+            <Tabs value={activeView} onValueChange={(value) => selectView(value as ApplicationView)}>
+              <TabsList variant="line" className="justify-start overflow-x-auto">
+                <TabsTrigger value="all" className="flex-none px-3">
+                  All
+                </TabsTrigger>
+                <TabsTrigger value="available" className="flex-none px-3">
+                  Available for {APPLICATION_TEAM_LABELS[effectiveTeam as ApplicationTeam] ?? effectiveTeam}
+                </TabsTrigger>
+                <TabsTrigger value="mine" className="flex-none px-3">
+                  Currently interviewing
+                </TabsTrigger>
+                <TabsTrigger value="interviewed" className="flex-none px-3">
+                  Interviewed by me / my team
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <p className="ml-auto text-sm text-muted-foreground tabular-nums">
+              {shownCount === totalCount
+                ? `${totalCount} application${totalCount === 1 ? "" : "s"}`
+                : `${shownCount} of ${totalCount} applications`}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={globalFilter}
                 onChange={(event) => {
@@ -2308,162 +2531,120 @@ export function ApplicationAdminPanel({
                 className="pl-9"
               />
             </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setMyInterviewingFilter(false);
-                setStatusFilter("available");
-                setTeamFilter(effectiveTeam as ApplicationTeamFilter);
-              }}
-            >
-              Available for {APPLICATION_TEAM_LABELS[effectiveTeam as ApplicationTeam] ?? effectiveTeam}
-            </Button>
-            <Button
-              variant="outline"
-              className={INTERVIEWING_BY_YOU_CLASSNAME}
-              onClick={() => {
-                resetFilters();
-                setMyInterviewingFilter(true);
-              }}
-            >
-              Currently interviewing
-            </Button>
-            <Button
-              variant="outline"
-              className={ALREADY_INTERVIEWED_CLASSNAME}
-              onClick={() => {
-                resetFilters();
-                setStatusFilter("interviewed");
-              }}
-            >
-              Interviewed by me / my team
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowAdvancedFilters((v) => !v)}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Filters
-              <ChevronDown
-                className="ml-2 h-4 w-4 transition-transform"
-                style={{ transform: showAdvancedFilters ? "rotate(180deg)" : undefined }}
-              />
-            </Button>
-            <DataTableViewOptions table={table} />
-            <Button type="button" variant="outline" onClick={resetFilters}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reset
-            </Button>
+            <Popover open={filtersPanelOpen} onOpenChange={openFiltersPanel}>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline">
+                  <ListFilter className="h-4 w-4" />
+                  Filters
+                  {activeAdvancedFilters.length > 0 && (
+                    <Badge variant="secondary" className="ml-0.5 px-1.5 tabular-nums">
+                      {activeAdvancedFilters.length}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 gap-4 p-4">
+                <p className="font-medium">Filters</p>
+                <form
+                  className="space-y-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    applyFilterDraft();
+                  }}
+                >
+                  <div className="grid grid-cols-2 gap-3">
+                    {advancedFilters.map((filter) => {
+                      const disabledHint =
+                        filter.requiresTeam && (filterDraft.team ?? "all") === "all"
+                          ? "Pick a team first"
+                          : undefined;
+                      return (
+                        <div key={filter.id} className="space-y-1.5">
+                          <Label
+                            htmlFor={`application-filter-${filter.id}`}
+                            className="text-xs"
+                          >
+                            {filter.label}
+                          </Label>
+                          <NativeSelect
+                            id={`application-filter-${filter.id}`}
+                            className="w-full"
+                            value={filterDraft[filter.id] ?? "all"}
+                            disabled={!!disabledHint}
+                            title={disabledHint}
+                            onChange={(event) =>
+                              updateFilterDraft(filter.id, event.target.value)
+                            }
+                          >
+                            <NativeSelectOption value="all">
+                              {disabledHint ?? filter.allLabel}
+                            </NativeSelectOption>
+                            {filter.options.map((option) => (
+                              <NativeSelectOption key={option.value} value={option.value}>
+                                {option.label}
+                              </NativeSelectOption>
+                            ))}
+                          </NativeSelect>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center gap-4 border-t pt-4">
+                    <Button type="submit">
+                      <Search className="h-4 w-4" />
+                      Search
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto p-0 font-bold"
+                      onClick={resetFilterPanel}
+                    >
+                      Reset filters
+                    </Button>
+                  </div>
+                </form>
+              </PopoverContent>
+            </Popover>
+            {/* Next to Filters: it exports exactly the filtered list. */}
             <Button
               type="button"
               variant="outline"
               onClick={exportFilteredApplications}
-              disabled={isLoading || table.getFilteredRowModel().rows.length === 0}
+              disabled={isLoading || shownCount === 0}
             >
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="h-4 w-4" />
               Export CSV
             </Button>
           </div>
 
-          {showAdvancedFilters && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-              <NativeSelect
-                aria-label="Filter applications by status"
-                className="w-full"
-                value={filters.status ?? "all"}
-                onChange={(event) =>
-                  setStatusFilter(event.target.value as ApplicationStatusFilter)
-                }
+          {activeAdvancedFilters.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {activeAdvancedFilters.map((filter) => (
+                <Badge key={filter.id} variant="secondary" className="gap-1 pr-1">
+                  <span className="text-muted-foreground">{filter.label}:</span>
+                  {filter.options.find((option) => option.value === filter.value)?.label ??
+                    filter.value}
+                  <button
+                    type="button"
+                    aria-label={`Remove filter: ${filter.label}`}
+                    className="rounded-sm p-0.5 hover:bg-foreground/10"
+                    onClick={() => filter.onChange("all")}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+              {/* Replaces the old toolbar Reset: also clears search and sorting. */}
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0 font-bold"
+                onClick={resetFilters}
               >
-                <NativeSelectOption value="all">All statuses</NativeSelectOption>
-                {APPLICATION_STATUSES.map((status) => (
-                  <NativeSelectOption key={status} value={status}>
-                    {status}
-                  </NativeSelectOption>
-                ))}
-                <NativeSelectOption value="interviewed_by_anyone">interviewed</NativeSelectOption>
-              </NativeSelect>
-
-              <NativeSelect
-                aria-label="Filter applications by team"
-                className="w-full"
-                value={filters.team ?? "all"}
-                onChange={(event) =>
-                  setTeamFilter(event.target.value as ApplicationTeamFilter)
-                }
-              >
-                <NativeSelectOption value="all">All teams</NativeSelectOption>
-                {APPLICATION_TEAMS.map((team) => (
-                  <NativeSelectOption key={team} value={team}>
-                    {team}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-
-              <NativeSelect
-                aria-label="Filter applications by selected team rank"
-                className="w-full"
-                value={rankFilter}
-                disabled={(filters.team ?? "all") === "all"}
-                onChange={(event) =>
-                  setRankFilter(event.target.value as ApplicationRankFilter)
-                }
-              >
-                <NativeSelectOption value="all">All ranks</NativeSelectOption>
-                {[1, 2, 3, 4, 5].map((rank) => (
-                  <NativeSelectOption key={rank} value={String(rank)}>
-                    Rank {rank}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-
-              <NativeSelect
-                aria-label="Filter applications by availability"
-                className="w-full"
-                value={availabilityFilter}
-                onChange={(event) =>
-                  setAvailabilityFilter(
-                    event.target.value as ApplicationAvailabilityFilter,
-                  )
-                }
-              >
-                <NativeSelectOption value="all">All availability</NativeSelectOption>
-                {APPLICATION_AVAILABILITY.map((availability) => (
-                  <NativeSelectOption key={availability} value={availability}>
-                    {availability}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-
-              <NativeSelect
-                aria-label="Filter applications by graduation year"
-                className="w-full"
-                value={graduationYearFilter}
-                onChange={(event) => setGraduationYearFilter(event.target.value)}
-              >
-                <NativeSelectOption value="all">All graduation years</NativeSelectOption>
-                {graduationYears.map((year) => (
-                  <NativeSelectOption key={year} value={String(year)}>
-                    {year}
-                  </NativeSelectOption>
-                ))}
-              </NativeSelect>
-
-              <NativeSelect
-                aria-label="Filter applications by preference type"
-                className="w-full"
-                value={preferenceTypeFilter}
-                onChange={(event) =>
-                  setPreferenceTypeFilter(
-                    event.target.value as ApplicationPreferenceTypeFilter,
-                  )
-                }
-              >
-                <NativeSelectOption value="all">All preference types</NativeSelectOption>
-                <NativeSelectOption value="ranked">Ranked only</NativeSelectOption>
-                <NativeSelectOption value="legacy">Legacy only</NativeSelectOption>
-              </NativeSelect>
+                Clear all
+              </Button>
             </div>
           )}
 

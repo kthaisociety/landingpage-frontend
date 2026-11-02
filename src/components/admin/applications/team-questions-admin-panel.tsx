@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
-import { ChevronDown, Eye, Mail, Search, Send, Settings } from "lucide-react";
+import { ChevronDown, Eye, Mail, Search, Send } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -238,7 +238,7 @@ function TeamQuestionsTemplatePanel() {
       <CardHeader className="cursor-pointer select-none" onClick={handleToggle}>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Settings className="h-4 w-4" />
+            <Mail className="h-4 w-4" />
             Team questions emails
           </CardTitle>
           <ChevronDown
@@ -272,7 +272,7 @@ function TeamQuestionsTemplatePanel() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-auto py-0 text-xs"
+                    className="h-auto py-0 text-xs text-primary hover:text-primary"
                     onClick={() => {
                       setEmailTemplate(DEFAULT_TEAM_QUESTIONS_TEMPLATE);
                       setEmailSubject(DEFAULT_TEAM_QUESTIONS_SUBJECT);
@@ -325,7 +325,7 @@ function TeamQuestionsTemplatePanel() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-auto py-0 text-xs"
+                    className="h-auto py-0 text-xs text-primary hover:text-primary"
                     onClick={() => {
                       setReminderEmailTemplate(DEFAULT_TEAM_QUESTIONS_REMINDER_TEMPLATE);
                       setReminderEmailSubject(DEFAULT_TEAM_QUESTIONS_REMINDER_SUBJECT);
@@ -337,7 +337,7 @@ function TeamQuestionsTemplatePanel() {
                 </div>
                 <CardDescription>
                   Sent automatically, once, to anyone who hasn&apos;t submitted 7 days after their
-                  invite. Also gets a fresh form link — the original one still isn&apos;t reused.
+                  invite. Also gets a fresh form link, since the original one isn&apos;t reused.
                 </CardDescription>
                 <div className="space-y-1">
                   <Label htmlFor="tq-reminder-subject" className="text-xs text-muted-foreground">
@@ -374,7 +374,7 @@ function TeamQuestionsTemplatePanel() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-auto py-0 text-xs"
+                    className="h-auto py-0 text-xs text-primary hover:text-primary"
                     onClick={() => {
                       setFinalCallTemplate(DEFAULT_TEAM_QUESTIONS_FINAL_CALL_TEMPLATE);
                       setFinalCallSubject(DEFAULT_TEAM_QUESTIONS_FINAL_CALL_SUBJECT);
@@ -386,8 +386,8 @@ function TeamQuestionsTemplatePanel() {
                 </div>
                 <CardDescription>
                   Sent automatically, once per applicant, during the final call window (set under
-                  the Deadlines section in Settings) to anyone who still hasn&apos;t submitted —
-                  retried automatically if an earlier attempt failed. Also gets a fresh form link,
+                  the Deadlines section in Settings) to anyone who still hasn&apos;t submitted.
+                  It&apos;s retried automatically if an earlier attempt failed. Also gets a fresh form link,
                   same as the reminder.
                 </CardDescription>
                 <div className="space-y-1">
@@ -433,7 +433,7 @@ function TeamQuestionsTemplatePanel() {
                   </Button>
                   {isDirty && !updateTemplate.isPending && (
                     <span className="text-xs text-muted-foreground">
-                      Unsaved - collapsing this without saving will discard your changes.
+                      Unsaved changes. Collapsing this without saving will discard them.
                     </span>
                   )}
                 </div>

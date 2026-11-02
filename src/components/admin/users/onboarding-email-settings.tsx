@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Eye, Settings } from "lucide-react";
+import { ChevronDown, Eye, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -247,7 +247,7 @@ export function OnboardingEmailSettingsPanel() {
       <CardHeader className="cursor-pointer select-none" onClick={handleToggle}>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Settings className="h-4 w-4" />
+            <Mail className="h-4 w-4" />
             Onboarding emails
           </CardTitle>
           <ChevronDown
@@ -289,7 +289,7 @@ export function OnboardingEmailSettingsPanel() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-auto py-0 text-xs"
+                        className="h-auto py-0 text-xs text-primary hover:text-primary"
                         onClick={() => setField(field, section.defaultValue)}
                       >
                         {section.defaultValue ? "Reset to default message" : "Clear"}

@@ -929,7 +929,10 @@ export function useUpdateProject() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["projects", variables.id] });
+      // useProject caches a single project under the singular "project" key;
+      // invalidating ["projects", id] missed it, so reopening Edit showed the
+      // pre-save values for up to its 5-minute staleTime.
+      queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
     },
   });
 }
