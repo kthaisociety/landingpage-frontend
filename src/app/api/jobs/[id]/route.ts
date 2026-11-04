@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
+import { API_BASE } from "@/config/env"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+// BACKEND_URL is read at runtime (see src/config/env.ts), not at build.
+export const dynamic = "force-dynamic"
+
+const API_URL = API_BASE
 
 export type JobDetail = {
   id: string

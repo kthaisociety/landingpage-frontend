@@ -13,10 +13,16 @@ const getJwtPublicKey = (): string => {
 };
 
 
+// The backend's member cookie: __Host-jwt over HTTPS when the API is on this
+// host (staging, production), jwt on local http and on a deployment that
+// still shares the cookie across hosts with COOKIE_DOMAIN.
+const JWT_COOKIE_NAMES = ["__Host-jwt", "jwt"];
+
 export async function proxy(req: NextRequest) {
   const url = req.nextUrl.clone();
   const { pathname } = url;
-  const token = req.cookies.get("jwt")?.value;
+  const jwtCookieName = JWT_COOKIE_NAMES.find((name) => req.cookies.has(name));
+  const token = jwtCookieName ? req.cookies.get(jwtCookieName)?.value : undefined;
 
   // Skip auth entirely in local development
   if (process.env.NODE_ENV === "development") {
@@ -74,7 +80,15 @@ export async function proxy(req: NextRequest) {
     url.pathname = "/member/login";
     const response = NextResponse.redirect(url);
 
-    response.cookies.delete("jwt");
+    if (jwtCookieName) {
+      // Browsers ignore a Set-Cookie for a __Host- cookie unless it's Secure
+      // with Path=/, and cookies.delete() sets neither.
+      response.cookies.set(jwtCookieName, "", {
+        path: "/",
+        maxAge: 0,
+        secure: jwtCookieName.startsWith("__Host-"),
+      });
+    }
     response.cookies.delete("roles");
 
     return response;
