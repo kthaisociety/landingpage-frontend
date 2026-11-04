@@ -3,8 +3,9 @@
 import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Briefcase, Camera, Check, ExternalLink, Music, Pause, Play, Plus, Trash2, User } from "lucide-react";
+import { Loader2, Briefcase, Camera, Check, ExternalLink, Music, Plus, Trash2, User } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -13,16 +14,16 @@ import { AsciiGrid } from "@/components/ui/ascii-grid";
 import { useAddMyTeamEntry, usePublicProfile, useRemoveMyTeamEntry, type PublicProfile } from "@/hooks/team";
 import { useUpdateMemberProfile } from "@/hooks/member";
 import { MemberProjectSelection } from "@/components/member/member-project-selection";
+import { SongSearch } from "@/components/member/song-search";
 import { API_URL } from "@/config";
 import { useAuth } from "@/lib/providers/auth-provider/authProvider";
-import { EMPTY_TOUCHES, loadPreviewDraft, loadTouches, savePreviewDraft, saveTouches, spotifyUrlFrom, type PreviewDraft, type ProfileTouches } from "@/lib/profile-touches";
+import { EMPTY_TOUCHES, loadPreviewDraft, loadTouches, savePreviewDraft, saveTouches, songFromFields, spotifyUrlFrom, type PreviewDraft, type ProfileSong, type ProfileTouches } from "@/lib/profile-touches";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { ProgrammeSelect } from "@/components/member/programme-select";
 import { OTHER_PROGRAMME_VALUE, OTHER_UNIVERSITY_VALUE, UNIVERSITIES } from "@/types/applications";
 import { ACADEMIC_YEARS } from "@/lib/academic-years";
-import { toast } from "sonner";
 
 const TEAMS = ["Board", "Research", "IT", "Development", "Business", "Growth"];
 
@@ -85,7 +86,13 @@ function withPreviewDraft(base: PublicProfile, draft: PreviewDraft): PublicProfi
     askMeAbout: draft.askMeAbout,
     outsideStudies: draft.outsideStudies,
     currentlyBuilding: draft.currentlyBuilding,
+    currentlyLearning: draft.currentlyLearning,
     currentlyReading: draft.currentlyReading,
+    songId: draft.songId,
+    songTitle: draft.songTitle,
+    songArtist: draft.songArtist,
+    songImage: draft.songImage,
+    songHref: draft.songHref,
     spotifyUrl: draft.spotifyUrl,
     teamHistory: draft.teamHistory,
   };
@@ -105,15 +112,32 @@ function draftFromProfile(profile: PublicProfile): PreviewDraft {
     outsideStudies: profile.outsideStudies || "",
     currentlyBuilding: profile.currentlyBuilding || "",
     currentlyReading: profile.currentlyReading || "",
-    currentlyLearning: "",
+    currentlyLearning: profile.currentlyLearning || "",
     currentlyExploring: "",
     spotifyUrl: profile.spotifyUrl || "",
     teamHistory: profile.teamHistory ?? [],
+    songId: profile.songId || "",
+    songTitle: profile.songTitle || "",
+    songArtist: profile.songArtist || "",
+    songImage: profile.songImage || "",
+    songHref: profile.songHref || "",
   };
+}
+
+function profileHasPersonalDetails(profile: PublicProfile) {
+  return Boolean(
+    profile.askMeAbout?.trim() ||
+      profile.outsideStudies?.trim() ||
+      profile.currentlyBuilding?.trim() ||
+      profile.currentlyLearning?.trim() ||
+      profile.currentlyReading?.trim() ||
+      profile.songTitle?.trim(),
+  );
 }
 
 function draftForMember(profile: PublicProfile, userId?: string): PreviewDraft {
   const base = draftFromProfile(profile);
+  if (profileHasPersonalDetails(profile)) return base;
   const stored = loadTouches(profile.slug) ?? (userId ? loadTouches(userId) : null);
   if (!stored) return base;
   return {
@@ -126,6 +150,11 @@ function draftForMember(profile: PublicProfile, userId?: string): PreviewDraft {
     currentlyExploring: stored.currentlyExploring || "",
     spotifyUrl: stored.spotifyUrl,
     teamHistory: profile.teamHistory ?? [],
+    songId: stored.songId || "",
+    songTitle: stored.songTitle || "",
+    songArtist: stored.songArtist || "",
+    songImage: stored.songImage || "",
+    songHref: stored.songHref || "",
   };
 }
 
@@ -140,62 +169,62 @@ function mergePreviewDraft(base: PreviewDraft, stored: PreviewDraft | null): Pre
   if (Array.isArray(stored.teamHistory)) next.teamHistory = stored.teamHistory;
   return next;
 }
-function personalityFor(profile: PublicProfile, routeSlug: string): ProfileTouches {
-  const stored = loadTouches(profile.slug || routeSlug);
+function personalityFor(profile: PublicProfile): ProfileTouches {
   return {
-    askMeAbout: profile.askMeAbout || stored?.askMeAbout || "",
-    outsideStudies: profile.outsideStudies || stored?.outsideStudies || "",
-    currentlyBuilding: profile.currentlyBuilding || stored?.currentlyBuilding || "",
-    currentlyReading: profile.currentlyReading || stored?.currentlyReading || "",
-    spotifyUrl: spotifyUrlFrom(profile) || (stored ? spotifyUrlFrom(stored) : ""),
+    askMeAbout: profile.askMeAbout || "",
+    outsideStudies: profile.outsideStudies || "",
+    currentlyBuilding: profile.currentlyBuilding || "",
+    currentlyReading: profile.currentlyReading || "",
+    currentlyLearning: profile.currentlyLearning || "",
+    spotifyUrl: spotifyUrlFrom(profile),
+    songId: profile.songId || "",
+    songTitle: profile.songTitle || "",
+    songArtist: profile.songArtist || "",
+    songImage: profile.songImage || "",
+    songHref: profile.songHref || "",
   };
 }
 
-type SpotifySong = { href: string; title: string; artist: string; image: string; preview: string };
-
+type DisplaySong = { href: string; title: string; artist: string; image: string };
 function useSpotifySong(url: string) {
-  const [song, setSong] = useState<SpotifySong | null>(null);
+  const trimmed = url.trim();
+  const [song, setSong] = useState<{ url: string; data: DisplaySong | null } | null>(null);
 
   useEffect(() => {
-    const trimmed = url.trim();
-    if (!trimmed) {
-      setSong(null);
-      return;
-    }
+    if (!trimmed) return;
 
     let cancelled = false;
     fetch(`/api/spotify?url=${encodeURIComponent(trimmed)}`)
-      .then(async (res) => (res.ok ? ((await res.json()) as SpotifySong) : null))
+      .then(async (res) => (res.ok ? ((await res.json()) as DisplaySong) : null))
       .then((data) => {
         if (cancelled) return;
-        setSong(data?.title ? data : null);
+        setSong({
+          url: trimmed,
+          data: data?.title ? { href: data.href || "", title: data.title, artist: data.artist || "", image: data.image || "" } : null,
+        });
       })
       .catch(() => {
-        if (!cancelled) setSong(null);
+        if (!cancelled) setSong({ url: trimmed, data: null });
       });
 
     return () => {
       cancelled = true;
     };
-  }, [url]);
+  }, [trimmed]);
 
-  return song;
+  if (!trimmed || song?.url !== trimmed) return null;
+  return song.data;
 }
 
 function JewelCasePlayer({
   song,
-  playing,
   caption,
-  onToggle,
 }: {
-  song: SpotifySong;
-  playing: boolean;
+  song: DisplaySong;
   caption?: string;
-  onToggle: () => void;
 }) {
-  const playable = Boolean(song.preview);
   const cover = song.image ? (
-    // eslint-disable-next-line @next/next/no-img-element -- Spotify album art
+    // eslint-disable-next-line @next/next/no-img-element -- album art from the song lookup
     <img src={song.image} alt="" className="h-full w-full object-cover" />
   ) : (
     <span className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground dark:bg-muted">
@@ -208,59 +237,43 @@ function JewelCasePlayer({
       <div className="w-36 sm:w-[13.5rem]">
         <div className="group/jewel relative h-36 w-36">
           <div
-            className={`absolute top-0 left-0 h-36 w-36 transition-[translate] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${playing ? "translate-x-1/2" : "translate-x-2 group-hover/jewel:translate-x-1/2"} ${playable ? "cursor-pointer" : ""}`}
-            onClick={playable ? onToggle : undefined}
+            className="absolute top-0 left-0 h-36 w-36 translate-x-2 transition-[translate] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none group-hover/jewel:translate-x-1/2"
             aria-hidden
           >
-            <div className="cd-disc relative h-full w-full" data-playing={playing ? "true" : "false"}>
+            <div className="cd-disc relative h-full w-full">
               <div className="absolute inset-0 rounded-full bg-zinc-100 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.9)] [mask-image:radial-gradient(circle_closest-side,transparent_11%,black_13.5%)] dark:bg-zinc-300">
                 <div className="absolute inset-0 bg-[repeating-radial-gradient(circle,transparent_0,transparent_3px,rgba(148,163,184,0.45)_3.5px,transparent_4.5px)]" />
               </div>
-              {playing ? (
-                <span className="pointer-events-none absolute top-[14%] left-1/2 z-10 -translate-x-1/2">
-                  <span className="cd-laser block size-2 rounded-full bg-primary shadow-[0_0_8px_var(--color-primary)]" />
-                </span>
-              ) : null}
+              <span className="pointer-events-none absolute top-[14%] left-1/2 z-10 -translate-x-1/2 opacity-0 transition-opacity duration-300 group-hover/jewel:opacity-100">
+                <span className="cd-laser block size-2 rounded-full bg-primary shadow-[0_0_8px_var(--color-primary)]" />
+              </span>
             </div>
           </div>
-          {playable ? (
-            <button
-              type="button"
-              onClick={onToggle}
-              aria-pressed={playing}
-              aria-label={playing ? `Pause ${song.title}` : `Play a preview of ${song.title}`}
-              className="relative z-10 block h-full w-full cursor-pointer overflow-hidden rounded-xl border-4 border-white/70 bg-white/20 p-0 text-left shadow-md backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-white/25 dark:bg-white/10"
-            >
-              {cover}
-              <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.55)_46%,transparent_60%)] dark:bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.22)_46%,transparent_60%)]" />
-            </button>
-          ) : (
-            <div className="relative z-10 h-full w-full overflow-hidden rounded-xl border-4 border-white/70 bg-white/20 shadow-md backdrop-blur-sm dark:border-white/25 dark:bg-white/10">
-              {cover}
-              <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.55)_46%,transparent_60%)] dark:bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.22)_46%,transparent_60%)]" />
-            </div>
-          )}
+          <div className="relative z-10 h-full w-full overflow-hidden rounded-xl border-4 border-white/70 bg-white/20 shadow-md backdrop-blur-sm dark:border-white/25 dark:bg-white/10">
+            {cover}
+            <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.55)_46%,transparent_60%)] dark:bg-[linear-gradient(115deg,transparent_30%,rgba(255,255,255,0.22)_46%,transparent_60%)]" />
+          </div>
         </div>
       </div>
       <div className="min-w-0">
         <p className="text-base font-semibold leading-tight text-secondary-black dark:text-foreground">{song.title}</p>
         {song.artist ? <p className="mt-1 text-sm text-muted-foreground">{song.artist}</p> : null}
         {caption ? <p className="mt-2 text-sm italic leading-relaxed text-foreground/90">{caption}</p> : null}
-        <a
-          href={song.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`Open ${song.title}`}
-          className="mt-3 inline-flex text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </a>
+        {song.href ? (
+          <a
+            href={song.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open ${song.title}`}
+            className="mt-3 inline-flex text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        ) : null}
       </div>
     </div>
   );
 }
-
-const EARWORM_DOTS = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
 function isWebUrl(value: string) {
   const trimmed = value.trim();
@@ -303,8 +316,7 @@ function profileCompletion(
       label: "Currently",
       done: CURRENTLY_FIELDS.some((field) => draft[field.key].trim().length > 0),
     },
-    { id: "profile-listening", label: "Listening to", done: isSpotifyLink(draft.spotifyUrl) },
-    { id: "profile-team", label: "Team history", done: draft.teamHistory.length > 0 },
+    { id: "profile-listening", label: "Listening to", done: Boolean(draft.songTitle.trim()) || isSpotifyLink(draft.spotifyUrl) },
     {
       id: "profile-info",
       label: "Info",
@@ -353,34 +365,32 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
   const savedDraft = useRef<PreviewDraft | null>(null);
   const pictureInputRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState(false);
+  const localTeamId = useRef(0);
   const [dashboardTab, setDashboardTab] = useState<"profile" | "projects">("profile");
   const [saving, setSaving] = useState(false);
   const [uploadingPicture, setUploadingPicture] = useState(false);
-  const [example, setExample] = useState<1 | 2 | 3>(1);
-  const badgeOnCard = isPreview && example === 2;
-  const promptsInstead = isPreview && example === 3;
-  const ruledLook = !promptsInstead;
   const [otherProgramme, setOtherProgramme] = useState(false);
   const [newTeamEntry, setNewTeamEntry] = useState({ role: "", department: "", academicYear: "" });
   const profile = source && draft && canEdit ? withPreviewDraft(source, draft) : source;
   const [textMask, setTextMask] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    if (!isPreview) return;
-    const loaded = mergePreviewDraft(draftFromProfile(PREVIEW_PROFILE), loadPreviewDraft());
-    savedDraft.current = loaded;
-    draftRef.current = loaded;
+  const loadKey = isPreview ? "preview" : isOwner && data ? data.slug || slug : "";
+  const [loadedFor, setLoadedFor] = useState("");
+  if (loadKey && loadedFor !== loadKey) {
+    const loaded = isPreview || !data
+      ? mergePreviewDraft(draftFromProfile(PREVIEW_PROFILE), loadPreviewDraft())
+      : draftForMember(data, user?.userId);
+    setLoadedFor(loadKey);
     setDraft(loaded);
-  }, [isPreview]);
+  }
 
+  const snapshottedFor = useRef("");
   useEffect(() => {
-    if (!isOwner || !data || savedDraft.current) return;
-    const loaded = draftForMember(data, user?.userId);
-    savedDraft.current = loaded;
-    draftRef.current = loaded;
-    setDraft(loaded);
-  }, [data, isOwner, user?.userId]);
-
+    if (!draft || loadedFor !== loadKey || snapshottedFor.current === loadKey) return;
+    snapshottedFor.current = loadKey;
+    draftRef.current = draft;
+    savedDraft.current = draft;
+  }, [draft, loadedFor, loadKey]);
   useEffect(() => {
     if (!profile?.firstName) return;
 
@@ -406,34 +416,26 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
 
   const touches = !profile
     ? EMPTY_TOUCHES
-    : isPreview && draft
+    : draft
       ? {
           askMeAbout: draft.askMeAbout,
           outsideStudies: draft.outsideStudies,
           currentlyBuilding: draft.currentlyBuilding,
           currentlyReading: draft.currentlyReading,
+          currentlyLearning: draft.currentlyLearning,
           spotifyUrl: draft.spotifyUrl,
+          songId: draft.songId,
+          songTitle: draft.songTitle,
+          songArtist: draft.songArtist,
+          songImage: draft.songImage,
+          songHref: draft.songHref,
         }
-      : personalityFor(profile, slug);
-  const song = useSpotifySong(touches.spotifyUrl);
-  const previewRef = useRef<HTMLAudioElement>(null);
-  const [previewPlaying, setPreviewPlaying] = useState(false);
-
-  useEffect(() => {
-    setPreviewPlaying(false);
-    previewRef.current?.pause();
-  }, [song?.preview]);
-
-  function togglePreview() {
-    const audio = previewRef.current;
-    if (!audio) return;
-    if (!audio.paused) {
-      audio.pause();
-      setPreviewPlaying(false);
-      return;
-    }
-    void audio.play().then(() => setPreviewPlaying(true)).catch(() => setPreviewPlaying(false));
-  }
+      : personalityFor(profile);
+  const picked = songFromFields(touches);
+  const legacySong = useSpotifySong(picked ? "" : touches.spotifyUrl);
+  const song: DisplaySong | null = picked
+    ? { href: picked.href, title: picked.title, artist: picked.artist, image: picked.image }
+    : legacySong;
 
   if (!isPreview && isLoading) {
     return (
@@ -472,6 +474,24 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
     });
   }
 
+  function updateDraftSong(pickedSong: ProfileSong) {
+    setDraft((current) => {
+      const base = current ?? draftRef.current;
+      if (!base) return current;
+      const next = {
+        ...base,
+        songId: pickedSong.id,
+        songTitle: pickedSong.title,
+        songArtist: pickedSong.artist,
+        songImage: pickedSong.image,
+        songHref: pickedSong.href,
+        spotifyUrl: "",
+      };
+      draftRef.current = next;
+      return next;
+    });
+  }
+
   async function saveProfile() {
     const current = draftRef.current;
     if (!current || saving) return;
@@ -496,14 +516,19 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
       return;
     }
 
-    const touches: ProfileTouches = {
+    const profileTouches: ProfileTouches = {
       askMeAbout: current.askMeAbout.trim(),
       outsideStudies: current.outsideStudies.trim(),
       currentlyBuilding: current.currentlyBuilding.trim(),
       currentlyReading: current.currentlyReading.trim(),
       currentlyLearning: current.currentlyLearning.trim(),
       currentlyExploring: current.currentlyExploring.trim(),
-      spotifyUrl: current.spotifyUrl.trim(),
+      spotifyUrl: current.songTitle.trim() ? "" : current.spotifyUrl.trim(),
+      songId: current.songId.trim(),
+      songTitle: current.songTitle.trim(),
+      songArtist: current.songArtist.trim(),
+      songImage: current.songImage.trim(),
+      songHref: current.songHref.trim(),
     };
     const previousTeams = savedDraft.current?.teamHistory ?? [];
     const nextIds = new Set(current.teamHistory.map((entry) => entry.id));
@@ -521,10 +546,19 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
         githubLink: current.githubLink.trim(),
         linkedinLink: current.linkedinLink.trim(),
         aboutMe: current.aboutMe.trim(),
+        askMeAbout: profileTouches.askMeAbout,
+        outsideStudies: profileTouches.outsideStudies,
+        currentlyBuilding: profileTouches.currentlyBuilding,
+        currentlyLearning: profileTouches.currentlyLearning,
+        currentlyReading: profileTouches.currentlyReading,
+        songId: profileTouches.songId,
+        songTitle: profileTouches.songTitle,
+        songArtist: profileTouches.songArtist,
+        songImage: profileTouches.songImage,
+        songHref: profileTouches.songHref,
       });
-      saveTouches(data.slug || slug, touches);
-      if (user.userId) saveTouches(user.userId, touches);
-
+      saveTouches(data.slug || slug, profileTouches);
+      if (user.userId) saveTouches(user.userId, profileTouches);
       await Promise.all(
         previousTeams
           .filter((entry) => !nextIds.has(entry.id))
@@ -610,10 +644,11 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
     if (!newTeamEntry.academicYear || !newTeamEntry.department) return;
     const current = draftRef.current;
     if (!current) return;
+    localTeamId.current -= 1;
     setTeamHistory([
       ...current.teamHistory,
       {
-        id: Date.now(),
+        id: localTeamId.current,
         role: newTeamEntry.role.trim(),
         department: newTeamEntry.department,
         academicYear: newTeamEntry.academicYear,
@@ -624,16 +659,15 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
 
   function currentlyValue(key: (typeof CURRENTLY_FIELDS)[number]["key"]) {
     if (draft) return draft[key];
-    if (key === "currentlyBuilding" || key === "currentlyReading") return touches[key];
-    return "";
+    const value = touches[key];
+    return typeof value === "string" ? value : "";
   }
 
-  const showGetToKnowMe = badgeOnCard
-    ? CURRENTLY_FIELDS.some((field) => currentlyValue(field.key)) || Boolean(touches.askMeAbout.trim() || touches.outsideStudies.trim()) || Boolean(song) || editing
-    : promptsInstead
-      ? Boolean(touches.askMeAbout.trim() || touches.outsideStudies.trim() || song || editing)
-      : CURRENTLY_FIELDS.some((field) => currentlyValue(field.key)) || Boolean(song) || editing;
-
+  const showGetToKnowMe =
+    CURRENTLY_FIELDS.some((field) => currentlyValue(field.key)) ||
+    Boolean(touches.askMeAbout.trim() || touches.outsideStudies.trim()) ||
+    Boolean(song) ||
+    editing;
   const completion = editing && draft
     ? profileCompletion(draft, { otherProgramme })
     : [];
@@ -644,7 +678,7 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
   const sectionDone = (id: string) => completion.some((section) => section.id === id && section.done);
 
   const avatar = (
-    <div className={`relative flex aspect-square h-full w-full items-center justify-center overflow-hidden border-4 border-white bg-primary/10 text-3xl font-semibold text-primary shadow-md md:text-5xl ${badgeOnCard ? "rounded-3xl" : "rounded-full"}`}>
+    <div className="relative flex aspect-square h-full w-full items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-primary/10 text-3xl font-semibold text-primary shadow-md md:text-5xl">
       {pictureUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- per-user backend image
         <img src={pictureUrl} alt={`${profile.firstName} ${profile.lastName}`} className="h-full w-full object-cover" />
@@ -668,22 +702,18 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
   const listeningSection = song || editing ? (
     <div id="profile-listening" className="scroll-mt-32 space-y-3">
       <style>{`
-        @keyframes earworm-float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-        @keyframes earworm-pulse {
-          0%, 100% { transform: scale(0.7); opacity: 0.45; }
-          50% { transform: scale(1); opacity: 1; }
-        }
         @keyframes cd-spin {
           to { transform: rotate(360deg); }
         }
         .cd-disc {
+          transform-origin: center;
           animation: cd-spin 2.8s linear infinite;
           animation-play-state: paused;
         }
-        .cd-disc[data-playing="true"] { animation-play-state: running; }
+        [class~="group/jewel"]:hover .cd-disc { animation-play-state: running; }
+        @media (prefers-reduced-motion: reduce) {
+          .cd-disc { animation: none; }
+        }
         @keyframes cd-laser {
           0%, 100% { opacity: 0.45; }
           50% { opacity: 1; }
@@ -694,79 +724,8 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
         Listening to
         <CompleteMark show={sectionDone("profile-listening")} />
       </h4>
-      {editing && draft ? (
-        <Input value={draft.spotifyUrl} onChange={(e) => updateDraft("spotifyUrl", e.target.value)} placeholder="Paste a Spotify song link" aria-label="Spotify link" className="max-w-sm" />
-      ) : null}
-      {song ? (
-        <>
-          {song.preview ? (
-            <audio
-              ref={previewRef}
-              className="hidden"
-              src={song.preview}
-              preload="none"
-              onEnded={() => setPreviewPlaying(false)}
-            />
-          ) : null}
-          {badgeOnCard ? (
-            <JewelCasePlayer
-              song={song}
-              playing={previewPlaying}
-              onToggle={togglePreview}
-            />
-          ) : (
-            <div className="flex items-start gap-3">
-              <div className="group w-24 shrink-0">
-                <div className={previewPlaying ? "motion-safe:animate-[earworm-float_3s_ease-in-out_infinite]" : undefined}>
-                  {song.preview ? (
-                    <button
-                      type="button"
-                      onClick={togglePreview}
-                      aria-label={previewPlaying ? `Pause ${song.title}` : `Play a preview of ${song.title}`}
-                      className={`relative block h-24 w-24 overflow-hidden rounded-sm ring-1 ring-foreground/10 shadow-[0_18px_32px_-20px_rgba(0,0,0,0.2)] transition-transform duration-500 motion-reduce:transition-none ${previewPlaying ? "" : "group-hover:-translate-y-1"}`}
-                    >
-                      {song.image ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- Spotify album art
-                        <img src={song.image} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
-                          <Music className="h-6 w-6" aria-hidden />
-                        </span>
-                      )}
-                      <span className={`absolute right-1.5 bottom-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-white transition-opacity ${previewPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"}`}>
-                        {previewPlaying ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current" />}
-                      </span>
-                    </button>
-                  ) : song.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- Spotify album art
-                    <img src={song.image} alt="" className="h-24 w-24 rounded-sm object-cover ring-1 ring-foreground/10 shadow-[0_18px_32px_-20px_rgba(0,0,0,0.2)]" />
-                  ) : (
-                    <span className="flex h-24 w-24 items-center justify-center rounded-sm bg-muted text-muted-foreground ring-1 ring-foreground/10">
-                      <Music className="h-6 w-6" aria-hidden />
-                    </span>
-                  )}
-                  <div className="mx-auto mt-3 h-1 w-14 rounded-full bg-foreground/15 blur-[2px]" aria-hidden />
-                </div>
-                <div className="mt-2 flex w-24 justify-between" aria-hidden>
-                  {EARWORM_DOTS.map((index) => (
-                    <span
-                      key={index}
-                      className={`h-1.5 w-1.5 rounded-full ${previewPlaying ? "bg-primary motion-safe:animate-[earworm-pulse_1.2s_ease-in-out_infinite]" : "bg-border group-hover:bg-primary/40"}`}
-                      style={previewPlaying ? { animationDelay: `${Math.abs(index - 4) * 0.14}s` } : undefined}
-                    />
-                  ))}
-                </div>
-              </div>
-              <a href={song.href} target="_blank" rel="noopener noreferrer" className="min-w-0 pt-1">
-                <p className="text-base font-semibold leading-tight text-secondary-black">{song.title}</p>
-                {song.artist ? (
-                  <p className="mt-1 text-sm text-secondary-gray">{song.artist}</p>
-                ) : null}
-              </a>
-            </div>
-          )}
-        </>
-      ) : null}
+      {editing && draft ? <SongSearch onSelect={updateDraftSong} /> : null}
+      {song ? <JewelCasePlayer song={song} /> : null}
     </div>
   ) : null;
 
@@ -822,31 +781,20 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white via-white/50 to-transparent pointer-events-none" />
         </div>
 
-        <div className={`container relative z-10 mx-auto max-w-7xl pb-8 pl-4 md:pl-6 ${badgeOnCard ? "" : "pr-40 md:pr-72"}`}>
-          {badgeOnCard ? <div className="h-12 md:h-[4.5rem]" /> : (
-            <h1 className="text-5xl md:text-7xl font-base tracking-tighter">
-            {profile.firstName} {profile.lastName}
-          </h1>
-          )}
+        <div className="container relative z-10 mx-auto max-w-7xl pb-8 pl-4 md:pl-6">
+          <div className="h-12 md:h-[4.5rem]" />
         </div>
       </section>
 
       {/* Content */}
       <div className="px-4 sm:px-6 md:px-8 lg:px-8 xl:px-8">
-        <section className={`relative max-w-7xl mx-auto z-20 -mt-24 mb-24 rounded-3xl border bg-neutral-50 shadow-lg ${badgeOnCard ? "px-4 pt-24 pb-4 md:px-8 md:pt-36 md:pb-8" : "p-4 md:p-8"}`}>
-          {badgeOnCard ? (
+        <section className="relative max-w-7xl mx-auto z-20 -mt-24 mb-24 rounded-3xl border bg-neutral-50 px-4 pt-24 pb-4 shadow-lg md:px-8 md:pt-36 md:pb-8">
             <div className="absolute top-0 left-4 z-30 flex -translate-y-[calc(100%+0.5rem)] items-end gap-6 md:left-8">
               <div className="size-32 shrink-0 translate-y-[calc(50%+0.5rem)] md:size-56">{avatar}</div>
               <h1 className="text-5xl md:text-7xl font-base tracking-tighter">
                 {profile.firstName} {profile.lastName}
               </h1>
             </div>
-          ) : (
-            <div className="absolute right-4 bottom-full z-30 mb-4 md:right-8">
-              <div className="h-32 w-32 md:h-56 md:w-56">{avatar}</div>
-            </div>
-          )}
-          {/* Breadcrumb */}
           <div className="mb-8 flex items-center">
             <Link href="/" className="text-secondary-gray hover:text-primary transition-colors text-sm font-medium">Home</Link>
             <span className="text-gray-300 mx-2">/</span>
@@ -939,10 +887,9 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
             </div>
           ) : null}
 
-          {badgeOnCard ? (
-            <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-              {profile.university ? <p className="text-sm text-primary">{profile.university}</p> : <span />}
-              <div className={editing ? "w-full max-w-sm" : "ml-auto"}>{socialLinks}</div>
+          {socialLinks ? (
+            <div className="mb-8 flex flex-wrap items-center justify-end gap-4">
+              <div className={editing ? "w-full max-w-sm" : ""}>{socialLinks}</div>
             </div>
           ) : null}
 
@@ -972,33 +919,15 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                 <>
                   <Separator />
                   <div className="space-y-5">
-                    {ruledLook ? null : <h3 className="text-lg font-medium text-secondary-black">Get to know me</h3>}
-                    {promptsInstead ? (
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        {PROMPT_FIELDS.map((field) => {
-                          const value = (editing && draft ? draft[field.key] : touches[field.key]).trim();
-                          if (!value && !editing) return null;
-                          return (
-                            <div key={field.key} className="rounded-2xl border border-secondary-light-gray/70 bg-white px-5 py-4">
-                              <p className="text-sm text-primary">{field.label}</p>
-                              {editing && draft ? (
-                                <Textarea value={draft[field.key]} onChange={(e) => updateDraft(field.key, e.target.value)} aria-label={field.label} className="mt-2 min-h-16 resize-none border-0 bg-transparent p-0 font-serif text-lg leading-relaxed shadow-none focus-visible:ring-0" />
-                              ) : (
-                                <p className="mt-2 font-serif text-lg leading-relaxed text-secondary-black/80">{value}</p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : CURRENTLY_FIELDS.some((field) => currentlyValue(field.key)) || editing ? (
-                      <div id="profile-currently" className={`scroll-mt-32 space-y-3 ${ruledLook && !(editing && draft) ? "border-l-2 border-primary pl-4" : ""}`}>
-                        <h4 className={`flex items-center gap-2 text-xs font-mono uppercase tracking-widest ${ruledLook && !(editing && draft) ? "text-primary" : "text-secondary-gray"}`}>
+                    {CURRENTLY_FIELDS.some((field) => currentlyValue(field.key)) || editing ? (
+                      <div id="profile-currently" className={`scroll-mt-32 space-y-3 ${editing && draft ? "" : "border-l-2 border-primary pl-4"}`}>
+                        <h4 className={`flex items-center gap-2 text-xs font-mono uppercase tracking-widest ${editing && draft ? "text-secondary-gray" : "text-primary"}`}>
                           Currently
                           <CompleteMark show={sectionDone("profile-currently")} />
                         </h4>
                         {editing && draft ? (
                   <div>
-                            <p className="mb-3 text-sm text-secondary-gray">Fill in whichever rows apply - leave the rest blank.</p>
+                            <p className="mb-3 font-serif text-sm text-secondary-gray">Fill in whichever rows apply - leave the rest blank.</p>
                             <div className="border-y border-secondary-light-gray/70">
                               {CURRENTLY_FIELDS.map((field) => (
                                 <div key={field.key} className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-center gap-4 border-b border-secondary-light-gray/70 py-3 last:border-b-0">
@@ -1021,7 +950,7 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                               const value = currentlyValue(field.key);
                               if (!value) return null;
                               return (
-                                <p key={field.key} className="text-base italic leading-relaxed text-secondary-black/80">
+                                <p key={field.key} className="font-serif leading-relaxed text-secondary-black/80">
                                   <span className="text-primary">{field.label}</span> {value}
                                 </p>
                               );
@@ -1030,7 +959,7 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                         )}
                       </div>
                     ) : null}
-                    {badgeOnCard && (editing || touches.askMeAbout.trim() || touches.outsideStudies.trim()) ? (
+                    {editing || touches.askMeAbout.trim() || touches.outsideStudies.trim() ? (
                       <>
                         <Separator />
                         <div className="space-y-5">
@@ -1054,7 +983,6 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                         </div>
                       </>
                     ) : null}
-                    {!promptsInstead && !badgeOnCard ? listeningSection : null}
                   </div>
                 </>
               ) : null}
@@ -1076,11 +1004,8 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                               className={`absolute top-1 left-0 size-2.5 -translate-x-1/2 rounded-full ${index === 0 ? "bg-primary" : "border-2 border-primary bg-neutral-50"}`}
                               aria-hidden
                             />
-                            <p className="text-xs font-mono text-secondary-gray">
-                              {entry.academicYear}
-                              {badgeOnCard && index === 0 ? <span className="font-sans normal-case text-primary"> · current</span> : null}
-                            </p>
-                            <div className="mt-1 flex items-center gap-3">
+                            <p className="text-xs font-mono text-secondary-gray">{entry.academicYear}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
                               <Badge variant="outline" className="font-mono text-xs shrink-0">{entry.department}</Badge>
                               {entry.role ? <span className="text-sm text-secondary-black">{entry.role}</span> : null}
                               {editing ? (
@@ -1200,7 +1125,7 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                         )}
                       </div>
                     ) : null}
-                    {(!badgeOnCard || editing) && (profile.university || editing) ? (
+                    {profile.university || editing ? (
                       <div>
                         <p className="text-xs text-secondary-gray">University</p>
                         {editing && draft ? (
@@ -1232,10 +1157,9 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
                       </div>
                     ) : null}
                   </div>
-                </div>
+              </div>
                 ) : null}
-                {(promptsInstead || badgeOnCard) ? listeningSection : null}
-                {!badgeOnCard ? socialLinks : null}
+                {listeningSection}
               </div>
             </div>
           </div>
@@ -1243,20 +1167,8 @@ export default function MemberPage({ params }: { params: Promise<{ slug: string 
           )}
         </section>
       </div>
-      {isPreview ? (
-        <div className="fixed top-24 left-1/2 z-40 flex -translate-x-1/2 gap-1 rounded-full border bg-white p-1 shadow-lg">
-          {([1, 2, 3] as const).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setExample(item)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium ${item === example ? "bg-primary text-white" : "text-secondary-black"}`}
-            >
-              Example {item}
-            </button>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }
+
+

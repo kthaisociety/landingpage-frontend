@@ -1,5 +1,13 @@
 const STORAGE_KEY = "profileTouches:v1";
 
+export interface ProfileSong {
+  id: string;
+  title: string;
+  artist: string;
+  image: string;
+  href: string;
+}
+
 export interface ProfileTouches {
   askMeAbout: string;
   outsideStudies: string;
@@ -8,6 +16,31 @@ export interface ProfileTouches {
   currentlyLearning?: string;
   currentlyExploring?: string;
   spotifyUrl: string;
+  songId?: string;
+  songTitle?: string;
+  songArtist?: string;
+  songImage?: string;
+  songHref?: string;
+}
+
+export function songFromFields(
+  value: {
+    songId?: string;
+    songTitle?: string;
+    songArtist?: string;
+    songImage?: string;
+    songHref?: string;
+  } | null | undefined,
+): ProfileSong | null {
+  const title = value?.songTitle?.trim() ?? "";
+  if (!title) return null;
+  return {
+    id: value?.songId?.trim() || title,
+    title,
+    artist: value?.songArtist?.trim() ?? "",
+    image: value?.songImage?.trim() ?? "",
+    href: value?.songHref?.trim() ?? "",
+  };
 }
 
 export const EMPTY_TOUCHES: ProfileTouches = {
@@ -47,6 +80,11 @@ export function loadTouches(id: string): ProfileTouches | null {
     currentlyLearning: stored.currentlyLearning || "",
     currentlyExploring: stored.currentlyExploring || "",
     spotifyUrl: spotifyUrlFrom(stored),
+    songId: stored.songId || "",
+    songTitle: stored.songTitle || "",
+    songArtist: stored.songArtist || "",
+    songImage: stored.songImage || "",
+    songHref: stored.songHref || "",
   };
 }
 
@@ -79,6 +117,11 @@ export interface PreviewDraft {
   currentlyLearning: string;
   currentlyExploring: string;
   spotifyUrl: string;
+  songId: string;
+  songTitle: string;
+  songArtist: string;
+  songImage: string;
+  songHref: string;
   teamHistory: { id: number; role: string; department: string; academicYear: string }[];
 }
 

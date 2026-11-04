@@ -17,6 +17,16 @@ export interface MemberProfile {
   linkedInLink?: string;
   aboutMe?: string;
   profilePicture?: string;
+  askMeAbout?: string;
+  outsideStudies?: string;
+  currentlyBuilding?: string;
+  currentlyLearning?: string;
+  currentlyReading?: string;
+  songId?: string;
+  songTitle?: string;
+  songArtist?: string;
+  songImage?: string;
+  songHref?: string;
 }
 
 export interface UpdateMemberProfileData {
@@ -27,8 +37,18 @@ export interface UpdateMemberProfileData {
   programme?: string;
   graduationYear?: number;
   githubLink?: string;
-  linkedinLink?: string; 
+  linkedinLink?: string;
   aboutMe?: string;
+  askMeAbout?: string;
+  outsideStudies?: string;
+  currentlyBuilding?: string;
+  currentlyLearning?: string;
+  currentlyReading?: string;
+  songId?: string;
+  songTitle?: string;
+  songArtist?: string;
+  songImage?: string;
+  songHref?: string;
 }
 
 async function fetchMemberProfile(): Promise<MemberProfile> {

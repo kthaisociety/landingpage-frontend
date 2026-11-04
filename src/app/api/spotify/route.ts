@@ -1,61 +1,94 @@
 import { NextResponse } from "next/server";
 
-type SpotifyImage = { url?: string; maxHeight?: number };
-type SpotifyEntity = {
-  title?: string;
-  name?: string;
-  artists?: { name?: string }[];
-  audioPreview?: { url?: string };
-  visualIdentity?: { image?: SpotifyImage[] };
+type ItunesSong = {
+  trackName?: string;
+  artistName?: string;
+  artworkUrl100?: string;
+  trackViewUrl?: string;
 };
 
-function spotifyEmbedUrl(value: string) {
+const CACHE_DAY = { next: { revalidate: 24 * 60 * 60 } };
+
+function artworkUrl(value: string) {
+  return value.replace("100x100bb", "600x600bb");
+}
+
+function metaContents(html: string, key: string) {
+  const pattern = new RegExp(
+    `<meta[^>]+(?:property|name)=["']${key}["'][^>]+content=["']([^"']+)["']|<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${key}["']`,
+    "gi",
+  );
+  return [...html.matchAll(pattern)]
+    .map((match) => (match[1] || match[2] || "").replaceAll("&amp;", "&").replaceAll("&quot;", "\"").replaceAll("&#39;", "'").trim())
+    .filter(Boolean);
+}
+
+async function titleAndArtistFromSpotify(value: string) {
+  let parsed: URL;
   try {
-    const url = new URL(value);
-    if (!url.hostname.endsWith("spotify.com")) return "";
-    const parts = url.pathname.split("/").filter(Boolean);
-    const kinds = ["track", "album", "playlist", "episode", "artist"];
-    const kindIndex = parts.findIndex((part) => kinds.includes(part));
-    const id = kindIndex >= 0 ? parts[kindIndex + 1] : "";
-    if (!id) return "";
-    return `https://open.spotify.com/embed/${parts[kindIndex]}/${id}`;
+    parsed = new URL(value);
   } catch {
-    return "";
+    return null;
   }
+  if (!parsed.hostname.endsWith("spotify.com")) return null;
+  const parts = parsed.pathname.split("/").filter(Boolean);
+  const kindIndex = parts.findIndex((part) => part === "track");
+  const id = kindIndex >= 0 ? parts[kindIndex + 1] : "";
+  if (!id) return null;
+
+  const res = await fetch(`https://open.spotify.com/track/${id}`, {
+    headers: { "user-agent": "facebookexternalhit/1.1" },
+    ...CACHE_DAY,
+  });
+  if (!res.ok) return null;
+  const html = await res.text();
+  const title = metaContents(html, "og:title")[0] ?? "";
+  const artist = metaContents(html, "music:musician_description").join(" ");
+  if (!title || !artist) return null;
+  return { title, artist };
+}
+
+async function searchItunes(title: string, artist: string) {
+  const term = [title, artist].filter(Boolean).join(" ");
+  const endpoint = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=1`;
+  const res = await fetch(endpoint, CACHE_DAY);
+  if (!res.ok) return null;
+  const data = (await res.json()) as { results?: ItunesSong[] };
+  return data.results?.[0] ?? null;
 }
 
 export async function GET(request: Request) {
-  const embedUrl = spotifyEmbedUrl(new URL(request.url).searchParams.get("url") ?? "");
-  if (!embedUrl) {
-    return NextResponse.json({ error: "Invalid Spotify link" }, { status: 400 });
-  }
+  const params = new URL(request.url).searchParams;
+  let title = params.get("title")?.trim() ?? "";
+  let artist = params.get("artist")?.trim() ?? "";
+  const spotifyUrl = params.get("url")?.trim() ?? "";
 
   try {
-    const res = await fetch(embedUrl, { next: { revalidate: 24 * 60 * 60 } });
-    if (!res.ok) {
-      return NextResponse.json({ error: "Spotify link could not be loaded" }, { status: 502 });
+    if ((!title || !artist) && spotifyUrl) {
+      const extracted = await titleAndArtistFromSpotify(spotifyUrl);
+      if (!extracted) {
+        return NextResponse.json({ error: "Invalid Spotify link" }, { status: 400 });
+      }
+      title = title || extracted.title;
+      artist = artist || extracted.artist;
     }
-    const html = await res.text();
-    const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/);
-    if (!match) {
-      return NextResponse.json({ error: "Spotify link could not be loaded" }, { status: 502 });
-    }
-    const entity = JSON.parse(match[1])?.props?.pageProps?.state?.data?.entity as SpotifyEntity | undefined;
-    const images = entity?.visualIdentity?.image ?? [];
-    const image = [...images].sort((a, b) => (b.maxHeight ?? 0) - (a.maxHeight ?? 0))[0]?.url ?? "";
-    const title = entity?.title || entity?.name || "";
+
     if (!title) {
-      return NextResponse.json({ error: "Spotify link could not be loaded" }, { status: 502 });
+      return NextResponse.json({ error: "Song title is required" }, { status: 400 });
     }
-    const artist = (entity?.artists ?? []).map((person) => person.name?.trim() || "").filter(Boolean).join(", ");
+
+    const song = await searchItunes(title, artist);
+    if (!song?.trackName) {
+      return NextResponse.json({ error: "Song could not be found" }, { status: 404 });
+    }
+
     return NextResponse.json({
-      href: embedUrl.replace("/embed/", "/"),
-      title,
-      artist,
-      image,
-      preview: entity?.audioPreview?.url ?? "",
+      href: song.trackViewUrl || spotifyUrl,
+      title: song.trackName,
+      artist: song.artistName || artist,
+      image: song.artworkUrl100 ? artworkUrl(song.artworkUrl100) : "",
     });
   } catch {
-    return NextResponse.json({ error: "Spotify link could not be loaded" }, { status: 502 });
+    return NextResponse.json({ error: "Song could not be loaded" }, { status: 502 });
   }
 }

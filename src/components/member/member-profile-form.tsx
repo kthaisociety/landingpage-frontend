@@ -21,7 +21,8 @@ import { ProgrammeSelect } from "@/components/member/programme-select";
 import { useMemberProfile, useUpdateMemberProfile } from "@/hooks/member";
 import { useAddMyTeamEntry, useRemoveMyTeamEntry } from "@/hooks/team";
 import { API_URL } from "@/config";
-import { loadTouches, saveTouches, type ProfileTouches } from "@/lib/profile-touches";
+import { loadTouches, saveTouches, type ProfileSong, type ProfileTouches } from "@/lib/profile-touches";
+import { SongSearch } from "@/components/member/song-search";
 import { ACADEMIC_YEARS } from "@/lib/academic-years";
 import {
   UNIVERSITIES,
@@ -81,8 +82,14 @@ interface ProfileFormData {
   askMeAbout: string;
   outsideStudies: string;
   currentlyBuilding: string;
+  currentlyLearning: string;
   currentlyReading: string;
   spotifyUrl: string;
+  songId: string;
+  songTitle: string;
+  songArtist: string;
+  songImage: string;
+  songHref: string;
 }
 
 const EMPTY_FORM: ProfileFormData = {
@@ -100,8 +107,14 @@ const EMPTY_FORM: ProfileFormData = {
   askMeAbout: "",
   outsideStudies: "",
   currentlyBuilding: "",
+  currentlyLearning: "",
   currentlyReading: "",
   spotifyUrl: "",
+  songId: "",
+  songTitle: "",
+  songArtist: "",
+  songImage: "",
+  songHref: "",
 };
 
 function FormSection({
@@ -312,11 +325,17 @@ export function MemberProfileForm() {
       githubLink: profile.githubLink || "",
       linkedinLink: profile.linkedInLink || "",
       aboutMe: profile.aboutMe || "",
-      askMeAbout: stored?.askMeAbout || "",
-      outsideStudies: stored?.outsideStudies || "",
-      currentlyBuilding: stored?.currentlyBuilding || "",
-      currentlyReading: stored?.currentlyReading || "",
+      askMeAbout: profile.askMeAbout || stored?.askMeAbout || "",
+      outsideStudies: profile.outsideStudies || stored?.outsideStudies || "",
+      currentlyBuilding: profile.currentlyBuilding || stored?.currentlyBuilding || "",
+      currentlyLearning: profile.currentlyLearning || stored?.currentlyLearning || "",
+      currentlyReading: profile.currentlyReading || stored?.currentlyReading || "",
       spotifyUrl: stored?.spotifyUrl || "",
+      songId: profile.songId || stored?.songId || "",
+      songTitle: profile.songTitle || stored?.songTitle || "",
+      songArtist: profile.songArtist || stored?.songArtist || "",
+      songImage: profile.songImage || stored?.songImage || "",
+      songHref: profile.songHref || stored?.songHref || "",
     });
   }, [profile]);
 
@@ -379,8 +398,14 @@ export function MemberProfileForm() {
       askMeAbout: formData.askMeAbout.trim(),
       outsideStudies: formData.outsideStudies.trim(),
       currentlyBuilding: formData.currentlyBuilding.trim(),
+      currentlyLearning: formData.currentlyLearning.trim(),
       currentlyReading: formData.currentlyReading.trim(),
-      spotifyUrl: formData.spotifyUrl.trim(),
+      spotifyUrl: formData.songTitle.trim() ? "" : formData.spotifyUrl.trim(),
+      songId: formData.songId.trim(),
+      songTitle: formData.songTitle.trim(),
+      songArtist: formData.songArtist.trim(),
+      songImage: formData.songImage.trim(),
+      songHref: formData.songHref.trim(),
     };
 
     try {
@@ -396,6 +421,16 @@ export function MemberProfileForm() {
         githubLink: formData.githubLink.trim(),
         linkedinLink: formData.linkedinLink.trim(),
         aboutMe: formData.aboutMe.trim(),
+        askMeAbout: touches.askMeAbout,
+        outsideStudies: touches.outsideStudies,
+        currentlyBuilding: touches.currentlyBuilding,
+        currentlyLearning: touches.currentlyLearning,
+        currentlyReading: touches.currentlyReading,
+        songId: touches.songId,
+        songTitle: touches.songTitle,
+        songArtist: touches.songArtist,
+        songImage: touches.songImage,
+        songHref: touches.songHref,
       });
       if (profile?.userId) saveTouches(profile.userId, touches);
       try {
@@ -630,7 +665,7 @@ export function MemberProfileForm() {
 
         <FormSection
           title="Get to know me"
-          description="Short answers for your public profile. These stay in this browser for now, so you can preview them."
+          description="Short answers for your public profile."
         >
           <div className="space-y-2">
             <Label htmlFor="askMeAbout">Ask me about…</Label>
@@ -643,7 +678,7 @@ export function MemberProfileForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="outsideStudies">Outside of studies you'll find me…</Label>
+            <Label htmlFor="outsideStudies">Outside of studies you&apos;ll find me…</Label>
             <Input
               id="outsideStudies"
               value={formData.outsideStudies}
@@ -663,6 +698,16 @@ export function MemberProfileForm() {
             />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="currentlyLearning">Currently learning</Label>
+            <Input
+              id="currentlyLearning"
+              value={formData.currentlyLearning}
+              onChange={(e) => setField("currentlyLearning", e.target.value.slice(0, 80))}
+              placeholder="Rust"
+              maxLength={80}
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="currentlyReading">Currently reading</Label>
             <Input
               id="currentlyReading"
@@ -673,14 +718,33 @@ export function MemberProfileForm() {
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="spotifyUrl">Spotify link</Label>
-            <Input
-              id="spotifyUrl"
-              type="url"
-              value={formData.spotifyUrl}
-              onChange={(e) => setField("spotifyUrl", e.target.value)}
-              placeholder="Paste a Spotify song link"
+            <Label htmlFor="song-search">Listening to</Label>
+            <SongSearch
+              id="song-search"
+              onSelect={(song: ProfileSong) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  songId: song.id,
+                  songTitle: song.title,
+                  songArtist: song.artist,
+                  songImage: song.image,
+                  songHref: song.href,
+                  spotifyUrl: "",
+                }))
+              }
             />
+            {formData.songTitle ? (
+              <div className="flex items-center gap-3">
+                {formData.songImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- album art for the saved song
+                  <img src={formData.songImage} alt="" className="size-10 rounded-sm object-cover" />
+                ) : null}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-secondary-black">{formData.songTitle}</p>
+                  {formData.songArtist ? <p className="truncate text-xs text-secondary-gray">{formData.songArtist}</p> : null}
+                </div>
+              </div>
+            ) : null}
           </div>
         </FormSection>
 

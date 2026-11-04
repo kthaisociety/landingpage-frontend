@@ -38,7 +38,13 @@ export interface PublicProfile {
   askMeAbout?: string;
   outsideStudies?: string;
   currentlyBuilding?: string;
+  currentlyLearning?: string;
   currentlyReading?: string;
+  songId?: string;
+  songTitle?: string;
+  songArtist?: string;
+  songImage?: string;
+  songHref?: string;
   spotifyUrl?: string;
   spotifyUrls?: string[];
   teamHistory: TeamEntry[];
