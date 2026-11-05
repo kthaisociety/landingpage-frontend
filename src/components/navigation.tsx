@@ -80,7 +80,7 @@ export function Navigation() {
   }
 
   function handleProfileClick() {
-    router.push("/member/dashboard");
+    router.push(user?.slug ? `/members/${user.slug}` : "/member/dashboard");
     setIsProfileOpen(false);
     setIsMobileMenuOpen(false);
   }

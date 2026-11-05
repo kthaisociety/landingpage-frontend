@@ -23,6 +23,7 @@ export interface UserProfile {
   githubLink: string;
   linkedInLink: string;
   exists: boolean;
+  slug?: string;
 }
 
 // Define the shape of the Context
