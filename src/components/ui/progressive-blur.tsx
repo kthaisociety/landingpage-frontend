@@ -67,7 +67,7 @@ export function ProgressiveBlur({
       {gradients.map(({ blur, maskGradient, zIndex }, index) => (
         <div
           key={`blur-${index}`}
-          className="absolute inset-0"
+          className="pointer-events-none absolute inset-0"
           style={{
             zIndex,
             backdropFilter: `blur(${blur}px)`,

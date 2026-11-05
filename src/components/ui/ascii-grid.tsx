@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { cn } from "@/lib/utils"
 
 interface AsciiGridProps {
   className?: string
@@ -353,9 +354,9 @@ export function AsciiGrid({
   }, [color, cellSize, logoSrc, logoPosition, logoScale, enableDripping])
 
   return (
-    <canvas 
-      ref={canvasRef} 
-      className={className}
+    <canvas
+      ref={canvasRef}
+      className={cn("pointer-events-none", className)}
     />
   )
 }

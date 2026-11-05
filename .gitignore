@@ -44,3 +44,9 @@ next-env.d.ts
 
 # local dev server logs
 *.log
+
+# local AI / agent tooling (never commit chat or session artifacts)
+.cursor/
+.claude/
+.agent-transcripts/
+agent-transcripts/
