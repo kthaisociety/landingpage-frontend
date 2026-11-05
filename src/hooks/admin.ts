@@ -1149,6 +1149,20 @@ export function useJobs() {
   });
 }
 
+export function useAdminJobs() {
+  return useQuery<SmallJobListing[]>({
+    queryKey: ["admin-jobs"],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/joblistings/admin/all`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch jobs");
+      const data = await res.json();
+      return data || [];
+    },
+  });
+}
+
 /**
  * Fetches a single job for the detailed view
  * Endpoint: GET /joblistings/job?id={id}
@@ -1208,6 +1222,7 @@ export function useCreateJob() {
     onSuccess: () => {
       toast.success("Job created successfully!");
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
     },
     onError: (error: Error) => {
       console.error("Error creating job:", error);
@@ -1239,6 +1254,7 @@ export function useUpdateJob() {
     onSuccess: (_, variables) => {
       toast.success("Job updated successfully!");
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
       queryClient.invalidateQueries({ queryKey: ["jobs", variables.id] });
     },
     onError: (error: Error) => {
@@ -1267,6 +1283,7 @@ export function useDeleteJob() {
     onSuccess: () => {
       toast.success("Job deleted successfully!");
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
     },
     onError: (error: Error) => {
       console.error("Error deleting job:", error);
