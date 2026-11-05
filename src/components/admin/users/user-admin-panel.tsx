@@ -14,7 +14,7 @@ import {
   type Row,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronsUpDown, Plus, Search, X } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronsUpDown, Plus, Search } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,6 +96,7 @@ import { APPLICATION_TEAMS, APPLICATION_TEAM_LABELS } from "@/types/applications
 import { useAuth } from "@/lib/providers/auth-provider/authProvider";
 import { ConfirmPhraseDialog } from "@/components/admin/confirm-phrase-dialog";
 import { AdminUserProfileForm } from "@/components/admin/users/admin-user-profile-form";
+import { AdminFormSheet } from "@/components/admin/admin-form-sheet";
 import { ManualOnboardingForm } from "@/components/admin/users/manual-onboarding-form";
 import { OnboardingRecordsList } from "@/components/admin/users/onboarding-records-list";
 import { OnboardingEmailSettingsPanel } from "@/components/admin/users/onboarding-email-settings";
@@ -473,7 +474,7 @@ function MembersTable({
         <CardTitle>Members</CardTitle>
         <CardDescription>Search, filter, and open a member for actions.</CardDescription>
         <CardAction>
-          <Badge variant="outline">
+          <Badge variant="outline" className="border-primary/40 text-primary">
             {table.getFilteredRowModel().rows.length} result
             {table.getFilteredRowModel().rows.length === 1 ? "" : "s"}
           </Badge>
@@ -481,7 +482,7 @@ function MembersTable({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="relative max-w-md">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by name, email, team, or role..."
             value={searchQuery}
@@ -790,6 +791,16 @@ export function UserAdminPanel({
 
   const clearPendingAction = () => setPendingAction(null);
 
+  // Board roles are stored by email; this finds the member to open.
+  const userIdByEmail = useMemo(
+    () => new Map(users.map((user) => [user.email.toLowerCase(), user.user_id])),
+    [users],
+  );
+  const openMemberByEmail = (email: string) => {
+    const userId = userIdByEmail.get(email.toLowerCase());
+    if (userId) setSelectedUserId(userId);
+  };
+
   const selectedUser = useMemo(
     () => users.find((user) => user.user_id === selectedUserId) ?? null,
     [users, selectedUserId],
@@ -836,45 +847,27 @@ export function UserAdminPanel({
       className="space-y-4"
     >
       <TabsList>
-        <TabsTrigger value="members">Members</TabsTrigger>
+        <TabsTrigger value="members">Directory</TabsTrigger>
         <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
       </TabsList>
 
       <TabsContent value="onboarding" className="space-y-4">
         <div className="flex justify-end">
-          {!showOnboardingForm && (
-            <Button size="sm" onClick={() => setShowOnboardingForm(true)}>
-              <Plus className="mr-2 h-4 w-4" /> Onboard Member
-            </Button>
-          )}
+          <Button size="sm" onClick={() => setShowOnboardingForm(true)}>
+            <Plus className="h-4 w-4" /> Onboard Member
+          </Button>
         </div>
 
-        {showOnboardingForm && (
-          <Card className="border-primary/30 shadow-sm">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
-              <div>
-                <CardTitle>Onboard Member</CardTitle>
-                <CardDescription className="mt-1">
-                  For members joining outside the recruitment pipeline (board
-                  appointments, special cases). Creates a real @kthais.com
-                  account and Mattermost invite.
-                </CardDescription>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-                onClick={() => setShowOnboardingForm(false)}
-                aria-label="Close onboarding form"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <ManualOnboardingForm onClose={() => setShowOnboardingForm(false)} />
-            </CardContent>
-          </Card>
-        )}
+        <AdminFormSheet
+          open={showOnboardingForm}
+          title="Onboard Member"
+          description="For members joining outside the recruitment pipeline (board appointments, special cases). Creates a real @kthais.com account and Mattermost invite."
+          onClose={() => setShowOnboardingForm(false)}
+        >
+          {showOnboardingForm && (
+            <ManualOnboardingForm onClose={() => setShowOnboardingForm(false)} />
+          )}
+        </AdminFormSheet>
 
         <Card>
           <CardHeader>
@@ -882,7 +875,7 @@ export function UserAdminPanel({
             <CardDescription>
               Everyone who&apos;s been sent an onboarding link, manual or from
               recruitment. Rows highlighted in red haven&apos;t completed
-              within a week — worth following up.
+              within a week, so it&apos;s worth following up with them.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -977,19 +970,52 @@ export function UserAdminPanel({
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-2 sm:grid-cols-2">
-                {EXACTLY_ONE_BOARD_ROLES.map((role) => (
-                  <div key={role} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                    <span className="font-medium">{BOARD_ROLE_LABELS[role]}</span>
-                    <span className="text-muted-foreground">
-                      {boardRoleHolders?.[role] ?? "Vacant"}
-                    </span>
-                  </div>
-                ))}
-                <div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm sm:col-span-2">
+                {EXACTLY_ONE_BOARD_ROLES.map((role) => {
+                  const holder = boardRoleHolders?.[role];
+                  const content = (
+                    <>
+                      <span className="font-medium">{BOARD_ROLE_LABELS[role]}</span>
+                      <span className="truncate text-muted-foreground">{holder ?? "Vacant"}</span>
+                    </>
+                  );
+                  const rowClassName =
+                    "flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm";
+                  // A held role opens its holder's member panel; a vacant one has nobody to open.
+                  return holder && userIdByEmail.has(holder.toLowerCase()) ? (
+                    <button
+                      key={role}
+                      type="button"
+                      className={`${rowClassName} transition-colors hover:bg-muted/50`}
+                      onClick={() => openMemberByEmail(holder)}
+                    >
+                      {content}
+                    </button>
+                  ) : (
+                    <div key={role} className={rowClassName}>
+                      {content}
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm sm:col-span-2">
                   <span className="font-medium">Board Advisors</span>
-                  <span className="text-muted-foreground">
+                  <span className="flex flex-wrap justify-end gap-x-1 text-muted-foreground">
                     {boardRoleHolders?.board_advisor?.length
-                      ? boardRoleHolders.board_advisor.join(", ")
+                      ? boardRoleHolders.board_advisor.map((email, index, all) => (
+                          <span key={email}>
+                            {userIdByEmail.has(email.toLowerCase()) ? (
+                              <button
+                                type="button"
+                                className="underline-offset-4 hover:text-foreground hover:underline"
+                                onClick={() => openMemberByEmail(email)}
+                              >
+                                {email}
+                              </button>
+                            ) : (
+                              email
+                            )}
+                            {index < all.length - 1 && ","}
+                          </span>
+                        ))
                       : "None"}
                   </span>
                 </div>
@@ -1014,9 +1040,16 @@ export function UserAdminPanel({
           </>
         ) : (
           <>
-            <Button variant="ghost" size="sm" onClick={() => setMembersView("dashboard")}>
-              ← Back to dashboard
-            </Button>
+            <button
+              type="button"
+              onClick={() => setMembersView("dashboard")}
+              className="group inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+              {/* The font's glyphs sit high in their line box; 1px down
+                  lines the text up optically with the chevron. */}
+              <span className="translate-y-px">Back to dashboard</span>
+            </button>
             <MembersTable
               users={users}
               filter={memberFilter}

@@ -23,8 +23,9 @@ export const STATUS_BADGE_CLASSNAME: Partial<Record<ApplicationStatus, string>> 
     "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400",
 };
 
-// Exported so other UI (e.g. the toolbar's quick-filter buttons) can match
-// these exact colors instead of drifting out of sync with a copy.
+// Exported so other UI can match these exact colors instead of drifting out
+// of sync with a copy. The toolbar's quick-filter buttons deliberately don't:
+// a permanently colored button reads as "selected".
 export const INTERVIEWING_BY_YOU_CLASSNAME =
   "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300";
 const INTERVIEWING_BY_OTHER_CLASSNAME =

@@ -865,9 +865,13 @@ export function ProjectForm({ projectId, onClose }: { projectId?: string; onClos
                       <Label htmlFor="project-status">Current Status</Label>
                       <Select
                         value={form.status}
-                        onValueChange={(val) =>
-                          setForm((prev) => ({ ...prev, status: val }))
-                        }
+                        // Radix Select can report "" when its value is set right
+                        // after mounting (edit mode loads the saved status that
+                        // way), which wiped the status. No option is empty, so
+                        // an empty value is never a real choice: ignore it.
+                        onValueChange={(val) => {
+                          if (val) setForm((prev) => ({ ...prev, status: val }));
+                        }}
                       >
                         <SelectTrigger id="project-status">
                           <SelectValue placeholder="Select a status" />

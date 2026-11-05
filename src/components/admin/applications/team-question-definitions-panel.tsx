@@ -137,7 +137,7 @@ function QuestionRow({
       <div className="space-y-1">
         <p className="text-sm">{question.text}</p>
         {question.required && (
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="border-primary/40 text-xs text-primary">
             Required
           </Badge>
         )}
@@ -238,7 +238,7 @@ export function TeamQuestionDefinitionsPanel() {
                         <div key={question.id} className="rounded-md border p-3">
                           <p className="text-sm">{question.text}</p>
                           {question.required && (
-                            <Badge variant="outline" className="mt-1 text-xs">
+                            <Badge variant="outline" className="mt-1 border-primary/40 text-xs text-primary">
                               Required
                             </Badge>
                           )}

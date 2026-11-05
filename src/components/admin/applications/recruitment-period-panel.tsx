@@ -192,7 +192,10 @@ export function RecruitmentPeriodPanel() {
           <CalendarClock className="h-4 w-4" />
           Deadlines
           {settings && (
-            <Badge variant={settings.is_recruitment_open ? "default" : "outline"} className="ml-1">
+            <Badge
+              variant={settings.is_recruitment_open ? "default" : "outline"}
+              className={settings.is_recruitment_open ? "ml-1" : "ml-1 border-primary/40 text-primary"}
+            >
               Recruitment {settings.is_recruitment_open ? "open" : "closed"}
             </Badge>
           )}
@@ -219,7 +222,7 @@ export function RecruitmentPeriodPanel() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-auto py-0 text-xs"
+                    className="h-auto py-0 text-xs text-primary hover:text-primary"
                     onClick={() => setOpensAtDraft("")}
                   >
                     Clear
@@ -255,7 +258,7 @@ export function RecruitmentPeriodPanel() {
                   Currently {format(new Date(settings.submission_deadline), "EEEE, MMMM d 'at' HH:mm")}.{" "}
                   {settings.updated_by_email
                     ? `Last updated by ${settings.updated_by_email}.`
-                    : "Not yet customised — this is the default."}
+                    : "Not yet customised, so this is the default."}
                 </CardDescription>
               )}
             </div>
@@ -309,7 +312,7 @@ export function RecruitmentPeriodPanel() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-auto py-0 text-xs"
+                  className="h-auto py-0 text-xs text-primary hover:text-primary"
                   onClick={() => {
                     setTqFinalCallStartDraft("");
                     setTqSubmissionCutoffDraft("");
@@ -327,7 +330,7 @@ export function RecruitmentPeriodPanel() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-auto py-0 text-xs"
+                  className="h-auto py-0 text-xs text-primary hover:text-primary"
                   onClick={() => {
                     setHeadingDraft(DEFAULT_CLOSED_HEADING);
                     setMessageDraft(DEFAULT_CLOSED_MESSAGE);
@@ -396,14 +399,14 @@ export function RecruitmentPeriodPanel() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-auto py-0 text-xs"
+                  className="h-auto py-0 text-xs text-primary hover:text-primary"
                   onClick={() => setRejectionIntroDraft(DEFAULT_REJECTION_INTRO_TEXT)}
                 >
                   Reset to default
                 </Button>
               </div>
               <CardDescription>
-                Sent to every applicant who wasn&apos;t accepted — either one at a time when an
+                Sent to every applicant who wasn&apos;t accepted, either one at a time when an
                 admin rejects them during finalize recruitment, or in bulk once the phase closes
                 (see the Finalize recruitment panel). Use{" "}
                 <code className="rounded bg-muted px-1 text-xs">{"{{year}}"}</code> for the

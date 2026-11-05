@@ -8,7 +8,6 @@ import {
   Edit,
   Trash2,
   Briefcase,
-  X,
   MousePointerClick,
 } from "lucide-react";
 
@@ -34,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { useJobs, useDeleteJob } from "@/hooks/admin";
+import { AdminFormSheet } from "@/components/admin/admin-form-sheet";
 import { JobForm } from "@/components/admin/jobs/job-form";
 
 type FormMode = { type: "new" } | { type: "edit"; jobId: string } | null;
@@ -60,45 +60,29 @@ export function JobAdminPanel() {
 
   return (
     <section className="space-y-6">
-      {!formMode && (
-        <div className="flex justify-end">
-          <Button onClick={() => setFormMode({ type: "new" })}>
-            <Plus className="mr-2 h-4 w-4" /> New Job
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <Button onClick={() => setFormMode({ type: "new" })}>
+          <Plus className="h-4 w-4" /> New Job
+        </Button>
+      </div>
 
-      {/* Inline Form — drops in above listings */}
-      {formMode && (
-        <Card className="border-primary/30 shadow-sm">
-          <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
-            <div>
-              <CardTitle>
-                {formMode.type === "edit" ? "Edit Job Post" : "New Job Post"}
-              </CardTitle>
-              <CardDescription className="mt-1">
-                {formMode.type === "edit"
-                  ? "Update the details for the selected job."
-                  : "Provide role details. You can preview before publishing."}
-              </CardDescription>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="shrink-0"
-              onClick={closeForm}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <JobForm
-              jobId={formMode.type === "edit" ? formMode.jobId : undefined}
-              onClose={closeForm}
-            />
-          </CardContent>
-        </Card>
-      )}
+      <AdminFormSheet
+        open={formMode !== null}
+        title={formMode?.type === "edit" ? "Edit Job Post" : "New Job Post"}
+        description={
+          formMode?.type === "edit"
+            ? "Update the details for the selected job."
+            : "Provide role details. You can preview before publishing."
+        }
+        onClose={closeForm}
+      >
+        {formMode && (
+          <JobForm
+            jobId={formMode.type === "edit" ? formMode.jobId : undefined}
+            onClose={closeForm}
+          />
+        )}
+      </AdminFormSheet>
 
       {/* Listings Card */}
       <Card>
@@ -110,7 +94,7 @@ export function JobAdminPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search jobs by title, company, or type..."
@@ -164,7 +148,6 @@ export function JobAdminPanel() {
                           size="sm"
                           onClick={() => {
                             setFormMode({ type: "edit", jobId: job.id });
-                            window.scrollTo({ top: 0, behavior: "smooth" });
                           }}
                         >
                           <Edit className="mr-2 h-4 w-4" /> Edit

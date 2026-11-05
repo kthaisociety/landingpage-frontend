@@ -6,6 +6,7 @@ import "./globals.css";
 import { Providers } from "@/lib/providers";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer"
+import { FooterVisibility } from "@/components/footer-visibility";
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {  ToastProvider } from '@/components/ui/toast';
 
@@ -48,7 +49,9 @@ export default function RootLayout({
         <Providers>
           <Navigation />
           <ToastProvider><TooltipProvider>{children}</TooltipProvider></ToastProvider>
-          <Footer />
+          <FooterVisibility>
+            <Footer />
+          </FooterVisibility>
         </Providers>
       </body>
     </html>

@@ -279,7 +279,7 @@ export function JobForm({
             ) : (
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Filter companies..."
                     className="pl-9"
@@ -344,7 +344,8 @@ export function JobForm({
               </Label>
               <Select
                 value={form.jobType}
-                onValueChange={(val) => handleSelectChange("jobType", val)}
+                // Ignore Radix Select's spurious "" on load (see project-form).
+                onValueChange={(val) => val && handleSelectChange("jobType", val)}
                 required
               >
                 <SelectTrigger>
@@ -392,7 +393,8 @@ export function JobForm({
               </Label>
               <Select
                 value={form.location.tag}
-                onValueChange={(val) => handleLocationChange("tag", val)}
+                // Ignore Radix Select's spurious "" on load (see project-form).
+                onValueChange={(val) => val && handleLocationChange("tag", val)}
                 required
               >
                 <SelectTrigger>
@@ -511,7 +513,7 @@ export function JobForm({
                   size="sm"
                   onClick={addContact}
                 >
-                  <Plus className="mr-2 h-4 w-4" /> Add Contact
+                  <Plus className="h-4 w-4" /> Add Contact
                 </Button>
               </div>
 
